@@ -231,21 +231,20 @@ var _ = Describe("Smelter", func() {
 
 			Context("when bin/release outputs malformed YAML", func() {
 				BeforeEach(func() {
-					// runner.WhenRunning(fake_command_runner.CommandSpec{
-					// 	Path: "/buildpacks/b/bin/release",
-					// }, func(cmd *exec.Cmd) error {
-					// 	cmd.Stdout.Write([]byte("---\n"))
-					// 	cmd.Stdout.Write([]byte("[ - ]\n"))
-					// 	cmd.Stdout.(io.WriteCloser).Close()
-					// 	return nil
-					// })
+					runner.WhenRunning(fake_command_runner.CommandSpec{
+						Path: "/buildpacks/b/bin/release",
+					}, func(cmd *exec.Cmd) error {
+						cmd.Stdout.Write([]byte("["))
+						cmd.Stdout.(io.WriteCloser).Close()
+						return nil
+					})
 				})
 
 				It("returns an MalformedReleaseYAMLError", func() {
-					// FIXME(GYPSY)
-					// gypsy literally cannot fail to parse yaml.
-					// err := smelter.Smelt()
-					// Ω(err).Should(Equal(MalformedReleaseYAML{}))
+					err := smelter.Smelt()
+
+					var expectedError MalformedReleaseYAMLError
+					Ω(err).Should(BeAssignableToTypeOf(expectedError))
 				})
 			})
 
