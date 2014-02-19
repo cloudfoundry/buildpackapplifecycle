@@ -28,6 +28,12 @@ var buildpacksDir = flag.String(
 	"directory containing the buildpacks to try, settable as $BUILDPACKS_DIR",
 )
 
+var cacheDir = flag.String(
+	"cacheDir",
+	os.Getenv("CACHE_DIR"),
+	"directory to store cached artifacts to buildpacks, settable as $CACHE_DIR",
+)
+
 var buildpackOrder = flag.String(
 	"buildpackOrder",
 	os.Getenv("BUILDPACK_ORDER"),
@@ -63,7 +69,7 @@ func main() {
 		buildpacks = append(buildpacks, path.Join(*buildpacksDir, name))
 	}
 
-	smelter := smelter.New(*appDir, *outputDir, buildpacks, command_runner.New(false))
+	smelter := smelter.New(*appDir, *outputDir, buildpacks, *cacheDir, command_runner.New(false))
 
 	err := smelter.Smelt()
 	if err != nil {

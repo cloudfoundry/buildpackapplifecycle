@@ -18,6 +18,7 @@ type Smelter struct {
 	appDir        string
 	outputDir     string
 	buildpackDirs []string
+	cacheDir      string
 
 	runner command_runner.CommandRunner
 }
@@ -40,12 +41,14 @@ func New(
 	appDir string,
 	outputDir string,
 	buildpackDirs []string,
+	cacheDir string,
 	runner command_runner.CommandRunner,
 ) *Smelter {
 	return &Smelter{
 		appDir:        appDir,
 		outputDir:     outputDir,
 		buildpackDirs: buildpackDirs,
+		cacheDir:      cacheDir,
 
 		runner: runner,
 	}
@@ -112,7 +115,7 @@ func (s *Smelter) detect() (string, string, error) {
 func (s *Smelter) compile(buildpackDir string) error {
 	return s.runner.Run(&exec.Cmd{
 		Path:   path.Join(buildpackDir, "bin", "compile"),
-		Args:   []string{s.appDir, "/tmp"},
+		Args:   []string{s.appDir, s.cacheDir},
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
 	})

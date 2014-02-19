@@ -23,6 +23,7 @@ var _ = Describe("Smelter", func() {
 	var (
 		appDir    string
 		outputDir string
+		cacheDir  string
 	)
 
 	BeforeEach(func() {
@@ -36,10 +37,14 @@ var _ = Describe("Smelter", func() {
 		outputDir, err = ioutil.TempDir(os.TempDir(), "smelting-droplet")
 		Ω(err).ShouldNot(HaveOccurred())
 
+		cacheDir, err = ioutil.TempDir(os.TempDir(), "smelting-cache")
+		Ω(err).ShouldNot(HaveOccurred())
+
 		smelter = New(
 			appDir,
 			outputDir,
 			[]string{"/buildpacks/a", "/buildpacks/b", "/buildpacks/c"},
+			cacheDir,
 			runner,
 		)
 	})
@@ -120,7 +125,7 @@ var _ = Describe("Smelter", func() {
 					},
 					fake_command_runner.CommandSpec{
 						Path: "/buildpacks/b/bin/compile",
-						Args: []string{appDir, "/tmp"},
+						Args: []string{appDir, cacheDir},
 					},
 				))
 			})

@@ -23,6 +23,7 @@ var _ = Describe("Smelting", func() {
 		appDir         string
 		buildpacksDir  string
 		outputDir      string
+		cacheDir       string
 		buildpackOrder string
 	)
 
@@ -39,6 +40,9 @@ var _ = Describe("Smelting", func() {
 
 		outputDir, err = ioutil.TempDir(os.TempDir(), "smelting-droplet")
 		Ω(err).ShouldNot(HaveOccurred())
+
+		cacheDir, err = ioutil.TempDir(os.TempDir(), "smelting-cache")
+		Ω(err).ShouldNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
@@ -53,6 +57,7 @@ var _ = Describe("Smelting", func() {
 			"APP_DIR="+appDir,
 			"BUILDPACKS_DIR="+buildpacksDir,
 			"OUTPUT_DIR="+outputDir,
+			"CACHE_DIR="+cacheDir,
 			"BUILDPACK_ORDER="+buildpackOrder,
 		)
 	})
@@ -112,6 +117,7 @@ var _ = Describe("Smelting", func() {
 			smelterCmd.Env = []string{
 				"BUILDPACKS_DIR=" + buildpacksDir,
 				"OUTPUT_DIR=" + outputDir,
+				"CACHE_DIR=" + cacheDir,
 				"BUILDPACK_ORDER=" + buildpackOrder,
 			}
 		})
@@ -126,6 +132,7 @@ var _ = Describe("Smelting", func() {
 			smelterCmd.Env = []string{
 				"APP_DIR=" + appDir,
 				"OUTPUT_DIR=" + outputDir,
+				"CACHE_DIR=" + cacheDir,
 				"BUILDPACK_ORDER=" + buildpackOrder,
 			}
 		})
@@ -140,6 +147,7 @@ var _ = Describe("Smelting", func() {
 			smelterCmd.Env = []string{
 				"APP_DIR=" + appDir,
 				"BUILDPACKS_DIR=" + buildpacksDir,
+				"CACHE_DIR=" + cacheDir,
 				"BUILDPACK_ORDER=" + buildpackOrder,
 			}
 		})
@@ -155,6 +163,7 @@ var _ = Describe("Smelting", func() {
 				"APP_DIR=" + appDir,
 				"BUILDPACKS_DIR=" + buildpacksDir,
 				"OUTPUT_DIR=" + outputDir,
+				"CACHE_DIR=" + cacheDir,
 			}
 		})
 
