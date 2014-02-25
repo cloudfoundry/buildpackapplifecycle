@@ -2,6 +2,7 @@ package smelter_test
 
 import (
 	"errors"
+	"github.com/fraenkel/candiedyaml"
 	"io"
 	"io/ioutil"
 	"os"
@@ -11,10 +12,14 @@ import (
 	. "github.com/cloudfoundry-incubator/linux-smelter/smelter"
 	"github.com/cloudfoundry/gunk/command_runner/fake_command_runner"
 	. "github.com/cloudfoundry/gunk/command_runner/fake_command_runner/matchers"
-	"github.com/kylelemons/go-gypsy/yaml"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
+
+type ExpectedStagingYAML struct {
+	DetectedBuildpack string `yaml:"detected_buildpack"`
+	StartCommand      string `yaml:"start_command"`
+}
 
 var _ = Describe("Smelter", func() {
 	var smelter *Smelter
@@ -165,10 +170,15 @@ var _ = Describe("Smelter", func() {
 				err := smelter.Smelt()
 				Ω(err).ShouldNot(HaveOccurred())
 
-				file, err := yaml.ReadFile(path.Join(outputDir, "staging_info.yml"))
+				var output ExpectedStagingYAML
+
+				file, err := os.Open(path.Join(outputDir, "staging_info.yml"))
 				Ω(err).ShouldNot(HaveOccurred())
 
-				Ω(file.Get("detected_buildpack")).Should(Equal("Always Matching"))
+				err = candiedyaml.NewDecoder(file).Decode(&output)
+				Ω(err).ShouldNot(HaveOccurred())
+
+				Ω(output.DetectedBuildpack).Should(Equal("Always Matching"))
 			})
 
 			Context("when bin/release has a start command", func() {
@@ -188,10 +198,15 @@ var _ = Describe("Smelter", func() {
 					err := smelter.Smelt()
 					Ω(err).ShouldNot(HaveOccurred())
 
-					file, err := yaml.ReadFile(path.Join(outputDir, "staging_info.yml"))
+					file, err := os.Open(path.Join(outputDir, "staging_info.yml"))
 					Ω(err).ShouldNot(HaveOccurred())
 
-					Ω(file.Get("start_command")).Should(Equal("some-command"))
+					var output ExpectedStagingYAML
+
+					err = candiedyaml.NewDecoder(file).Decode(&output)
+					Ω(err).ShouldNot(HaveOccurred())
+
+					Ω(output.StartCommand).Should(Equal("some-command"))
 				})
 			})
 

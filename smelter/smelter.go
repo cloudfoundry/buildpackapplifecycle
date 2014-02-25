@@ -3,15 +3,14 @@ package smelter
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/cloudfoundry/gunk/command_runner"
 	"github.com/fraenkel/candiedyaml"
-	"github.com/kylelemons/go-gypsy/yaml"
 )
 
 type Smelter struct {
@@ -121,7 +120,7 @@ func (s *Smelter) detect() (string, string, error) {
 		})
 
 		if err == nil {
-			return buildpackDir, output.String(), nil
+			return buildpackDir, strings.TrimRight(output.String(), "\n"), nil
 		}
 	}
 
@@ -169,19 +168,17 @@ func (s *Smelter) release(buildpackDir string) (Release, error) {
 }
 
 func (s *Smelter) saveInfo(detectedName string, releaseInfo Release) error {
-	info := map[string]yaml.Node{
-		"detected_buildpack": yaml.Scalar(detectedName),
+	file, err := os.Create(filepath.Join(s.outputDir, "staging_info.yml"))
+	if err != nil {
+		return err
 	}
 
-	if releaseInfo.DefaultProcessTypes.Web != "" {
-		info["start_command"] = yaml.Scalar(releaseInfo.DefaultProcessTypes.Web)
+	info := StagingInfo{
+		DetectedBuildpack: detectedName,
+		StartCommand:      releaseInfo.DefaultProcessTypes.Web,
 	}
 
-	return ioutil.WriteFile(
-		filepath.Join(s.outputDir, "staging_info.yml"),
-		[]byte(yaml.Render(yaml.Map(info))),
-		0644,
-	)
+	return candiedyaml.NewEncoder(file).Encode(info)
 }
 
 func (s *Smelter) copyApp() error {

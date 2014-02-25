@@ -7,20 +7,19 @@
 	"Deps": [
 		{
 			"ImportPath": "github.com/cloudfoundry/gunk/command_runner",
-			"Rev": "18a433dbc75d5feadfa00ef9a9d2c206e7c0327c"
+			"Rev": "67d1d59a7eef22e8cdb1198e58387c77442b5d9f"
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry/gunk/runner_support",
-			"Rev": "18a433dbc75d5feadfa00ef9a9d2c206e7c0327c"
+			"Rev": "67d1d59a7eef22e8cdb1198e58387c77442b5d9f"
 		},
 		{
-			"ImportPath": "github.com/kylelemons/go-gypsy/yaml",
-			"Comment": "go.weekly.2011-11-02-17-g0ddb27c",
-			"Rev": "0ddb27ce74ade2ca988ec85587d636e10312dfc6"
+			"ImportPath": "github.com/fraenkel/candiedyaml",
+			"Rev": "f27ea5c711b0e986a4df3fb91ee316ec7f51f530"
 		},
 		{
 			"ImportPath": "github.com/onsi/ginkgo",
-			"Rev": "d71f32f5dc46c47cafde0b96a628e3594e96b75a"
+			"Rev": "884dab811fc3c75f6c9cc51254601b426049cd98"
 		},
 		{
 			"ImportPath": "github.com/onsi/gomega",
