@@ -25,6 +25,7 @@ var _ = Describe("Smelting", func() {
 		outputDir      string
 		cacheDir       string
 		buildpackOrder string
+		resultDir      string
 	)
 
 	BeforeEach(func() {
@@ -43,6 +44,9 @@ var _ = Describe("Smelting", func() {
 
 		cacheDir, err = ioutil.TempDir(os.TempDir(), "smelting-cache")
 		Ω(err).ShouldNot(HaveOccurred())
+
+		resultDir, err = ioutil.TempDir(os.TempDir(), "smelting-result")
+		Ω(err).ShouldNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
@@ -59,6 +63,7 @@ var _ = Describe("Smelting", func() {
 			"OUTPUT_DIR="+outputDir,
 			"CACHE_DIR="+cacheDir,
 			"BUILDPACK_ORDER="+buildpackOrder,
+			"RESULT_DIR="+resultDir,
 		)
 	})
 
@@ -109,66 +114,6 @@ var _ = Describe("Smelting", func() {
 			fileInfo, err = os.Stat(path.Join(outputDir, "staging_info.yml"))
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(fileInfo.IsDir()).Should(BeFalse())
-		})
-	})
-
-	Context("when APP_DIR is not specified", func() {
-		BeforeEach(func() {
-			smelterCmd.Env = []string{
-				"BUILDPACKS_DIR=" + buildpacksDir,
-				"OUTPUT_DIR=" + outputDir,
-				"CACHE_DIR=" + cacheDir,
-				"BUILDPACK_ORDER=" + buildpackOrder,
-			}
-		})
-
-		It("asplodes", func() {
-			Ω(smelt()).Should(ExitWith(1))
-		})
-	})
-
-	Context("when BUILDPACKS_DIR is not specified", func() {
-		BeforeEach(func() {
-			smelterCmd.Env = []string{
-				"APP_DIR=" + appDir,
-				"OUTPUT_DIR=" + outputDir,
-				"CACHE_DIR=" + cacheDir,
-				"BUILDPACK_ORDER=" + buildpackOrder,
-			}
-		})
-
-		It("asplodes", func() {
-			Ω(smelt()).Should(ExitWith(1))
-		})
-	})
-
-	Context("when OUTPUT_DIR is not specified", func() {
-		BeforeEach(func() {
-			smelterCmd.Env = []string{
-				"APP_DIR=" + appDir,
-				"BUILDPACKS_DIR=" + buildpacksDir,
-				"CACHE_DIR=" + cacheDir,
-				"BUILDPACK_ORDER=" + buildpackOrder,
-			}
-		})
-
-		It("asplodes", func() {
-			Ω(smelt()).Should(ExitWith(1))
-		})
-	})
-
-	Context("when BUILDPACK_ORDER is not specified", func() {
-		BeforeEach(func() {
-			smelterCmd.Env = []string{
-				"APP_DIR=" + appDir,
-				"BUILDPACKS_DIR=" + buildpacksDir,
-				"OUTPUT_DIR=" + outputDir,
-				"CACHE_DIR=" + cacheDir,
-			}
-		})
-
-		It("asplodes", func() {
-			Ω(smelt()).Should(ExitWith(1))
 		})
 	})
 })

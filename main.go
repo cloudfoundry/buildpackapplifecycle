@@ -22,6 +22,12 @@ var outputDir = flag.String(
 	"directory in which to write the smelted app bits, settable as $OUTPUT_DIR",
 )
 
+var resultDir = flag.String(
+	"resultDir",
+	os.Getenv("RESULT_DIR"),
+	"directory in which to place smelting result metadata, settable as $RESULT_DIR",
+)
+
 var buildpacksDir = flag.String(
 	"buildpacksDir",
 	os.Getenv("BUILDPACKS_DIR"),
@@ -64,6 +70,11 @@ func main() {
 		usage()
 	}
 
+	if *resultDir == "" {
+		println("missing -resultDir")
+		usage()
+	}
+
 	if *buildpackOrder == "" {
 		println("missing -buildpackOrder")
 		usage()
@@ -75,7 +86,14 @@ func main() {
 		buildpacks = append(buildpacks, path.Join(*buildpacksDir, name))
 	}
 
-	smelter := smelter.New(*appDir, *outputDir, buildpacks, *cacheDir, command_runner.New(*debug))
+	smelter := smelter.New(
+		*appDir,
+		*outputDir,
+		*resultDir,
+		buildpacks,
+		*cacheDir,
+		command_runner.New(*debug),
+	)
 
 	err := smelter.Smelt()
 	if err != nil {

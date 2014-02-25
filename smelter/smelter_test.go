@@ -26,9 +26,11 @@ var _ = Describe("Smelter", func() {
 	var runner *fake_command_runner.FakeCommandRunner
 
 	var (
-		appDir    string
-		outputDir string
-		cacheDir  string
+		smeltingDir string
+		appDir      string
+		outputDir   string
+		cacheDir    string
+		resultDir   string
 	)
 
 	BeforeEach(func() {
@@ -36,18 +38,18 @@ var _ = Describe("Smelter", func() {
 
 		var err error
 
-		appDir, err = ioutil.TempDir(os.TempDir(), "smelting-app")
+		smeltingDir, err = ioutil.TempDir(os.TempDir(), "smelting")
 		Ω(err).ShouldNot(HaveOccurred())
 
-		outputDir, err = ioutil.TempDir(os.TempDir(), "smelting-droplet")
-		Ω(err).ShouldNot(HaveOccurred())
-
-		cacheDir, err = ioutil.TempDir(os.TempDir(), "smelting-cache")
-		Ω(err).ShouldNot(HaveOccurred())
+		appDir = path.Join(smeltingDir, "app")
+		outputDir = path.Join(smeltingDir, "output")
+		cacheDir = path.Join(smeltingDir, "cache")
+		resultDir = path.Join(smeltingDir, "result")
 
 		smelter = New(
 			appDir,
 			outputDir,
+			resultDir,
 			[]string{"/buildpacks/a", "/buildpacks/b", "/buildpacks/c"},
 			cacheDir,
 			runner,
@@ -55,8 +57,7 @@ var _ = Describe("Smelter", func() {
 	})
 
 	AfterEach(func() {
-		os.RemoveAll(appDir)
-		os.RemoveAll(outputDir)
+		os.RemoveAll(smeltingDir)
 	})
 
 	Describe("smelting", func() {
@@ -180,13 +181,13 @@ var _ = Describe("Smelter", func() {
 				Ω(output.DetectedBuildpack).Should(Equal("Always Matching"))
 			})
 
-			It("writes the detected buildpack to result.json in the droplet dir", func() {
+			It("writes the detected buildpack to result.json in the result dir", func() {
 				setupSuccessfulRelease()
 
 				err := smelter.Smelt()
 				Ω(err).ShouldNot(HaveOccurred())
 
-				file, err := os.Open(path.Join(outputDir, "result.json"))
+				file, err := os.Open(path.Join(resultDir, "result.json"))
 				Ω(err).ShouldNot(HaveOccurred())
 
 				var output ExpectedStagingResult

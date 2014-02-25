@@ -19,6 +19,7 @@ type Smelter struct {
 	outputDir     string
 	buildpackDirs []string
 	cacheDir      string
+	resultDir     string
 
 	runner command_runner.CommandRunner
 }
@@ -56,6 +57,7 @@ type StagingInfo struct {
 func New(
 	appDir string,
 	outputDir string,
+	resultDir string,
 	buildpackDirs []string,
 	cacheDir string,
 	runner command_runner.CommandRunner,
@@ -63,6 +65,7 @@ func New(
 	return &Smelter{
 		appDir:        appDir,
 		outputDir:     outputDir,
+		resultDir:     resultDir,
 		buildpackDirs: buildpackDirs,
 		cacheDir:      cacheDir,
 
@@ -71,6 +74,14 @@ func New(
 }
 
 func (s *Smelter) Smelt() error {
+	if err := os.MkdirAll(s.outputDir, 0755); err != nil {
+		return err
+	}
+
+	if err := os.MkdirAll(s.resultDir, 0755); err != nil {
+		return err
+	}
+
 	detectedBuildpackDir, detectedName, err := s.detect()
 	if err != nil {
 		return err
@@ -172,7 +183,7 @@ func (s *Smelter) saveInfo(detectedName string, releaseInfo Release) error {
 
 	defer infoFile.Close()
 
-	resultFile, err := os.Create(filepath.Join(s.outputDir, "result.json"))
+	resultFile, err := os.Create(filepath.Join(s.resultDir, "result.json"))
 	if err != nil {
 		return err
 	}
