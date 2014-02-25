@@ -137,25 +137,21 @@ func (s *Smelter) compile(buildpackDir string) error {
 }
 
 func (s *Smelter) release(buildpackDir string) (Release, error) {
+	releaseOut := new(bytes.Buffer)
+
 	release := &exec.Cmd{
 		Path:   path.Join(buildpackDir, "bin", "release"),
 		Args:   []string{s.appDir},
 		Stderr: os.Stderr,
+		Stdout: releaseOut,
 	}
 
-	out, err := release.StdoutPipe()
+	err := s.runner.Run(release)
 	if err != nil {
 		return Release{}, err
 	}
 
-	err = s.runner.Start(release)
-	if err != nil {
-		return Release{}, err
-	}
-
-	defer s.runner.Wait(release)
-
-	decoder := candiedyaml.NewDecoder(out)
+	decoder := candiedyaml.NewDecoder(releaseOut)
 
 	var parsedRelease Release
 

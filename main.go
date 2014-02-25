@@ -40,6 +40,12 @@ var buildpackOrder = flag.String(
 	"comma-separated list of buildpacks, to be tried in order, settable as $BUILDPACK_ORDER",
 )
 
+var debug = flag.Bool(
+	"debug",
+	false,
+	"print the output of commands as they're executed",
+)
+
 func main() {
 	flag.Parse()
 
@@ -69,7 +75,7 @@ func main() {
 		buildpacks = append(buildpacks, path.Join(*buildpacksDir, name))
 	}
 
-	smelter := smelter.New(*appDir, *outputDir, buildpacks, *cacheDir, command_runner.New(false))
+	smelter := smelter.New(*appDir, *outputDir, buildpacks, *cacheDir, command_runner.New(*debug))
 
 	err := smelter.Smelt()
 	if err != nil {
