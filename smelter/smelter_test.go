@@ -1,9 +1,9 @@
 package smelter_test
 
 import (
+	"encoding/json"
 	"errors"
 	"github.com/fraenkel/candiedyaml"
-	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -16,9 +16,9 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-type ExpectedStagingYAML struct {
-	DetectedBuildpack string `yaml:"detected_buildpack"`
-	StartCommand      string `yaml:"start_command"`
+type ExpectedStagingResult struct {
+	DetectedBuildpack string `yaml:"detected_buildpack" json:"detected_buildpack"`
+	StartCommand      string `yaml:"start_command" json:"-"`
 }
 
 var _ = Describe("Smelter", func() {
@@ -83,7 +83,6 @@ var _ = Describe("Smelter", func() {
 					Path: "/buildpacks/b/bin/release",
 				}, func(cmd *exec.Cmd) error {
 					cmd.Stdout.Write([]byte("--- {}\n"))
-					cmd.Stdout.(io.WriteCloser).Close()
 					return nil
 				})
 			}
@@ -170,12 +169,29 @@ var _ = Describe("Smelter", func() {
 				err := smelter.Smelt()
 				Ω(err).ShouldNot(HaveOccurred())
 
-				var output ExpectedStagingYAML
+				var output ExpectedStagingResult
 
 				file, err := os.Open(path.Join(outputDir, "staging_info.yml"))
 				Ω(err).ShouldNot(HaveOccurred())
 
 				err = candiedyaml.NewDecoder(file).Decode(&output)
+				Ω(err).ShouldNot(HaveOccurred())
+
+				Ω(output.DetectedBuildpack).Should(Equal("Always Matching"))
+			})
+
+			It("writes the detected buildpack to result.json in the droplet dir", func() {
+				setupSuccessfulRelease()
+
+				err := smelter.Smelt()
+				Ω(err).ShouldNot(HaveOccurred())
+
+				file, err := os.Open(path.Join(outputDir, "result.json"))
+				Ω(err).ShouldNot(HaveOccurred())
+
+				var output ExpectedStagingResult
+
+				err = json.NewDecoder(file).Decode(&output)
 				Ω(err).ShouldNot(HaveOccurred())
 
 				Ω(output.DetectedBuildpack).Should(Equal("Always Matching"))
@@ -189,7 +205,6 @@ var _ = Describe("Smelter", func() {
 						cmd.Stdout.Write([]byte("---\n"))
 						cmd.Stdout.Write([]byte("default_process_types:\n"))
 						cmd.Stdout.Write([]byte("  web: some-command\n"))
-						cmd.Stdout.(io.WriteCloser).Close()
 						return nil
 					})
 				})
@@ -201,7 +216,7 @@ var _ = Describe("Smelter", func() {
 					file, err := os.Open(path.Join(outputDir, "staging_info.yml"))
 					Ω(err).ShouldNot(HaveOccurred())
 
-					var output ExpectedStagingYAML
+					var output ExpectedStagingResult
 
 					err = candiedyaml.NewDecoder(file).Decode(&output)
 					Ω(err).ShouldNot(HaveOccurred())
@@ -250,7 +265,6 @@ var _ = Describe("Smelter", func() {
 						Path: "/buildpacks/b/bin/release",
 					}, func(cmd *exec.Cmd) error {
 						cmd.Stdout.Write([]byte("["))
-						cmd.Stdout.(io.WriteCloser).Close()
 						return nil
 					})
 				})

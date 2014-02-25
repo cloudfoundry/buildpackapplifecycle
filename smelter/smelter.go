@@ -2,6 +2,7 @@ package smelter
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -48,8 +49,8 @@ type Release struct {
 }
 
 type StagingInfo struct {
-	DetectedBuildpack string `yaml:"detected_buildpack"`
-	StartCommand      string `yaml:"start_command"`
+	DetectedBuildpack string `yaml:"detected_buildpack" json:"detected_buildpack"`
+	StartCommand      string `yaml:"start_command" json:"-"`
 }
 
 func New(
@@ -164,17 +165,36 @@ func (s *Smelter) release(buildpackDir string) (Release, error) {
 }
 
 func (s *Smelter) saveInfo(detectedName string, releaseInfo Release) error {
-	file, err := os.Create(filepath.Join(s.outputDir, "staging_info.yml"))
+	infoFile, err := os.Create(filepath.Join(s.outputDir, "staging_info.yml"))
 	if err != nil {
 		return err
 	}
+
+	defer infoFile.Close()
+
+	resultFile, err := os.Create(filepath.Join(s.outputDir, "result.json"))
+	if err != nil {
+		return err
+	}
+
+	defer resultFile.Close()
 
 	info := StagingInfo{
 		DetectedBuildpack: detectedName,
 		StartCommand:      releaseInfo.DefaultProcessTypes.Web,
 	}
 
-	return candiedyaml.NewEncoder(file).Encode(info)
+	err = candiedyaml.NewEncoder(infoFile).Encode(info)
+	if err != nil {
+		return err
+	}
+
+	err = json.NewEncoder(resultFile).Encode(info)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *Smelter) copyApp() error {
