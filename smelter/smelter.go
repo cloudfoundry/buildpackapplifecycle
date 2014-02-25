@@ -1,7 +1,6 @@
 package smelter
 
 import (
-	"bufio"
 	"bytes"
 	"fmt"
 	"io/ioutil"
@@ -11,6 +10,7 @@ import (
 	"path/filepath"
 
 	"github.com/cloudfoundry/gunk/command_runner"
+	"github.com/fraenkel/candiedyaml"
 	"github.com/kylelemons/go-gypsy/yaml"
 )
 
@@ -31,10 +31,26 @@ func (e NoneDetectedError) Error() string {
 	return fmt.Sprintf("no buildpack detected for %s", e.AppDir)
 }
 
-type MalformedReleaseYAML struct{}
+type MalformedReleaseYAMLError struct {
+	ParseError error
+}
 
-func (e MalformedReleaseYAML) Error() string {
-	return fmt.Sprintf("buildpack's release script provided malformed YAML")
+func (e MalformedReleaseYAMLError) Error() string {
+	return fmt.Sprintf(
+		"buildpack's release output invalid: %s",
+		e.ParseError,
+	)
+}
+
+type Release struct {
+	DefaultProcessTypes struct {
+		Web string `yaml:"web"`
+	} `yaml:"default_process_types"`
+}
+
+type StagingInfo struct {
+	DetectedBuildpack string `yaml:"detected_buildpack"`
+	StartCommand      string `yaml:"start_command"`
 }
 
 func New(
@@ -121,7 +137,7 @@ func (s *Smelter) compile(buildpackDir string) error {
 	})
 }
 
-func (s *Smelter) release(buildpackDir string) (yaml.Node, error) {
+func (s *Smelter) release(buildpackDir string) (Release, error) {
 	release := &exec.Cmd{
 		Path:   path.Join(buildpackDir, "bin", "release"),
 		Args:   []string{s.appDir},
@@ -130,48 +146,35 @@ func (s *Smelter) release(buildpackDir string) (yaml.Node, error) {
 
 	out, err := release.StdoutPipe()
 	if err != nil {
-		return nil, err
+		return Release{}, err
 	}
 
 	err = s.runner.Start(release)
 	if err != nil {
-		return nil, err
+		return Release{}, err
 	}
 
 	defer s.runner.Wait(release)
 
-	outBuf := bufio.NewReader(out)
+	decoder := candiedyaml.NewDecoder(out)
 
-	// FIXME(GYPSY)
-	// hack around Gypsy's lack of full YAML parsitude
-	peeked, err := outBuf.Peek(4)
+	var parsedRelease Release
+
+	err = decoder.Decode(&parsedRelease)
 	if err != nil {
-		return nil, err
+		return Release{}, MalformedReleaseYAMLError{err}
 	}
 
-	if string(peeked) == "---\n" {
-		_, err := outBuf.ReadBytes('\n')
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	parsed, err := yaml.Parse(outBuf)
-	if err != nil || parsed == nil {
-		return nil, MalformedReleaseYAML{}
-	}
-
-	return parsed, nil
+	return parsedRelease, nil
 }
 
-func (s *Smelter) saveInfo(detectedName string, releaseInfo yaml.Node) error {
+func (s *Smelter) saveInfo(detectedName string, releaseInfo Release) error {
 	info := map[string]yaml.Node{
 		"detected_buildpack": yaml.Scalar(detectedName),
 	}
 
-	command, err := yaml.Child(releaseInfo, ".default_process_types.web")
-	if err == nil {
-		info["start_command"] = command
+	if releaseInfo.DefaultProcessTypes.Web != "" {
+		info["start_command"] = yaml.Scalar(releaseInfo.DefaultProcessTypes.Web)
 	}
 
 	return ioutil.WriteFile(
