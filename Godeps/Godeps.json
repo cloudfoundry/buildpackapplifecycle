@@ -15,7 +15,7 @@
 		},
 		{
 			"ImportPath": "github.com/fraenkel/candiedyaml",
-			"Rev": "f27ea5c711b0e986a4df3fb91ee316ec7f51f530"
+			"Rev": "ed21d7678d04b5abe57f8cb12ded8c6c8211a710"
 		},
 		{
 			"ImportPath": "github.com/onsi/ginkgo",
@@ -27,7 +27,7 @@
 		},
 		{
 			"ImportPath": "github.com/vito/cmdtest",
-			"Rev": "4b86f8c2259c55e86e4b971cd7dc5dfb03e41b80"
+			"Rev": "fbd89b77403b5ed2f394946ec8debcc251b96815"
 		}
 	]
 }

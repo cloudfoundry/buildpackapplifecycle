@@ -359,4 +359,15 @@ var _ = Describe("Decode", func() {
 			"rbi": []string{"Sammy Sosa", "Ken Griffey"},
 		}))
 	})
+
+	Context("When decoding fails", func() {
+		It("returns an error", func() {
+			f, _ := os.Open("fixtures/specification/example_empty.yaml")
+			d := NewDecoder(f)
+			v := new(interface{})
+
+			err := d.Decode(&v)
+			Ω(err).Should(HaveOccurred())
+		})
+	})
 })

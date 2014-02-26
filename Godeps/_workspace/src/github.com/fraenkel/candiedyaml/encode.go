@@ -2,12 +2,9 @@ package candiedyaml
 
 import (
 	"encoding/base64"
-	"errors"
 	"io"
 	"math"
 	"reflect"
-	"runtime"
-	"runtime/debug"
 	"sort"
 	"strconv"
 	"time"
@@ -38,23 +35,7 @@ func NewEncoder(w io.Writer) *Encoder {
 }
 
 func (e *Encoder) Encode(v interface{}) (err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			if _, ok := r.(runtime.Error); ok {
-				panic(r)
-			}
-			switch r := r.(type) {
-			case error:
-				err = r
-			case string:
-				err = errors.New(r)
-			default:
-				err = errors.New("Unknown panic: " + reflect.TypeOf(r).String())
-			}
-
-			debug.PrintStack()
-		}
-	}()
+	defer recovery(&err)
 
 	if e.err != nil {
 		return e.err

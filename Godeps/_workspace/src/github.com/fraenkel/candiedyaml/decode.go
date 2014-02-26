@@ -40,6 +40,27 @@ func (e *UnexpectedEventError) Error() string {
 	return fmt.Sprintf("yaml: Unexpect event [%d]: '%s' at line %d, column %d", e.EventType, e.Value, e.At.line+1, e.At.column+1)
 }
 
+func recovery(err *error) {
+	if r := recover(); r != nil {
+		if _, ok := r.(runtime.Error); ok {
+			panic(r)
+		}
+
+		var tmpError error
+		switch r := r.(type) {
+		case error:
+			tmpError = r
+		case string:
+			tmpError = errors.New(r)
+		default:
+			tmpError = errors.New("Unknown panic: " + reflect.TypeOf(r).String())
+		}
+
+		stackTrace := debug.Stack()
+		*err = fmt.Errorf("%s\n%s", tmpError.Error(), string(stackTrace))
+	}
+}
+
 func Unmarshal(data []byte, v interface{}) error {
 	d := NewDecoder(bytes.NewBuffer(data))
 	return d.Decode(v)
@@ -55,23 +76,7 @@ func NewDecoder(r io.Reader) *Decoder {
 }
 
 func (d *Decoder) Decode(v interface{}) (err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			if _, ok := r.(runtime.Error); ok {
-				panic(r)
-			}
-			switch r := r.(type) {
-			case error:
-				err = r
-			case string:
-				err = errors.New(r)
-			default:
-				err = errors.New("Unknown panic: " + reflect.TypeOf(r).String())
-			}
-
-			debug.PrintStack()
-		}
-	}()
+	defer recovery(&err)
 
 	rv := reflect.ValueOf(v)
 	if rv.Kind() != reflect.Ptr || rv.IsNil() {
