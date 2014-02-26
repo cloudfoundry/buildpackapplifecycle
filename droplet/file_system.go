@@ -18,18 +18,18 @@ func NewFileSystem(runner command_runner.CommandRunner) *FileSystem {
 	}
 }
 
-func (fs *FileSystem) GenerateFiles(appDir, outputDir string) error {
-	err := fs.copyApp(appDir, outputDir)
+func (fs *FileSystem) GenerateFiles(appDir, stageDir string) error {
+	err := fs.copyApp(appDir, stageDir)
 	if err != nil {
 		return err
 	}
 
-	err = os.MkdirAll(path.Join(outputDir, "tmp"), 0755)
+	err = os.MkdirAll(path.Join(stageDir, "tmp"), 0755)
 	if err != nil {
 		return err
 	}
 
-	err = os.MkdirAll(path.Join(outputDir, "logs"), 0755)
+	err = os.MkdirAll(path.Join(stageDir, "logs"), 0755)
 	if err != nil {
 		return err
 	}
@@ -37,10 +37,10 @@ func (fs *FileSystem) GenerateFiles(appDir, outputDir string) error {
 	return nil
 }
 
-func (fs *FileSystem) copyApp(appDir, outputDir string) error {
+func (fs *FileSystem) copyApp(appDir, stageDir string) error {
 	return fs.runner.Run(&exec.Cmd{
 		Path:   "cp",
-		Args:   []string{"-a", appDir, path.Join(outputDir, "app")},
+		Args:   []string{"-a", appDir, path.Join(stageDir, "app")},
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
 	})

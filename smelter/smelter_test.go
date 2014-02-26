@@ -144,22 +144,22 @@ var _ = Describe("Smelter", func() {
 				Ω(runner).Should(HaveExecutedSerially(
 					fake_command_runner.CommandSpec{
 						Path: "cp",
-						Args: []string{"-a", appDir, path.Join(outputDir, "app")},
+						Args: []string{"-a", appDir, path.Join(outputDir, "stage", "app")},
 					},
 				))
 			})
 
-			It("creates app/, tmp/, and logs/ in the droplet dir", func() {
+			It("creates app/, tmp/, and logs/ in the stage dir", func() {
 				setupSuccessfulRelease()
 
 				err := smelter.Smelt()
 				Ω(err).ShouldNot(HaveOccurred())
 
-				fileInfo, err := os.Stat(path.Join(outputDir, "tmp"))
+				fileInfo, err := os.Stat(path.Join(outputDir, "stage", "tmp"))
 				Ω(err).ShouldNot(HaveOccurred())
 				Ω(fileInfo.IsDir()).Should(BeTrue())
 
-				fileInfo, err = os.Stat(path.Join(outputDir, "logs"))
+				fileInfo, err = os.Stat(path.Join(outputDir, "stage", "logs"))
 				Ω(err).ShouldNot(HaveOccurred())
 				Ω(fileInfo.IsDir()).Should(BeTrue())
 			})
@@ -172,7 +172,7 @@ var _ = Describe("Smelter", func() {
 
 				var output ExpectedStagingResult
 
-				file, err := os.Open(path.Join(outputDir, "staging_info.yml"))
+				file, err := os.Open(path.Join(outputDir, "stage", "staging_info.yml"))
 				Ω(err).ShouldNot(HaveOccurred())
 
 				err = candiedyaml.NewDecoder(file).Decode(&output)
@@ -214,7 +214,7 @@ var _ = Describe("Smelter", func() {
 					err := smelter.Smelt()
 					Ω(err).ShouldNot(HaveOccurred())
 
-					file, err := os.Open(path.Join(outputDir, "staging_info.yml"))
+					file, err := os.Open(path.Join(outputDir, "stage", "staging_info.yml"))
 					Ω(err).ShouldNot(HaveOccurred())
 
 					var output ExpectedStagingResult

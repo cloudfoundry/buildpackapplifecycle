@@ -16,10 +16,10 @@ import (
 
 var _ = Describe("FileSystem", func() {
 	var (
-		fs        *FileSystem
-		runner    *fake_command_runner.FakeCommandRunner
-		appDir    string
-		outputDir string
+		fs       *FileSystem
+		runner   *fake_command_runner.FakeCommandRunner
+		appDir   string
+		stageDir string
 	)
 
 	BeforeEach(func() {
@@ -29,38 +29,38 @@ var _ = Describe("FileSystem", func() {
 
 		appDir = "/path/to/app/dir"
 
-		outputDir, err = ioutil.TempDir(os.TempDir(), "smelting-droplet")
+		stageDir, err = ioutil.TempDir(os.TempDir(), "smelting-droplet")
 		Ω(err).ShouldNot(HaveOccurred())
 
 		fs = NewFileSystem(runner)
 	})
 
 	AfterEach(func() {
-		os.RemoveAll(outputDir)
+		os.RemoveAll(stageDir)
 	})
 
 	Describe("GenerateFiles", func() {
 		It("copies the built app to app/ in the droplet dir", func() {
-			err := fs.GenerateFiles(appDir, outputDir)
+			err := fs.GenerateFiles(appDir, stageDir)
 			Ω(err).ShouldNot(HaveOccurred())
 
 			Ω(runner).Should(HaveExecutedSerially(
 				fake_command_runner.CommandSpec{
 					Path: "cp",
-					Args: []string{"-a", appDir, path.Join(outputDir, "app")},
+					Args: []string{"-a", appDir, path.Join(stageDir, "app")},
 				},
 			))
 		})
 
 		It("creates app/, tmp/, and logs/ in the droplet dir", func() {
-			err := fs.GenerateFiles(appDir, outputDir)
+			err := fs.GenerateFiles(appDir, stageDir)
 			Ω(err).ShouldNot(HaveOccurred())
 
-			fileInfo, err := os.Stat(path.Join(outputDir, "tmp"))
+			fileInfo, err := os.Stat(path.Join(stageDir, "tmp"))
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(fileInfo.IsDir()).Should(BeTrue())
 
-			fileInfo, err = os.Stat(path.Join(outputDir, "logs"))
+			fileInfo, err = os.Stat(path.Join(stageDir, "logs"))
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(fileInfo.IsDir()).Should(BeTrue())
 		})
@@ -77,7 +77,7 @@ var _ = Describe("FileSystem", func() {
 			})
 
 			It("returns the error", func() {
-				err := fs.GenerateFiles(appDir, outputDir)
+				err := fs.GenerateFiles(appDir, stageDir)
 				Ω(err).Should(Equal(disaster))
 			})
 		})

@@ -22,6 +22,7 @@ type Smelter struct {
 	buildpackDirs []string
 	cacheDir      string
 	resultDir     string
+	stageDir      string
 
 	runner command_runner.CommandRunner
 }
@@ -70,8 +71,8 @@ func New(
 		resultDir:     resultDir,
 		buildpackDirs: buildpackDirs,
 		cacheDir:      cacheDir,
-
-		runner: runner,
+		stageDir:      filepath.Join(outputDir, "stage"),
+		runner:        runner,
 	}
 }
 
@@ -81,6 +82,10 @@ func (s *Smelter) Smelt() error {
 	}
 
 	if err := os.MkdirAll(s.resultDir, 0755); err != nil {
+		return err
+	}
+
+	if err := os.MkdirAll(s.stageDir, 0755); err != nil {
 		return err
 	}
 
@@ -105,7 +110,13 @@ func (s *Smelter) Smelt() error {
 	}
 
 	dropletFS := droplet.NewFileSystem(s.runner)
-	return dropletFS.GenerateFiles(s.appDir, s.outputDir)
+	err = dropletFS.GenerateFiles(s.appDir, s.stageDir)
+	if err != nil {
+		return err
+	}
+
+	tarPath := filepath.Join(s.outputDir, "droplet.tgz")
+	return s.produceTarBall(tarPath, s.stageDir)
 }
 
 func (s *Smelter) detect() (string, string, error) {
@@ -164,7 +175,7 @@ func (s *Smelter) release(buildpackDir string) (Release, error) {
 }
 
 func (s *Smelter) saveInfo(detectedName string, releaseInfo Release) error {
-	infoFile, err := os.Create(filepath.Join(s.outputDir, "staging_info.yml"))
+	infoFile, err := os.Create(filepath.Join(s.stageDir, "staging_info.yml"))
 	if err != nil {
 		return err
 	}
@@ -194,4 +205,14 @@ func (s *Smelter) saveInfo(detectedName string, releaseInfo Release) error {
 	}
 
 	return nil
+}
+
+func (s *Smelter) produceTarBall(tarPath string, srcDir string) error {
+	return s.runner.Run(&exec.Cmd{
+		Path:   "tar",
+		Args:   []string{"-czf", tarPath, "."},
+		Dir:    srcDir,
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	})
 }
