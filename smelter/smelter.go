@@ -12,6 +12,8 @@ import (
 
 	"github.com/cloudfoundry/gunk/command_runner"
 	"github.com/fraenkel/candiedyaml"
+
+	"github.com/cloudfoundry-incubator/linux-smelter/droplet"
 )
 
 type Smelter struct {
@@ -102,22 +104,8 @@ func (s *Smelter) Smelt() error {
 		return err
 	}
 
-	err = s.copyApp()
-	if err != nil {
-		return err
-	}
-
-	err = os.MkdirAll(path.Join(s.outputDir, "tmp"), 0755)
-	if err != nil {
-		return err
-	}
-
-	err = os.MkdirAll(path.Join(s.outputDir, "logs"), 0755)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	dropletFS := droplet.NewFileSystem(s.runner)
+	return dropletFS.GenerateFiles(s.appDir, s.outputDir)
 }
 
 func (s *Smelter) detect() (string, string, error) {
@@ -206,13 +194,4 @@ func (s *Smelter) saveInfo(detectedName string, releaseInfo Release) error {
 	}
 
 	return nil
-}
-
-func (s *Smelter) copyApp() error {
-	return s.runner.Run(&exec.Cmd{
-		Path:   "cp",
-		Args:   []string{"-a", s.appDir, path.Join(s.outputDir, "app")},
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
-	})
 }
