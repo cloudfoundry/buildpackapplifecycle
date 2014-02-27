@@ -7,11 +7,11 @@
 	"Deps": [
 		{
 			"ImportPath": "github.com/cloudfoundry/gunk/command_runner",
-			"Rev": "67d1d59a7eef22e8cdb1198e58387c77442b5d9f"
+			"Rev": "53bcf9b1215796e9173ef67baf6e9e2f1850a644"
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry/gunk/runner_support",
-			"Rev": "67d1d59a7eef22e8cdb1198e58387c77442b5d9f"
+			"Rev": "53bcf9b1215796e9173ef67baf6e9e2f1850a644"
 		},
 		{
 			"ImportPath": "github.com/fraenkel/candiedyaml",
@@ -19,7 +19,7 @@
 		},
 		{
 			"ImportPath": "github.com/onsi/ginkgo",
-			"Rev": "884dab811fc3c75f6c9cc51254601b426049cd98"
+			"Rev": "349f2d5baae688f172db626a521c8317e11550d3"
 		},
 		{
 			"ImportPath": "github.com/onsi/gomega",

@@ -29,8 +29,8 @@ var _ = Describe("Smelting", func() {
 	smelt := func() *cmdtest.Session {
 		session, err := cmdtest.StartWrapped(
 			smelterCmd,
-			runner_support.TeeIfVerbose,
-			runner_support.TeeIfVerbose,
+			runner_support.TeeToGinkgoWriter,
+			runner_support.TeeToGinkgoWriter,
 		)
 		Ω(err).ShouldNot(HaveOccurred())
 
@@ -156,8 +156,8 @@ var _ = Describe("Smelting", func() {
 func cp(src string, dst string) {
 	session, err := cmdtest.StartWrapped(
 		exec.Command("cp", "-a", src, dst),
-		runner_support.TeeIfVerbose,
-		runner_support.TeeIfVerbose,
+		runner_support.TeeToGinkgoWriter,
+		runner_support.TeeToGinkgoWriter,
 	)
 	Ω(err).ShouldNot(HaveOccurred())
 	Ω(session).Should(ExitWith(0))
@@ -166,8 +166,8 @@ func cp(src string, dst string) {
 func assertIsGzip(src string) {
 	session, err := cmdtest.StartWrapped(
 		exec.Command("gunzip", src),
-		runner_support.TeeIfVerbose,
-		runner_support.TeeIfVerbose,
+		runner_support.TeeToGinkgoWriter,
+		runner_support.TeeToGinkgoWriter,
 	)
 	Ω(err).ShouldNot(HaveOccurred())
 	Ω(session).Should(ExitWith(0), "Expected a gzipped file, got something else")
@@ -176,8 +176,8 @@ func assertIsGzip(src string) {
 func untar(src string, dst string) {
 	session, err := cmdtest.StartWrapped(
 		exec.Command("tar", "-xvf", src, "-C", dst),
-		runner_support.TeeIfVerbose,
-		runner_support.TeeIfVerbose,
+		runner_support.TeeToGinkgoWriter,
+		runner_support.TeeToGinkgoWriter,
 	)
 	Ω(err).ShouldNot(HaveOccurred())
 	Ω(session).Should(ExitWith(0))
