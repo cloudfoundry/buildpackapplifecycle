@@ -1,17 +1,17 @@
 {
 	"ImportPath": "github.com/cloudfoundry-incubator/linux-smelter",
-	"GoVersion": "go1.2",
+	"GoVersion": "go1.2.1",
 	"Packages": [
 		"./..."
 	],
 	"Deps": [
 		{
 			"ImportPath": "github.com/cloudfoundry/gunk/command_runner",
-			"Rev": "53bcf9b1215796e9173ef67baf6e9e2f1850a644"
+			"Rev": "9750128b82fc0c6008211f51520e1c1f5d155200"
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry/gunk/runner_support",
-			"Rev": "53bcf9b1215796e9173ef67baf6e9e2f1850a644"
+			"Rev": "9750128b82fc0c6008211f51520e1c1f5d155200"
 		},
 		{
 			"ImportPath": "github.com/fraenkel/candiedyaml",
@@ -19,15 +19,15 @@
 		},
 		{
 			"ImportPath": "github.com/onsi/ginkgo",
-			"Rev": "349f2d5baae688f172db626a521c8317e11550d3"
+			"Rev": "d3df15ba539a80f951632fc85b0ff6aee2f993b8"
 		},
 		{
 			"ImportPath": "github.com/onsi/gomega",
-			"Rev": "930b4522e0d3027320b5d56f8a375796f2e376e5"
+			"Rev": "3da99a5a1412b006dac6662a2244f3da7ee3155b"
 		},
 		{
 			"ImportPath": "github.com/vito/cmdtest",
-			"Rev": "fbd89b77403b5ed2f394946ec8debcc251b96815"
+			"Rev": "5073503e50f68b9c14d073ab261164965bffa872"
 		}
 	]
 }
