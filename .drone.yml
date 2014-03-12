@@ -1,0 +1,10 @@
+---
+image: vito/garden-lucid64
+
+env:
+  - GOROOT=/usr/local/go
+  - GOPATH=/var/cache/drone
+  - PATH=$GOPATH/bin:$PATH
+
+script:
+  - ./scripts/test
