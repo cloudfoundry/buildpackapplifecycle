@@ -1,5 +1,5 @@
 ---
-image: vito/garden-lucid64
+image: mischief/docker-golang
 
 env:
   - GOROOT=/usr/local/go
