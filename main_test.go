@@ -68,7 +68,7 @@ var _ = Describe("Smelting", func() {
 		)
 
 		cp(path.Join(buildpackFixtures, "always-detects"), buildpacksDir)
-		cp(path.Join(appFixtures, "bash-app")+"/", appDir)
+		cp(path.Join(appFixtures, "bash-app", "app.sh"), appDir)
 
 		Ω(smelt()).Should(ExitWith(0))
 	})
