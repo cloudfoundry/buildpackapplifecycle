@@ -38,8 +38,6 @@ var _ = Describe("Smelting", func() {
 	}
 
 	BeforeEach(func() {
-		smelterCmd = exec.Command(smelterPath)
-
 		var err error
 
 		appDir, err = ioutil.TempDir(os.TempDir(), "smelting-app")
@@ -57,15 +55,14 @@ var _ = Describe("Smelting", func() {
 		resultDir, err = ioutil.TempDir(os.TempDir(), "smelting-result")
 		Ω(err).ShouldNot(HaveOccurred())
 
-		smelterCmd.Env = append(
-			os.Environ(),
-			"APP_DIR="+appDir,
-			"BUILDPACKS_DIR="+buildpacksDir,
-			"OUTPUT_DIR="+outputDir,
-			"CACHE_DIR="+cacheDir,
-			"BUILDPACK_ORDER=always-detects",
-			"RESULT_DIR="+resultDir,
-		)
+		smelterCmd = exec.Command(smelterPath,
+			"-appDir", appDir,
+			"-buildpacksDir", buildpacksDir,
+			"-outputDir", outputDir,
+			"-cacheDir", cacheDir,
+			"-buildpackOrder", "always-detects",
+			"-resultDir", resultDir)
+		smelterCmd.Env = os.Environ()
 
 		cp(path.Join(buildpackFixtures, "always-detects"), buildpacksDir)
 		cp(path.Join(appFixtures, "bash-app", "app.sh"), appDir)
