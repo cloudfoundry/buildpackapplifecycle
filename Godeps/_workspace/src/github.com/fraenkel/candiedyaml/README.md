@@ -14,7 +14,6 @@ import (
   "fmt"
   "os"
 )
-```
 
 func main() {
   file, err := os.Open("path/to/some/file.yml")
@@ -49,3 +48,4 @@ func main() {
   
   return
 }
+```

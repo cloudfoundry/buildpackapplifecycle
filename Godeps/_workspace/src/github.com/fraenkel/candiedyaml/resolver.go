@@ -46,60 +46,74 @@ func init() {
 	ymd_regexp = regexp.MustCompile("^([0-9][0-9][0-9][0-9])-([0-9][0-9]?)-([0-9][0-9]?)$")
 }
 
-func resolve(event yaml_event_t, v reflect.Value) error {
+func resolve(event yaml_event_t, v reflect.Value, useNumber bool) (string, error) {
 	val := string(event.value)
 
 	if null_values[val] {
 		v.Set(reflect.Zero(v.Type()))
-		return nil
+		return "!!null", nil
 	}
 
 	switch v.Kind() {
 	case reflect.String:
-		v.SetString(val)
+		if useNumber && v.Type() == numberType {
+			tag, i := resolveInterface(event, useNumber)
+			if n, ok := i.(Number); ok {
+				v.Set(reflect.ValueOf(n))
+				return tag, nil
+			} else {
+				return "", errors.New("Not a Number: " + reflect.TypeOf(i).String())
+			}
+		} else {
+			v.SetString(val)
+		}
 	case reflect.Bool:
 		return resolve_bool(val, v)
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return resolve_int(val, v)
+		return resolve_int(val, v, useNumber)
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		return resolve_uint(val, v)
+		return resolve_uint(val, v, useNumber)
 	case reflect.Float32, reflect.Float64:
-		return resolve_float(val, v)
+		return resolve_float(val, v, useNumber)
 	case reflect.Interface:
-		v.Set(reflect.ValueOf(resolveInterface(event)))
+		_, i := resolveInterface(event, useNumber)
+		v.Set(reflect.ValueOf(i))
 	case reflect.Struct:
 		return resolve_time(val, v)
 	case reflect.Slice:
 		if v.Type() != byteSliceType {
-			return errors.New("Cannot resolve into " + v.Type().String())
+			return "", errors.New("Cannot resolve into " + v.Type().String())
 		}
 		b := make([]byte, base64.StdEncoding.DecodedLen(len(event.value)))
 		n, err := base64.StdEncoding.Decode(b, event.value)
 		if err != nil {
-			return err
+			return "", err
 		}
 
 		v.Set(reflect.ValueOf(b[0:n]))
 	default:
-		return errors.New("Resolve failed for " + v.Kind().String())
+		return "", errors.New("Resolve failed for " + v.Kind().String())
 	}
 
-	return nil
+	return "!!str", nil
 }
 
-func resolve_bool(val string, v reflect.Value) error {
+func resolve_bool(val string, v reflect.Value) (string, error) {
 	b, found := bool_values[strings.ToLower(val)]
 	if !found {
-		return errors.New("Invalid boolean: " + val)
+		return "", errors.New("Invalid boolean: " + val)
 	}
 
 	v.SetBool(b)
-	return nil
+	return "!!bool", nil
 }
 
-func resolve_int(val string, v reflect.Value) error {
+func resolve_int(val string, v reflect.Value, useNumber bool) (string, error) {
+	original := val
 	val = strings.Replace(val, "_", "", -1)
 	var value int64
+
+	isNumberValue := v.Type() == numberType
 
 	sign := int64(1)
 	if val[0] == '-' {
@@ -111,8 +125,13 @@ func resolve_int(val string, v reflect.Value) error {
 
 	base := 10
 	if val == "0" {
-		v.Set(reflect.Zero(v.Type()))
-		return nil
+		if isNumberValue {
+			v.SetString("0")
+		} else {
+			v.Set(reflect.Zero(v.Type()))
+		}
+
+		return "!!int", nil
 	}
 
 	if strings.HasPrefix(val, "0b") {
@@ -130,34 +149,55 @@ func resolve_int(val string, v reflect.Value) error {
 		for j := len(digits) - 1; j >= 0; j-- {
 			n, err := strconv.ParseInt(digits[j], 10, 64)
 			n *= bes
-			if err != nil || v.OverflowInt(n) {
-				return errors.New("Integer: " + val)
+			if err != nil {
+				return "", errors.New("Integer: " + original)
 			}
 			value += n
 			bes *= 60
 		}
 
 		value *= sign
-		v.SetInt(value)
-		return nil
+
+		if isNumberValue {
+			v.SetString(strconv.FormatInt(value, 10))
+		} else {
+			if v.OverflowInt(value) {
+				return "", errors.New("Integer: " + original)
+			}
+
+			v.SetInt(value)
+		}
+		return "!!int", nil
 	}
 
 	value, err := strconv.ParseInt(val, base, 64)
+	if err != nil {
+		return "", errors.New("Integer: " + original)
+	}
 	value *= sign
-	if err != nil || v.OverflowInt(value) {
-		return errors.New("Integer: " + val)
+
+	if isNumberValue {
+		v.SetString(strconv.FormatInt(value, 10))
+	} else {
+		if v.OverflowInt(value) {
+			return "", errors.New("Integer: " + original)
+		}
+
+		v.SetInt(value)
 	}
 
-	v.SetInt(value)
-	return nil
+	return "!!int", nil
 }
 
-func resolve_uint(val string, v reflect.Value) error {
+func resolve_uint(val string, v reflect.Value, useNumber bool) (string, error) {
+	original := val
 	val = strings.Replace(val, "_", "", -1)
 	var value uint64
 
+	isNumberValue := v.Type() == numberType
+
 	if val[0] == '-' {
-		return errors.New("Unsigned int with negative value: " + val)
+		return "", errors.New("Unsigned int with negative value: " + original)
 	}
 
 	if val[0] == '+' {
@@ -166,8 +206,13 @@ func resolve_uint(val string, v reflect.Value) error {
 
 	base := 10
 	if val == "0" {
-		v.Set(reflect.Zero(v.Type()))
-		return nil
+		if isNumberValue {
+			v.SetString("0")
+		} else {
+			v.Set(reflect.Zero(v.Type()))
+		}
+
+		return "!!int", nil
 	}
 
 	if strings.HasPrefix(val, "0b") {
@@ -185,29 +230,52 @@ func resolve_uint(val string, v reflect.Value) error {
 		for j := len(digits) - 1; j >= 0; j-- {
 			n, err := strconv.ParseUint(digits[j], 10, 64)
 			n *= bes
-			if err != nil || v.OverflowUint(n) {
-				return errors.New("Unsigned Integer: " + val)
+			if err != nil {
+				return "", errors.New("Unsigned Integer: " + original)
 			}
 			value += n
 			bes *= 60
 		}
 
-		v.SetUint(value)
-		return nil
+		if isNumberValue {
+			v.SetString(strconv.FormatUint(value, 10))
+		} else {
+			if v.OverflowUint(value) {
+				return "", errors.New("Unsigned Integer: " + original)
+			}
+
+			v.SetUint(value)
+		}
+		return "!!int", nil
 	}
 
 	value, err := strconv.ParseUint(val, base, 64)
-	if err != nil || v.OverflowUint(value) {
-		return errors.New("Unsigned Integer: " + val)
+	if err != nil {
+		return "", errors.New("Unsigned Integer: " + val)
 	}
 
-	v.SetUint(value)
-	return nil
+	if isNumberValue {
+		v.SetString(strconv.FormatUint(value, 10))
+	} else {
+		if v.OverflowUint(value) {
+			return "", errors.New("Unsigned Integer: " + val)
+		}
+
+		v.SetUint(value)
+	}
+
+	return "!!int", nil
 }
 
-func resolve_float(val string, v reflect.Value) error {
+func resolve_float(val string, v reflect.Value, useNumber bool) (string, error) {
 	val = strings.Replace(val, "_", "", -1)
 	var value float64
+
+	isNumberValue := v.Type() == numberType
+	typeBits := 64
+	if !isNumberValue {
+		typeBits = v.Type().Bits()
+	}
 
 	sign := 1
 	if val[0] == '-' {
@@ -226,10 +294,10 @@ func resolve_float(val string, v reflect.Value) error {
 		digits := strings.Split(val, ":")
 		bes := float64(1)
 		for j := len(digits) - 1; j >= 0; j-- {
-			n, err := strconv.ParseFloat(digits[j], v.Type().Bits())
+			n, err := strconv.ParseFloat(digits[j], typeBits)
 			n *= bes
-			if err != nil || v.OverflowFloat(n) {
-				return errors.New("Float: " + val)
+			if err != nil {
+				return "", errors.New("Float: " + val)
 			}
 			value += n
 			bes *= 60
@@ -237,18 +305,28 @@ func resolve_float(val string, v reflect.Value) error {
 		value *= float64(sign)
 	} else {
 		var err error
-		value, err = strconv.ParseFloat(val, v.Type().Bits())
+		value, err = strconv.ParseFloat(val, typeBits)
 		value *= float64(sign)
-		if err != nil || v.OverflowFloat(value) {
-			return errors.New("Float: " + val)
+
+		if err != nil {
+			return "", errors.New("Float: " + val)
 		}
 	}
 
-	v.SetFloat(value)
-	return nil
+	if isNumberValue {
+		v.SetString(strconv.FormatFloat(value, 'g', -1, typeBits))
+	} else {
+		if v.OverflowFloat(value) {
+			return "", errors.New("Float: " + val)
+		}
+
+		v.SetFloat(value)
+	}
+
+	return "!!float", nil
 }
 
-func resolve_time(val string, v reflect.Value) error {
+func resolve_time(val string, v reflect.Value) (string, error) {
 	var parsedTime time.Time
 	matches := ymd_regexp.FindStringSubmatch(val)
 	if len(matches) > 0 {
@@ -259,7 +337,7 @@ func resolve_time(val string, v reflect.Value) error {
 	} else {
 		matches = timestamp_regexp.FindStringSubmatch(val)
 		if len(matches) == 0 {
-			return errors.New("Unexpected timestamp: " + val)
+			return "", errors.New("Unexpected timestamp: " + val)
 		}
 
 		year, _ := strconv.Atoi(matches[1])
@@ -295,18 +373,20 @@ func resolve_time(val string, v reflect.Value) error {
 	}
 
 	v.Set(reflect.ValueOf(parsedTime))
-	return nil
+	return "", nil
 }
 
-func resolveInterface(event yaml_event_t) interface{} {
+func resolveInterface(event yaml_event_t, useNumber bool) (string, interface{}) {
 	if len(event.value) == 0 {
-		return nil
+		return "", nil
 	}
 
 	val := string(event.value)
 	if len(event.tag) == 0 && !event.implicit {
-		return val
+		return "", val
 	}
+
+	var result interface{}
 
 	sign := false
 	c := val[0]
@@ -316,39 +396,61 @@ func resolveInterface(event yaml_event_t) interface{} {
 		fallthrough
 	case c >= '0' && c <= '9':
 		i := int64(0)
-		if resolve_int(val, reflect.ValueOf(&i).Elem()) == nil {
-			return i
+		result = &i
+		if useNumber {
+			var n Number
+			result = &n
 		}
+
+		v := reflect.ValueOf(result).Elem()
+		if _, err := resolve_int(val, v, useNumber); err == nil {
+			return "!!int", v.Interface()
+		}
+
 		f := float64(0)
-		if resolve_float(val, reflect.ValueOf(&f).Elem()) == nil {
-			return f
+		result = &f
+		if useNumber {
+			var n Number
+			result = &n
+		}
+
+		v = reflect.ValueOf(result).Elem()
+		if _, err := resolve_float(val, v, useNumber); err == nil {
+			return "!!float", v.Interface()
 		}
 
 		if !sign {
 			t := time.Time{}
-			if resolve_time(val, reflect.ValueOf(&t).Elem()) == nil {
-				return t
+			if _, err := resolve_time(val, reflect.ValueOf(&t).Elem()); err == nil {
+				return "", t
 			}
 		}
 	case bytes.IndexByte(nulls, c) != -1:
 		if null_values[val] {
-			return nil
+			return "!!null", nil
 		}
 		b := false
-		if resolve_bool(val, reflect.ValueOf(&b).Elem()) == nil {
-			return b
+		if _, err := resolve_bool(val, reflect.ValueOf(&b).Elem()); err == nil {
+			return "!!bool", b
 		}
 	case c == '.':
 		f := float64(0)
-		if resolve_float(val, reflect.ValueOf(&f).Elem()) == nil {
-			return f
+		result = &f
+		if useNumber {
+			var n Number
+			result = &n
+		}
+
+		v := reflect.ValueOf(result).Elem()
+		if _, err := resolve_float(val, v, useNumber); err == nil {
+			return "!!float", v.Interface()
 		}
 	case bytes.IndexByte(bools, c) != -1:
 		b := false
-		if resolve_bool(val, reflect.ValueOf(&b).Elem()) == nil {
-			return b
+		if _, err := resolve_bool(val, reflect.ValueOf(&b).Elem()); err == nil {
+			return "!!bool", b
 		}
 	}
 
-	return string(event.value)
+	return "!!str", string(event.value)
 }

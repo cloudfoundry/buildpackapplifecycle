@@ -5,6 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 	"math"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -12,8 +13,9 @@ var _ = Describe("Decode", func() {
 	It("Decodes a file", func() {
 		f, _ := os.Open("fixtures/specification/example2_1.yaml")
 		d := NewDecoder(f)
-		v := new(interface{})
+		var v interface{}
 		err := d.Decode(&v)
+
 		Ω(err).ShouldNot(HaveOccurred())
 	})
 
@@ -21,11 +23,11 @@ var _ = Describe("Decode", func() {
 		It("Decodes to interface{}s", func() {
 			f, _ := os.Open("fixtures/specification/example2_1.yaml")
 			d := NewDecoder(f)
-			v := new(interface{})
-
+			var v interface{}
 			err := d.Decode(&v)
+
 			Ω(err).ShouldNot(HaveOccurred())
-			Ω((*v).([]interface{})).To(Equal([]interface{}{"Mark McGwire", "Sammy Sosa", "Ken Griffey"}))
+			Ω((v).([]interface{})).To(Equal([]interface{}{"Mark McGwire", "Sammy Sosa", "Ken Griffey"}))
 		})
 
 		It("Decodes to []string", func() {
@@ -130,11 +132,11 @@ var _ = Describe("Decode", func() {
 		It("Decodes to interface{}s", func() {
 			f, _ := os.Open("fixtures/specification/example2_2.yaml")
 			d := NewDecoder(f)
-			v := new(interface{})
+			var v interface{}
 
 			err := d.Decode(&v)
 			Ω(err).ShouldNot(HaveOccurred())
-			Ω((*v).(map[interface{}]interface{})).To(Equal(map[interface{}]interface{}{
+			Ω((v).(map[interface{}]interface{})).To(Equal(map[interface{}]interface{}{
 				"hr":  int64(65),
 				"avg": float64(0.278),
 				"rbi": int64(147),
@@ -173,11 +175,11 @@ var _ = Describe("Decode", func() {
 		It("Decodes to interface{}s", func() {
 			f, _ := os.Open("fixtures/specification/example2_4.yaml")
 			d := NewDecoder(f)
-			v := new(interface{})
+			var v interface{}
 
 			err := d.Decode(&v)
 			Ω(err).ShouldNot(HaveOccurred())
-			Ω((*v).([]interface{})).To(Equal([]interface{}{
+			Ω((v).([]interface{})).To(Equal([]interface{}{
 				map[interface{}]interface{}{"name": "Mark McGwire", "hr": int64(65), "avg": float64(0.278)},
 				map[interface{}]interface{}{"name": "Sammy Sosa", "hr": int64(63), "avg": float64(0.288)},
 			}))
@@ -364,10 +366,108 @@ var _ = Describe("Decode", func() {
 		It("returns an error", func() {
 			f, _ := os.Open("fixtures/specification/example_empty.yaml")
 			d := NewDecoder(f)
-			v := new(interface{})
+			var v interface{}
 
 			err := d.Decode(&v)
 			Ω(err).Should(HaveOccurred())
+		})
+	})
+
+	Context("Unmarshaler support", func() {
+		Context("Receiver is a value", func() {
+			It("the Marshaler interface is not used", func() {
+				d := NewDecoder(strings.NewReader("abc\n"))
+				v := hasMarshaler{}
+
+				err := d.Decode(&v)
+				Ω(err).ShouldNot(HaveOccurred())
+				Ω(v.Value).Should(BeNil())
+			})
+
+		})
+
+		Context("Receiver is a pointer", func() {
+			It("uses the Marshaler interface when a pointer", func() {
+				d := NewDecoder(strings.NewReader("abc\n"))
+				v := hasPtrMarshaler{}
+
+				err := d.Decode(&v)
+				Ω(err).ShouldNot(HaveOccurred())
+			})
+
+			It("marshals a scalar", func() {
+				d := NewDecoder(strings.NewReader("abc\n"))
+				v := hasPtrMarshaler{}
+
+				err := d.Decode(&v)
+				Ω(err).ShouldNot(HaveOccurred())
+				Ω(v.Tag).Should(Equal("!!str"))
+				Ω(v.Value).Should(Equal("abc"))
+			})
+
+			It("marshals a sequence", func() {
+				d := NewDecoder(strings.NewReader("[abc, def]\n"))
+				v := hasPtrMarshaler{}
+
+				err := d.Decode(&v)
+				Ω(err).ShouldNot(HaveOccurred())
+				Ω(v.Tag).Should(Equal("!!seq"))
+				Ω(v.Value).Should(Equal([]interface{}{"abc", "def"}))
+			})
+
+			It("marshals a map", func() {
+				d := NewDecoder(strings.NewReader("{ a: bc}\n"))
+				v := hasPtrMarshaler{}
+
+				err := d.Decode(&v)
+				Ω(err).ShouldNot(HaveOccurred())
+				Ω(v.Tag).Should(Equal("!!map"))
+				Ω(v.Value).Should(Equal(map[interface{}]interface{}{"a": "bc"}))
+			})
+		})
+	})
+
+	Context("Marshals into a Number", func() {
+		It("when the number is an int", func() {
+			d := NewDecoder(strings.NewReader("123\n"))
+			d.UseNumber()
+			var v Number
+
+			err := d.Decode(&v)
+			Ω(err).ShouldNot(HaveOccurred())
+			Ω(v.String()).Should(Equal("123"))
+		})
+
+		It("when the number is an float", func() {
+			d := NewDecoder(strings.NewReader("1.23\n"))
+			d.UseNumber()
+			var v Number
+
+			err := d.Decode(&v)
+			Ω(err).ShouldNot(HaveOccurred())
+			Ω(v.String()).Should(Equal("1.23"))
+		})
+
+		It("it fails when its a non-Number", func() {
+			d := NewDecoder(strings.NewReader("on\n"))
+			d.UseNumber()
+			var v Number
+
+			err := d.Decode(&v)
+			Ω(err).Should(HaveOccurred())
+		})
+
+		It("returns a Number", func() {
+			d := NewDecoder(strings.NewReader("123\n"))
+			d.UseNumber()
+			var v interface{}
+
+			err := d.Decode(&v)
+			Ω(err).ShouldNot(HaveOccurred())
+			Ω(v).Should(BeAssignableToTypeOf(Number("")))
+
+			n := v.(Number)
+			Ω(n.String()).Should(Equal("123"))
 		})
 	})
 })

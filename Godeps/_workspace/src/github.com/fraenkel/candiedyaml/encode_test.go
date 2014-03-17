@@ -67,7 +67,8 @@ var _ = Describe("Encode", func() {
 		It("handles time.Time", func() {
 			t := time.Now()
 			enc.Encode(t)
-			Ω(buf.String()).Should(Equal(t.Format(time.RFC3339) + "\n"))
+			bytes, _ := t.MarshalText()
+			Ω(buf.String()).Should(Equal(string(bytes) + "\n"))
 		})
 
 		Context("Null", func() {
@@ -368,4 +369,69 @@ var _ = Describe("Encode", func() {
 		})
 	})
 
+	Context("Marshaler support", func() {
+		Context("Receiver is a value", func() {
+			It("uses the Marshaler interface when a value", func() {
+				enc.Encode(hasMarshaler{Value: 123})
+				Ω(buf.String()).Should(Equal("123\n"))
+			})
+
+			It("uses the Marshaler interface when a pointer", func() {
+				enc.Encode(&hasMarshaler{Value: "abc"})
+				Ω(buf.String()).Should(Equal(`"abc"
+`))
+			})
+		})
+
+		Context("Receiver is a pointer", func() {
+			It("uses the Marshaler interface when a pointer", func() {
+				enc.Encode(&hasPtrMarshaler{Value: map[string]string{"a": "b"}})
+				Ω(buf.String()).Should(Equal(`"a": "b"
+`))
+			})
+			It("skips the Marshaler when its a value", func() {
+				enc.Encode(hasPtrMarshaler{Value: map[string]string{"a": "b"}})
+				Ω(buf.String()).Should(Equal(`"Tag": ""
+"Value":
+  "a": "b"
+`))
+			})
+		})
+	})
+
+	Context("Number type", func() {
+		It("encodes as a number", func() {
+			n := Number("12345")
+			enc.Encode(n)
+			Ω(buf.String()).Should(Equal("12345\n"))
+		})
+	})
 })
+
+type hasMarshaler struct {
+	Value interface{}
+}
+
+func (m hasMarshaler) MarshalYAML() (tag string, value interface{}) {
+	return "", m.Value
+}
+
+func (m hasMarshaler) UnmarshalYAML(tag string, value interface{}) error {
+	m.Value = value
+	return nil
+}
+
+type hasPtrMarshaler struct {
+	Tag   string
+	Value interface{}
+}
+
+func (m *hasPtrMarshaler) MarshalYAML() (tag string, value interface{}) {
+	return "", m.Value
+}
+
+func (m *hasPtrMarshaler) UnmarshalYAML(tag string, value interface{}) error {
+	m.Tag = tag
+	m.Value = value
+	return nil
+}
