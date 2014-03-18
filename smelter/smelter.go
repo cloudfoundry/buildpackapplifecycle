@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/cloudfoundry-incubator/runtime-schema/models"
 	"os"
 	"os/exec"
 	"path"
@@ -50,11 +51,6 @@ type Release struct {
 	DefaultProcessTypes struct {
 		Web string `yaml:"web"`
 	} `yaml:"default_process_types"`
-}
-
-type StagingInfo struct {
-	DetectedBuildpack string `yaml:"detected_buildpack" json:"detected_buildpack"`
-	StartCommand      string `yaml:"start_command" json:"-"`
 }
 
 func New(
@@ -189,7 +185,7 @@ func (s *Smelter) saveInfo(detectedName string, releaseInfo Release) error {
 
 	defer resultFile.Close()
 
-	info := StagingInfo{
+	info := models.StagingInfo{
 		DetectedBuildpack: detectedName,
 		StartCommand:      releaseInfo.DefaultProcessTypes.Web,
 	}
