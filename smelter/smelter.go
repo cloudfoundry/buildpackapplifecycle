@@ -18,12 +18,8 @@ import (
 )
 
 type Smelter struct {
-	appDir        string
-	outputDir     string
-	buildpackDirs []string
-	cacheDir      string
-	resultDir     string
-	stageDir      string
+	config   *models.LinuxSmeltingConfig
+	stageDir string
 
 	runner command_runner.CommandRunner
 }
@@ -54,30 +50,22 @@ type Release struct {
 }
 
 func New(
-	appDir string,
-	outputDir string,
-	resultDir string,
-	buildpackDirs []string,
-	cacheDir string,
+	config *models.LinuxSmeltingConfig,
 	runner command_runner.CommandRunner,
 ) *Smelter {
 	return &Smelter{
-		appDir:        appDir,
-		outputDir:     outputDir,
-		resultDir:     resultDir,
-		buildpackDirs: buildpackDirs,
-		cacheDir:      cacheDir,
-		stageDir:      filepath.Join(outputDir, "stage"),
-		runner:        runner,
+		config:   config,
+		stageDir: filepath.Join(config.OutputDir(), "stage"),
+		runner:   runner,
 	}
 }
 
 func (s *Smelter) Smelt() error {
-	if err := os.MkdirAll(s.outputDir, 0755); err != nil {
+	if err := os.MkdirAll(s.config.OutputDir(), 0755); err != nil {
 		return err
 	}
 
-	if err := os.MkdirAll(s.resultDir, 0755); err != nil {
+	if err := os.MkdirAll(s.config.ResultJsonDir(), 0755); err != nil {
 		return err
 	}
 
@@ -106,38 +94,38 @@ func (s *Smelter) Smelt() error {
 	}
 
 	dropletFS := droplet.NewFileSystem(s.runner)
-	err = dropletFS.GenerateFiles(s.appDir, s.stageDir)
+	err = dropletFS.GenerateFiles(s.config.AppDir(), s.stageDir)
 	if err != nil {
 		return err
 	}
 
-	tarPath := filepath.Join(s.outputDir, "droplet.tgz")
+	tarPath := filepath.Join(s.config.DropletArchivePath())
 	return s.produceTarBall(tarPath, s.stageDir)
 }
 
 func (s *Smelter) detect() (string, string, error) {
-	for _, buildpackDir := range s.buildpackDirs {
+	for _, buildpack := range s.config.BuildpackOrder() {
 		output := new(bytes.Buffer)
 
 		err := s.runner.Run(&exec.Cmd{
-			Path:   path.Join(buildpackDir, "bin", "detect"),
-			Args:   []string{s.appDir},
+			Path:   path.Join(s.config.BuildpackPath(buildpack), "bin", "detect"),
+			Args:   []string{s.config.AppDir()},
 			Stdout: output,
 			Stderr: os.Stderr,
 		})
 
 		if err == nil {
-			return buildpackDir, strings.TrimRight(output.String(), "\n"), nil
+			return s.config.BuildpackPath(buildpack), strings.TrimRight(output.String(), "\n"), nil
 		}
 	}
 
-	return "", "", NoneDetectedError{AppDir: s.appDir}
+	return "", "", NoneDetectedError{AppDir: s.config.AppDir()}
 }
 
 func (s *Smelter) compile(buildpackDir string) error {
 	return s.runner.Run(&exec.Cmd{
 		Path:   path.Join(buildpackDir, "bin", "compile"),
-		Args:   []string{s.appDir, s.cacheDir},
+		Args:   []string{s.config.AppDir(), s.config.CacheDir()},
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
 	})
@@ -148,7 +136,7 @@ func (s *Smelter) release(buildpackDir string) (Release, error) {
 
 	release := &exec.Cmd{
 		Path:   path.Join(buildpackDir, "bin", "release"),
-		Args:   []string{s.appDir},
+		Args:   []string{s.config.AppDir()},
 		Stderr: os.Stderr,
 		Stdout: releaseOut,
 	}
@@ -178,7 +166,7 @@ func (s *Smelter) saveInfo(detectedName string, releaseInfo Release) error {
 
 	defer infoFile.Close()
 
-	resultFile, err := os.Create(filepath.Join(s.resultDir, "result.json"))
+	resultFile, err := os.Create(s.config.ResultJsonPath())
 	if err != nil {
 		return err
 	}

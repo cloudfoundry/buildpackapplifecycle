@@ -3,97 +3,53 @@ package main
 import (
 	"flag"
 	"os"
-	"path"
-	"strings"
+
+	"github.com/cloudfoundry/gunk/command_runner"
 
 	"github.com/cloudfoundry-incubator/linux-smelter/smelter"
-	"github.com/cloudfoundry/gunk/command_runner"
-)
-
-var appDir = flag.String(
-	"appDir",
-	"",
-	"directory containing raw app bits, settable as $APP_DIR",
-)
-
-var outputDir = flag.String(
-	"outputDir",
-	"",
-	"directory in which to write the smelted app bits, settable as $OUTPUT_DIR",
-)
-
-var resultDir = flag.String(
-	"resultDir",
-	"",
-	"directory in which to place smelting result metadata, settable as $RESULT_DIR",
-)
-
-var buildpacksDir = flag.String(
-	"buildpacksDir",
-	"",
-	"directory containing the buildpacks to try, settable as $BUILDPACKS_DIR",
-)
-
-var cacheDir = flag.String(
-	"cacheDir",
-	"",
-	"directory to store cached artifacts to buildpacks, settable as $CACHE_DIR",
-)
-
-var buildpackOrder = flag.String(
-	"buildpackOrder",
-	"",
-	"comma-separated list of buildpacks, to be tried in order, settable as $BUILDPACK_ORDER",
-)
-
-var debug = flag.Bool(
-	"debug",
-	false,
-	"print the output of commands as they're executed",
+	"github.com/cloudfoundry-incubator/runtime-schema/models"
 )
 
 func main() {
-	flag.Parse()
+	theLinuxSmeltingConfig := models.NewLinuxSmeltingConfig([]string{})
 
-	if *appDir == "" {
+	debug := theLinuxSmeltingConfig.Bool(
+		"debug",
+		false,
+		"print the output of commands as they're executed",
+	)
+
+	if err := theLinuxSmeltingConfig.Parse(os.Args[1:len(os.Args)]); err != nil {
+		println(err.Error())
+		os.Exit(1)
+	}
+
+	if theLinuxSmeltingConfig.AppDir() == "" {
 		println("missing -appDir")
 		usage()
 	}
 
-	if *outputDir == "" {
+	if theLinuxSmeltingConfig.OutputDir() == "" {
 		println("missing -outputDir")
 		usage()
 	}
 
-	if *buildpacksDir == "" {
+	if theLinuxSmeltingConfig.BuildpacksDir() == "" {
 		println("missing -buildpacksDir")
 		usage()
 	}
 
-	if *resultDir == "" {
+	if theLinuxSmeltingConfig.ResultJsonDir() == "" {
 		println("missing -resultDir")
 		usage()
 	}
 
-	if *buildpackOrder == "" {
+	if len(theLinuxSmeltingConfig.BuildpackOrder()) == 0 {
 		println("missing -buildpackOrder")
 		usage()
 	}
 
-	buildpacks := []string{}
-
-	for _, name := range strings.Split(*buildpackOrder, ",") {
-		buildpacks = append(buildpacks, path.Join(*buildpacksDir, name))
-	}
-
-	smelter := smelter.New(
-		*appDir,
-		*outputDir,
-		*resultDir,
-		buildpacks,
-		*cacheDir,
-		command_runner.New(*debug),
-	)
+	smelter := smelter.New(&theLinuxSmeltingConfig, command_runner.New(*debug))
 
 	err := smelter.Smelt()
 	if err != nil {
