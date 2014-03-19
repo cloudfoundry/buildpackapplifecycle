@@ -24,28 +24,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	if theLinuxSmeltingConfig.AppDir() == "" {
-		println("missing -appDir")
-		usage()
-	}
-
-	if theLinuxSmeltingConfig.OutputDir() == "" {
-		println("missing -outputDir")
-		usage()
-	}
-
-	if theLinuxSmeltingConfig.BuildpacksDir() == "" {
-		println("missing -buildpacksDir")
-		usage()
-	}
-
-	if theLinuxSmeltingConfig.ResultJsonDir() == "" {
-		println("missing -resultDir")
-		usage()
-	}
-
-	if len(theLinuxSmeltingConfig.BuildpackOrder()) == 0 {
-		println("missing -buildpackOrder")
+	if err := theLinuxSmeltingConfig.Validate(); err != nil {
+		println(err.Error())
 		usage()
 	}
 
