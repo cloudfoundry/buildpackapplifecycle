@@ -13,9 +13,9 @@ var _ = Describe("StagingMessages", func() {
 		ccJSON := `{
            "app_id" : "fake-app_id",
            "task_id" : "fake-task_id",
-           "memoryMB" : 1024,
-           "diskMB" : 10000,
-           "fileDescriptors" : 3,
+           "memory_mb" : 1024,
+           "disk_mb" : 10000,
+           "file_descriptors" : 3,
            "environment" : [["FOO", "BAR"]],
            "stack" : "fake-stack",
            "download_uri" : "fake-download_uri",

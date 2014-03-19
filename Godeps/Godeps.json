@@ -7,7 +7,7 @@
 	"Deps": [
 		{
 			"ImportPath": "github.com/cloudfoundry-incubator/runtime-schema/models",
-			"Rev": "c10e24b4ce475de45b013c7222016a1a6174547c"
+			"Rev": "bc4c92b1cb393cc06bea3989fb842d12a55d5822"
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry/gunk/command_runner",

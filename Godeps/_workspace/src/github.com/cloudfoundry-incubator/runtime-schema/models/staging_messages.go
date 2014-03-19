@@ -5,9 +5,9 @@ type StagingRequestFromCC struct {
 	TaskId          string           `json:"task_id"`
 	Stack           string           `json:"stack"`
 	DownloadUri     string           `json:"download_uri"`
-	FileDescriptors int              `json:"fileDescriptors"`
-	MemoryMB        int              `json:"memoryMB"`
-	DiskMB          int              `json:"diskMB"`
+	FileDescriptors int              `json:"file_descriptors"`
+	MemoryMB        int              `json:"memory_mb"`
+	DiskMB          int              `json:"disk_mb"`
 	AdminBuildpacks []AdminBuildpack `json:"admin_buildpacks"`
 	Environment     [][]string       `json:"environment"`
 }
