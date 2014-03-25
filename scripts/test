@@ -12,4 +12,4 @@ export PATH=$FIRST_GOPATH/bin:$PATH
 
 go install github.com/onsi/ginkgo/ginkgo
 
-ginkgo -r -failOnPending -randomizeAllSpecs "$@"
+ginkgo -r -failOnPending -randomizeAllSpecs -race "$@"
