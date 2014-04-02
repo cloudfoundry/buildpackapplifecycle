@@ -141,7 +141,7 @@ var _ = Describe("Smelter", func() {
 				))
 			})
 
-			It("copies the built app to app/ in the droplet dir", func() {
+			It("copies the built app to app/ in the output dir", func() {
 				setupSuccessfulRelease()
 
 				err := smelter.Smelt()
@@ -150,27 +150,27 @@ var _ = Describe("Smelter", func() {
 				Ω(runner).Should(HaveExecutedSerially(
 					fake_command_runner.CommandSpec{
 						Path: "cp",
-						Args: []string{"-a", appDir, path.Join(outputDir, "stage", "app")},
+						Args: []string{"-a", appDir, path.Join(outputDir, "app")},
 					},
 				))
 			})
 
-			It("creates app/, tmp/, and logs/ in the stage dir", func() {
+			It("creates app/, tmp/, and logs/ in the output dir", func() {
 				setupSuccessfulRelease()
 
 				err := smelter.Smelt()
 				Ω(err).ShouldNot(HaveOccurred())
 
-				fileInfo, err := os.Stat(path.Join(outputDir, "stage", "tmp"))
+				fileInfo, err := os.Stat(path.Join(outputDir, "tmp"))
 				Ω(err).ShouldNot(HaveOccurred())
 				Ω(fileInfo.IsDir()).Should(BeTrue())
 
-				fileInfo, err = os.Stat(path.Join(outputDir, "stage", "logs"))
+				fileInfo, err = os.Stat(path.Join(outputDir, "logs"))
 				Ω(err).ShouldNot(HaveOccurred())
 				Ω(fileInfo.IsDir()).Should(BeTrue())
 			})
 
-			It("writes the detected buildpack to staging_info.yml in the droplet dir", func() {
+			It("writes the detected buildpack to staging_info.yml in the output dir", func() {
 				setupSuccessfulRelease()
 
 				err := smelter.Smelt()
@@ -178,7 +178,7 @@ var _ = Describe("Smelter", func() {
 
 				var output ExpectedStagingResult
 
-				file, err := os.Open(path.Join(outputDir, "stage", "staging_info.yml"))
+				file, err := os.Open(path.Join(outputDir, "staging_info.yml"))
 				Ω(err).ShouldNot(HaveOccurred())
 
 				err = candiedyaml.NewDecoder(file).Decode(&output)
@@ -220,7 +220,7 @@ var _ = Describe("Smelter", func() {
 					err := smelter.Smelt()
 					Ω(err).ShouldNot(HaveOccurred())
 
-					file, err := os.Open(path.Join(outputDir, "stage", "staging_info.yml"))
+					file, err := os.Open(path.Join(outputDir, "staging_info.yml"))
 					Ω(err).ShouldNot(HaveOccurred())
 
 					var output ExpectedStagingResult

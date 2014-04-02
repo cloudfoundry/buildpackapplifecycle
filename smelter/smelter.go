@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/cloudfoundry-incubator/runtime-schema/models"
 	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
 	"strings"
+
+	"github.com/cloudfoundry-incubator/runtime-schema/models"
 
 	"github.com/cloudfoundry/gunk/command_runner"
 	"github.com/fraenkel/candiedyaml"
@@ -18,8 +19,7 @@ import (
 )
 
 type Smelter struct {
-	config   *models.LinuxSmeltingConfig
-	stageDir string
+	config *models.LinuxSmeltingConfig
 
 	runner command_runner.CommandRunner
 }
@@ -54,9 +54,8 @@ func New(
 	runner command_runner.CommandRunner,
 ) *Smelter {
 	return &Smelter{
-		config:   config,
-		stageDir: filepath.Join(config.OutputDir(), "stage"),
-		runner:   runner,
+		config: config,
+		runner: runner,
 	}
 }
 
@@ -66,10 +65,6 @@ func (s *Smelter) Smelt() error {
 	}
 
 	if err := os.MkdirAll(s.config.ResultJsonDir(), 0755); err != nil {
-		return err
-	}
-
-	if err := os.MkdirAll(s.stageDir, 0755); err != nil {
 		return err
 	}
 
@@ -94,13 +89,13 @@ func (s *Smelter) Smelt() error {
 	}
 
 	dropletFS := droplet.NewFileSystem(s.runner)
-	err = dropletFS.GenerateFiles(s.config.AppDir(), s.stageDir)
+
+	err = dropletFS.GenerateFiles(s.config.AppDir(), s.config.OutputDir())
 	if err != nil {
 		return err
 	}
 
-	tarPath := filepath.Join(s.config.DropletArchivePath())
-	return s.produceTarBall(tarPath, s.stageDir)
+	return nil
 }
 
 func (s *Smelter) detect() (string, string, error) {
@@ -159,7 +154,7 @@ func (s *Smelter) release(buildpackDir string) (Release, error) {
 }
 
 func (s *Smelter) saveInfo(detectedName string, releaseInfo Release) error {
-	infoFile, err := os.Create(filepath.Join(s.stageDir, "staging_info.yml"))
+	infoFile, err := os.Create(filepath.Join(s.config.OutputDir(), "staging_info.yml"))
 	if err != nil {
 		return err
 	}
@@ -189,14 +184,4 @@ func (s *Smelter) saveInfo(detectedName string, releaseInfo Release) error {
 	}
 
 	return nil
-}
-
-func (s *Smelter) produceTarBall(tarPath string, srcDir string) error {
-	return s.runner.Run(&exec.Cmd{
-		Path:   "tar",
-		Args:   []string{"-czf", tarPath, "."},
-		Dir:    srcDir,
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
-	})
 }
