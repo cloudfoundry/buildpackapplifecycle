@@ -9,23 +9,32 @@ import (
 var InvalidActionConversion = errors.New("Invalid Action Conversion")
 
 type DownloadAction struct {
+	Name    string `json:"name"`
 	From    string `json:"from"`
 	To      string `json:"to"`
 	Extract bool   `json:"extract"`
 }
 
 type UploadAction struct {
-	To   string `json:"to"`
-	From string `json:"from"`
+	Name     string `json:"name"`
+	To       string `json:"to"`
+	From     string `json:"from"`
+	Compress bool   `json:"compress"`
 }
 
 type RunAction struct {
+	Name    string        `json:"name"`
 	Script  string        `json:"script"`
 	Env     [][]string    `json:"env"`
 	Timeout time.Duration `json:"timeout"`
 }
 
+type TryAction struct {
+	Action ExecutorAction `json:"action"`
+}
+
 type FetchResultAction struct {
+	Name string `json:"name"`
 	File string `json:"file"`
 }
 
@@ -56,6 +65,8 @@ func (a ExecutorAction) MarshalJSON() ([]byte, error) {
 		envelope.Name = "upload"
 	case FetchResultAction:
 		envelope.Name = "fetch_result"
+	case TryAction:
+		envelope.Name = "try"
 	default:
 		return nil, InvalidActionConversion
 	}
@@ -90,6 +101,10 @@ func (a *ExecutorAction) UnmarshalJSON(bytes []byte) error {
 		fetchResultAction := FetchResultAction{}
 		err = json.Unmarshal(*envelope.ActionPayload, &fetchResultAction)
 		a.Action = fetchResultAction
+	case "try":
+		tryAction := TryAction{}
+		err = json.Unmarshal(*envelope.ActionPayload, &tryAction)
+		a.Action = tryAction
 	default:
 		err = InvalidActionConversion
 	}

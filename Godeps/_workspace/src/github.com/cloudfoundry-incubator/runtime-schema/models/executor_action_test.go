@@ -54,12 +54,14 @@ var _ = Describe("ExecutorAction", func() {
 				"action": "download",
 				"args": {
 					"from": "web_location",
+					"name": "some asset",
 					"to": "local_location",
 					"extract": true
 				}
 			}`,
 			ExecutorAction{
 				Action: DownloadAction{
+					Name:    "some asset",
 					From:    "web_location",
 					To:      "local_location",
 					Extract: true,
@@ -73,14 +75,18 @@ var _ = Describe("ExecutorAction", func() {
 			`{
 				"action": "upload",
 				"args": {
+					"name": "some output",
 					"from": "local_location",
-					"to": "web_location"
+					"to": "web_location",
+					"compress": true
 				}
 			}`,
 			ExecutorAction{
 				Action: UploadAction{
-					From: "local_location",
-					To:   "web_location",
+					Name:     "some output",
+					From:     "local_location",
+					To:       "web_location",
+					Compress: true,
 				},
 			},
 		)
@@ -91,6 +97,7 @@ var _ = Describe("ExecutorAction", func() {
 			`{
 				"action": "run",
 				"args": {
+					"name": "nuke",
 					"script": "rm -rf /",
 					"timeout": 10000000,
 					"env": [
@@ -101,6 +108,7 @@ var _ = Describe("ExecutorAction", func() {
 			}`,
 			ExecutorAction{
 				Action: RunAction{
+					Name:    "nuke",
 					Script:  "rm -rf /",
 					Timeout: 10 * time.Millisecond,
 					Env: [][]string{
@@ -117,12 +125,51 @@ var _ = Describe("ExecutorAction", func() {
 			`{
 				"action": "fetch_result",
 				"args": {
+					"name": "fetching temp file",
 					"file": "/tmp/foo"
 				}
 			}`,
 			ExecutorAction{
 				Action: FetchResultAction{
+					Name: "fetching temp file",
 					File: "/tmp/foo",
+				},
+			},
+		)
+	})
+
+	Describe("Try", func() {
+		itSerializesAndDeserializes(
+			`{
+				"action": "try",
+				"args": {
+					"action": {
+						"action": "run",
+						"args": {
+							"name": "nuke",
+							"script": "rm -rf /",
+							"timeout": 10000000,
+							"env": [
+								["FOO", "1"],
+								["BAR", "2"]
+							]
+						}
+					}
+				}
+			}`,
+			ExecutorAction{
+				Action: TryAction{
+					Action: ExecutorAction{
+						Action: RunAction{
+							Name:    "nuke",
+							Script:  "rm -rf /",
+							Timeout: 10 * time.Millisecond,
+							Env: [][]string{
+								{"FOO", "1"},
+								{"BAR", "2"},
+							},
+						},
+					},
 				},
 			},
 		)

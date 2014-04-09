@@ -12,8 +12,8 @@ import (
 
 	"github.com/cloudfoundry-incubator/runtime-schema/models"
 
+	"github.com/cloudfoundry-incubator/candiedyaml"
 	"github.com/cloudfoundry/gunk/command_runner"
-	"github.com/fraenkel/candiedyaml"
 
 	"github.com/cloudfoundry-incubator/linux-smelter/droplet"
 )

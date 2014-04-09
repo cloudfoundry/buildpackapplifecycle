@@ -10,7 +10,7 @@ Usage
 package myApp
 
 import (
-  "github.com/fraenkel/candiedyaml"
+  "github.com/cloudfoundry-incubator/candiedyaml"
   "fmt"
   "os"
 )
