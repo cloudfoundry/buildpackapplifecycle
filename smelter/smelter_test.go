@@ -1,29 +1,40 @@
 package smelter_test
 
 import (
+	"encoding/json"
 	"errors"
-	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
 
-	. "github.com/cloudfoundry-incubator/linux-smelter/smelter"
-	"github.com/cloudfoundry/gunk/command_runner/fake_command_runner"
-	. "github.com/cloudfoundry/gunk/command_runner/fake_command_runner/matchers"
-	"github.com/kylelemons/go-gypsy/yaml"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"github.com/cloudfoundry-incubator/candiedyaml"
+	"github.com/cloudfoundry-incubator/runtime-schema/models"
+	"github.com/cloudfoundry/gunk/command_runner/fake_command_runner"
+	. "github.com/cloudfoundry/gunk/command_runner/fake_command_runner/matchers"
+
+	. "github.com/cloudfoundry-incubator/linux-smelter/smelter"
 )
+
+type ExpectedStagingResult struct {
+	DetectedBuildpack string `yaml:"detected_buildpack" json:"detected_buildpack"`
+	StartCommand      string `yaml:"start_command" json:"-"`
+}
 
 var _ = Describe("Smelter", func() {
 	var smelter *Smelter
 	var runner *fake_command_runner.FakeCommandRunner
 
 	var (
-		appDir    string
-		outputDir string
-		cacheDir  string
+		smeltingDir   string
+		appDir        string
+		outputDir     string
+		cacheDir      string
+		resultDir     string
+		buildpacksDir string
 	)
 
 	BeforeEach(func() {
@@ -31,41 +42,41 @@ var _ = Describe("Smelter", func() {
 
 		var err error
 
-		appDir, err = ioutil.TempDir(os.TempDir(), "smelting-app")
+		smeltingDir, err = ioutil.TempDir(os.TempDir(), "smelting")
 		Ω(err).ShouldNot(HaveOccurred())
 
-		outputDir, err = ioutil.TempDir(os.TempDir(), "smelting-droplet")
-		Ω(err).ShouldNot(HaveOccurred())
+		appDir = path.Join(smeltingDir, "app")
+		outputDir = path.Join(smeltingDir, "output")
+		cacheDir = path.Join(smeltingDir, "cache")
+		resultDir = path.Join(smeltingDir, "result")
+		buildpacksDir = path.Join(smeltingDir, "buildpacks")
 
-		cacheDir, err = ioutil.TempDir(os.TempDir(), "smelting-cache")
-		Ω(err).ShouldNot(HaveOccurred())
+		config := models.NewLinuxSmeltingConfig([]string{"a", "b", "c"})
+		config.Set(models.LinuxSmeltingAppDirFlag, appDir)
+		config.Set(models.LinuxSmeltingOutputDirFlag, outputDir)
+		config.Set(models.LinuxSmeltingResultDirFlag, resultDir)
+		config.Set(models.LinuxSmeltingCacheDirFlag, cacheDir)
+		config.Set(models.LinuxSmeltingBuildpacksDirFlag, buildpacksDir)
 
-		smelter = New(
-			appDir,
-			outputDir,
-			[]string{"/buildpacks/a", "/buildpacks/b", "/buildpacks/c"},
-			cacheDir,
-			runner,
-		)
+		smelter = New(&config, runner)
 	})
 
 	AfterEach(func() {
-		os.RemoveAll(appDir)
-		os.RemoveAll(outputDir)
+		os.RemoveAll(smeltingDir)
 	})
 
 	Describe("smelting", func() {
 		Context("when a buildpack successfully detects", func() {
 			BeforeEach(func() {
 				runner.WhenRunning(fake_command_runner.CommandSpec{
-					Path: "/buildpacks/a/bin/detect",
+					Path: buildpacksDir + "/a/bin/detect",
 				}, func(*exec.Cmd) error {
 					// detection failed
 					return errors.New("exit status 1")
 				})
 
 				runner.WhenRunning(fake_command_runner.CommandSpec{
-					Path: "/buildpacks/b/bin/detect",
+					Path: buildpacksDir + "/b/bin/detect",
 				}, func(cmd *exec.Cmd) error {
 					// detected!
 					cmd.Stdout.Write([]byte("Always Matching\n"))
@@ -75,10 +86,9 @@ var _ = Describe("Smelter", func() {
 
 			setupSuccessfulRelease := func() {
 				runner.WhenRunning(fake_command_runner.CommandSpec{
-					Path: "/buildpacks/b/bin/release",
+					Path: buildpacksDir + "/b/bin/release",
 				}, func(cmd *exec.Cmd) error {
 					cmd.Stdout.Write([]byte("--- {}\n"))
-					cmd.Stdout.(io.WriteCloser).Close()
 					return nil
 				})
 			}
@@ -87,25 +97,26 @@ var _ = Describe("Smelter", func() {
 				setupSuccessfulRelease()
 
 				err := smelter.Smelt()
-				Ω(err).ShouldNot(HaveOccurred())
 
 				Ω(runner).Should(HaveExecutedSerially(
 					fake_command_runner.CommandSpec{
-						Path: "/buildpacks/a/bin/detect",
+						Path: buildpacksDir + "/a/bin/detect",
 						Args: []string{appDir},
 					},
 					fake_command_runner.CommandSpec{
-						Path: "/buildpacks/b/bin/detect",
+						Path: buildpacksDir + "/b/bin/detect",
 						Args: []string{appDir},
 					},
 				))
 
 				Ω(runner).ShouldNot(HaveExecutedSerially(
 					fake_command_runner.CommandSpec{
-						Path: "/buildpacks/c/bin/detect",
+						Path: buildpacksDir + "/c/bin/detect",
 						Args: []string{appDir},
 					},
 				))
+
+				Ω(err).ShouldNot(HaveOccurred())
 			})
 
 			It("runs bin/compile on the first matching buildpack", func() {
@@ -116,21 +127,21 @@ var _ = Describe("Smelter", func() {
 
 				Ω(runner).Should(HaveExecutedSerially(
 					fake_command_runner.CommandSpec{
-						Path: "/buildpacks/a/bin/detect",
+						Path: buildpacksDir + "/a/bin/detect",
 						Args: []string{appDir},
 					},
 					fake_command_runner.CommandSpec{
-						Path: "/buildpacks/b/bin/detect",
+						Path: buildpacksDir + "/b/bin/detect",
 						Args: []string{appDir},
 					},
 					fake_command_runner.CommandSpec{
-						Path: "/buildpacks/b/bin/compile",
+						Path: buildpacksDir + "/b/bin/compile",
 						Args: []string{appDir, cacheDir},
 					},
 				))
 			})
 
-			It("copies the built app to app/ in the droplet dir", func() {
+			It("copies the built app to app/ in the output dir", func() {
 				setupSuccessfulRelease()
 
 				err := smelter.Smelt()
@@ -144,7 +155,7 @@ var _ = Describe("Smelter", func() {
 				))
 			})
 
-			It("creates app/, tmp/, and logs/ in the droplet dir", func() {
+			It("creates app/, tmp/, and logs/ in the output dir", func() {
 				setupSuccessfulRelease()
 
 				err := smelter.Smelt()
@@ -159,27 +170,48 @@ var _ = Describe("Smelter", func() {
 				Ω(fileInfo.IsDir()).Should(BeTrue())
 			})
 
-			It("writes the detected buildpack to staging_info.yml in the droplet dir", func() {
+			It("writes the detected buildpack to staging_info.yml in the output dir", func() {
 				setupSuccessfulRelease()
 
 				err := smelter.Smelt()
 				Ω(err).ShouldNot(HaveOccurred())
 
-				file, err := yaml.ReadFile(path.Join(outputDir, "staging_info.yml"))
+				var output ExpectedStagingResult
+
+				file, err := os.Open(path.Join(outputDir, "staging_info.yml"))
 				Ω(err).ShouldNot(HaveOccurred())
 
-				Ω(file.Get("detected_buildpack")).Should(Equal("Always Matching"))
+				err = candiedyaml.NewDecoder(file).Decode(&output)
+				Ω(err).ShouldNot(HaveOccurred())
+
+				Ω(output.DetectedBuildpack).Should(Equal("Always Matching"))
+			})
+
+			It("writes the detected buildpack to result.json in the result dir", func() {
+				setupSuccessfulRelease()
+
+				err := smelter.Smelt()
+				Ω(err).ShouldNot(HaveOccurred())
+
+				file, err := os.Open(path.Join(resultDir, "result.json"))
+				Ω(err).ShouldNot(HaveOccurred())
+
+				var output ExpectedStagingResult
+
+				err = json.NewDecoder(file).Decode(&output)
+				Ω(err).ShouldNot(HaveOccurred())
+
+				Ω(output.DetectedBuildpack).Should(Equal("Always Matching"))
 			})
 
 			Context("when bin/release has a start command", func() {
 				BeforeEach(func() {
 					runner.WhenRunning(fake_command_runner.CommandSpec{
-						Path: "/buildpacks/b/bin/release",
+						Path: buildpacksDir + "/b/bin/release",
 					}, func(cmd *exec.Cmd) error {
 						cmd.Stdout.Write([]byte("---\n"))
 						cmd.Stdout.Write([]byte("default_process_types:\n"))
 						cmd.Stdout.Write([]byte("  web: some-command\n"))
-						cmd.Stdout.(io.WriteCloser).Close()
 						return nil
 					})
 				})
@@ -188,10 +220,15 @@ var _ = Describe("Smelter", func() {
 					err := smelter.Smelt()
 					Ω(err).ShouldNot(HaveOccurred())
 
-					file, err := yaml.ReadFile(path.Join(outputDir, "staging_info.yml"))
+					file, err := os.Open(path.Join(outputDir, "staging_info.yml"))
 					Ω(err).ShouldNot(HaveOccurred())
 
-					Ω(file.Get("start_command")).Should(Equal("some-command"))
+					var output ExpectedStagingResult
+
+					err = candiedyaml.NewDecoder(file).Decode(&output)
+					Ω(err).ShouldNot(HaveOccurred())
+
+					Ω(output.StartCommand).Should(Equal("some-command"))
 				})
 			})
 
@@ -200,7 +237,7 @@ var _ = Describe("Smelter", func() {
 
 				BeforeEach(func() {
 					runner.WhenRunning(fake_command_runner.CommandSpec{
-						Path: "/buildpacks/b/bin/compile",
+						Path: buildpacksDir + "/b/bin/compile",
 					}, func(*exec.Cmd) error {
 						return disaster
 					})
@@ -217,7 +254,7 @@ var _ = Describe("Smelter", func() {
 
 				BeforeEach(func() {
 					runner.WhenRunning(fake_command_runner.CommandSpec{
-						Path: "/buildpacks/b/bin/release",
+						Path: buildpacksDir + "/b/bin/release",
 					}, func(*exec.Cmd) error {
 						return disaster
 					})
@@ -232,10 +269,9 @@ var _ = Describe("Smelter", func() {
 			Context("when bin/release outputs malformed YAML", func() {
 				BeforeEach(func() {
 					runner.WhenRunning(fake_command_runner.CommandSpec{
-						Path: "/buildpacks/b/bin/release",
+						Path: buildpacksDir + "/b/bin/release",
 					}, func(cmd *exec.Cmd) error {
 						cmd.Stdout.Write([]byte("["))
-						cmd.Stdout.(io.WriteCloser).Close()
 						return nil
 					})
 				})
@@ -272,7 +308,7 @@ var _ = Describe("Smelter", func() {
 			It("returns a NoneDetectedError", func() {
 				for _, name := range []string{"a", "b", "c"} {
 					runner.WhenRunning(fake_command_runner.CommandSpec{
-						Path: "/buildpacks/" + name + "/bin/detect",
+						Path: buildpacksDir + "/" + name + "/bin/detect",
 					}, func(*exec.Cmd) error {
 						// detection failed
 						return errors.New("exit status 1")

@@ -2,23 +2,24 @@ package smelter
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
+	"strings"
 
+	"github.com/cloudfoundry-incubator/runtime-schema/models"
+
+	"github.com/cloudfoundry-incubator/candiedyaml"
 	"github.com/cloudfoundry/gunk/command_runner"
-	"github.com/fraenkel/candiedyaml"
-	"github.com/kylelemons/go-gypsy/yaml"
+
+	"github.com/cloudfoundry-incubator/linux-smelter/droplet"
 )
 
 type Smelter struct {
-	appDir        string
-	outputDir     string
-	buildpackDirs []string
-	cacheDir      string
+	config *models.LinuxSmeltingConfig
 
 	runner command_runner.CommandRunner
 }
@@ -48,29 +49,25 @@ type Release struct {
 	} `yaml:"default_process_types"`
 }
 
-type StagingInfo struct {
-	DetectedBuildpack string `yaml:"detected_buildpack"`
-	StartCommand      string `yaml:"start_command"`
-}
-
 func New(
-	appDir string,
-	outputDir string,
-	buildpackDirs []string,
-	cacheDir string,
+	config *models.LinuxSmeltingConfig,
 	runner command_runner.CommandRunner,
 ) *Smelter {
 	return &Smelter{
-		appDir:        appDir,
-		outputDir:     outputDir,
-		buildpackDirs: buildpackDirs,
-		cacheDir:      cacheDir,
-
+		config: config,
 		runner: runner,
 	}
 }
 
 func (s *Smelter) Smelt() error {
+	if err := os.MkdirAll(s.config.OutputDir(), 0755); err != nil {
+		return err
+	}
+
+	if err := os.MkdirAll(s.config.ResultJsonDir(), 0755); err != nil {
+		return err
+	}
+
 	detectedBuildpackDir, detectedName, err := s.detect()
 	if err != nil {
 		return err
@@ -91,17 +88,9 @@ func (s *Smelter) Smelt() error {
 		return err
 	}
 
-	err = s.copyApp()
-	if err != nil {
-		return err
-	}
+	dropletFS := droplet.NewFileSystem(s.runner)
 
-	err = os.MkdirAll(path.Join(s.outputDir, "tmp"), 0755)
-	if err != nil {
-		return err
-	}
-
-	err = os.MkdirAll(path.Join(s.outputDir, "logs"), 0755)
+	err = dropletFS.GenerateFiles(s.config.AppDir(), s.config.OutputDir())
 	if err != nil {
 		return err
 	}
@@ -110,53 +99,49 @@ func (s *Smelter) Smelt() error {
 }
 
 func (s *Smelter) detect() (string, string, error) {
-	for _, buildpackDir := range s.buildpackDirs {
+	for _, buildpack := range s.config.BuildpackOrder() {
 		output := new(bytes.Buffer)
 
 		err := s.runner.Run(&exec.Cmd{
-			Path:   path.Join(buildpackDir, "bin", "detect"),
-			Args:   []string{s.appDir},
+			Path:   path.Join(s.config.BuildpackPath(buildpack), "bin", "detect"),
+			Args:   []string{s.config.AppDir()},
 			Stdout: output,
 			Stderr: os.Stderr,
 		})
 
 		if err == nil {
-			return buildpackDir, output.String(), nil
+			return s.config.BuildpackPath(buildpack), strings.TrimRight(output.String(), "\n"), nil
 		}
 	}
 
-	return "", "", NoneDetectedError{AppDir: s.appDir}
+	return "", "", NoneDetectedError{AppDir: s.config.AppDir()}
 }
 
 func (s *Smelter) compile(buildpackDir string) error {
 	return s.runner.Run(&exec.Cmd{
 		Path:   path.Join(buildpackDir, "bin", "compile"),
-		Args:   []string{s.appDir, s.cacheDir},
+		Args:   []string{s.config.AppDir(), s.config.CacheDir()},
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
 	})
 }
 
 func (s *Smelter) release(buildpackDir string) (Release, error) {
+	releaseOut := new(bytes.Buffer)
+
 	release := &exec.Cmd{
 		Path:   path.Join(buildpackDir, "bin", "release"),
-		Args:   []string{s.appDir},
+		Args:   []string{s.config.AppDir()},
 		Stderr: os.Stderr,
+		Stdout: releaseOut,
 	}
 
-	out, err := release.StdoutPipe()
+	err := s.runner.Run(release)
 	if err != nil {
 		return Release{}, err
 	}
 
-	err = s.runner.Start(release)
-	if err != nil {
-		return Release{}, err
-	}
-
-	defer s.runner.Wait(release)
-
-	decoder := candiedyaml.NewDecoder(out)
+	decoder := candiedyaml.NewDecoder(releaseOut)
 
 	var parsedRelease Release
 
@@ -169,26 +154,34 @@ func (s *Smelter) release(buildpackDir string) (Release, error) {
 }
 
 func (s *Smelter) saveInfo(detectedName string, releaseInfo Release) error {
-	info := map[string]yaml.Node{
-		"detected_buildpack": yaml.Scalar(detectedName),
+	infoFile, err := os.Create(filepath.Join(s.config.OutputDir(), "staging_info.yml"))
+	if err != nil {
+		return err
 	}
 
-	if releaseInfo.DefaultProcessTypes.Web != "" {
-		info["start_command"] = yaml.Scalar(releaseInfo.DefaultProcessTypes.Web)
+	defer infoFile.Close()
+
+	resultFile, err := os.Create(s.config.ResultJsonPath())
+	if err != nil {
+		return err
 	}
 
-	return ioutil.WriteFile(
-		filepath.Join(s.outputDir, "staging_info.yml"),
-		[]byte(yaml.Render(yaml.Map(info))),
-		0644,
-	)
-}
+	defer resultFile.Close()
 
-func (s *Smelter) copyApp() error {
-	return s.runner.Run(&exec.Cmd{
-		Path:   "cp",
-		Args:   []string{"-a", s.appDir, path.Join(s.outputDir, "app")},
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
-	})
+	info := models.StagingInfo{
+		DetectedBuildpack: detectedName,
+		StartCommand:      releaseInfo.DefaultProcessTypes.Web,
+	}
+
+	err = candiedyaml.NewEncoder(infoFile).Encode(info)
+	if err != nil {
+		return err
+	}
+
+	err = json.NewEncoder(resultFile).Encode(info)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
