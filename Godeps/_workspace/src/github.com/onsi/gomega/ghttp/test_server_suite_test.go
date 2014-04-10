@@ -1,4 +1,4 @@
-package candiedyaml
+package ghttp_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestCandiedyaml(t *testing.T) {
+func TestGHTTP(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Candiedyaml Suite")
+	RunSpecs(t, "GHTTP Suite")
 }

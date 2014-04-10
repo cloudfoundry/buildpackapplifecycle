@@ -20,7 +20,7 @@ var _ = Describe("RunOnce", func() {
 		"actions":[
 			{
 				"action":"download",
-				"args":{"from":"old_location","to":"new_location","extract":true}
+				"args":{"name":"thingy","from":"old_location","to":"new_location","extract":true}
 			}
 		],
 		"container_handle":"17fgsafdfcvc",
@@ -50,6 +50,7 @@ var _ = Describe("RunOnce", func() {
 			Actions: []ExecutorAction{
 				{
 					Action: DownloadAction{
+						Name:    "thingy",
 						From:    "old_location",
 						To:      "new_location",
 						Extract: true,

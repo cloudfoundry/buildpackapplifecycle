@@ -73,10 +73,6 @@ var _ = Describe("LinuxSmeltingConfig", func() {
 		Ω(smeltingConfig.BuildpackPath("my-buildpack")).To(Equal("/tmp/buildpacks/my-buildpack"))
 	})
 
-	It("returns the path to the droplet.tgz", func() {
-		Ω(smeltingConfig.DropletArchivePath()).To(Equal("/tmp/droplet/droplet.tgz"))
-	})
-
 	It("returns the path to the result.json", func() {
 		Ω(smeltingConfig.ResultJsonPath()).To(Equal("/tmp/result/result.json"))
 	})
