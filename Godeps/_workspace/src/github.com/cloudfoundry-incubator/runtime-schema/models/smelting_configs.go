@@ -14,29 +14,29 @@ type LinuxSmeltingConfig struct {
 
 	values map[string]*string
 
-	appDir         *string
-	outputDir      *string
-	resultDir      *string
-	buildpacksDir  *string
-	cacheDir       *string
-	buildpackOrder *string
+	appDir                 *string
+	outputDir              *string
+	resultDir              *string
+	buildpacksDir          *string
+	buildArtifactsCacheDir *string
+	buildpackOrder         *string
 }
 
 const (
-	LinuxSmeltingAppDirFlag         = "appDir"
-	LinuxSmeltingOutputDirFlag      = "outputDir"
-	LinuxSmeltingResultDirFlag      = "resultDir"
-	LinuxSmeltingBuildpacksDirFlag  = "buildpacksDir"
-	LinuxSmeltingCacheDirFlag       = "cacheDir"
-	LinuxSmeltingBuildpackOrderFlag = "buildpackOrder"
+	LinuxSmeltingAppDirFlag                 = "appDir"
+	LinuxSmeltingOutputDirFlag              = "outputDir"
+	LinuxSmeltingResultDirFlag              = "resultDir"
+	LinuxSmeltingBuildpacksDirFlag          = "buildpacksDir"
+	LinuxSmeltingBuildArtifactsCacheDirFlag = "buildArtifactsCacheDir"
+	LinuxSmeltingBuildpackOrderFlag         = "buildpackOrder"
 )
 
 var LinuxSmeltingDefaults = map[string]string{
-	LinuxSmeltingAppDirFlag:        "/app",
-	LinuxSmeltingOutputDirFlag:     "/tmp/droplet",
-	LinuxSmeltingResultDirFlag:     "/tmp/result",
-	LinuxSmeltingBuildpacksDirFlag: "/tmp/buildpacks",
-	LinuxSmeltingCacheDirFlag:      "/tmp/cache",
+	LinuxSmeltingAppDirFlag:                 "/app",
+	LinuxSmeltingOutputDirFlag:              "/tmp/droplet",
+	LinuxSmeltingResultDirFlag:              "/tmp/result",
+	LinuxSmeltingBuildpacksDirFlag:          "/tmp/buildpacks",
+	LinuxSmeltingBuildArtifactsCacheDirFlag: "/tmp/cache",
 }
 
 func NewLinuxSmeltingConfig(buildpacks []string) LinuxSmeltingConfig {
@@ -66,9 +66,9 @@ func NewLinuxSmeltingConfig(buildpacks []string) LinuxSmeltingConfig {
 		"directory containing the buildpacks to try",
 	)
 
-	cacheDir := flagSet.String(
-		LinuxSmeltingCacheDirFlag,
-		LinuxSmeltingDefaults[LinuxSmeltingCacheDirFlag],
+	buildArtifactsCacheDir := flagSet.String(
+		LinuxSmeltingBuildArtifactsCacheDirFlag,
+		LinuxSmeltingDefaults[LinuxSmeltingBuildArtifactsCacheDirFlag],
 		"directory to store cached artifacts to buildpacks",
 	)
 
@@ -85,20 +85,20 @@ func NewLinuxSmeltingConfig(buildpacks []string) LinuxSmeltingConfig {
 
 		compilerPath: compilerPath,
 
-		appDir:         appDir,
-		outputDir:      outputDir,
-		resultDir:      resultDir,
-		buildpacksDir:  buildpacksDir,
-		cacheDir:       cacheDir,
-		buildpackOrder: buildpackOrder,
+		appDir:                 appDir,
+		outputDir:              outputDir,
+		resultDir:              resultDir,
+		buildpacksDir:          buildpacksDir,
+		buildArtifactsCacheDir: buildArtifactsCacheDir,
+		buildpackOrder:         buildpackOrder,
 
 		values: map[string]*string{
-			"appDir":         appDir,
-			"outputDir":      outputDir,
-			"resultDir":      resultDir,
-			"buildpacksDir":  buildpacksDir,
-			"cacheDir":       cacheDir,
-			"buildpackOrder": buildpackOrder,
+			LinuxSmeltingAppDirFlag:                 appDir,
+			LinuxSmeltingOutputDirFlag:              outputDir,
+			LinuxSmeltingResultDirFlag:              resultDir,
+			LinuxSmeltingBuildpacksDirFlag:          buildpacksDir,
+			LinuxSmeltingBuildArtifactsCacheDirFlag: buildArtifactsCacheDir,
+			LinuxSmeltingBuildpackOrderFlag:         buildpackOrder,
 		},
 	}
 }
@@ -151,8 +151,8 @@ func (s LinuxSmeltingConfig) BuildpacksDir() string {
 	return *s.buildpacksDir
 }
 
-func (s LinuxSmeltingConfig) CacheDir() string {
-	return *s.cacheDir
+func (s LinuxSmeltingConfig) BuildArtifactsCacheDir() string {
+	return *s.buildArtifactsCacheDir
 }
 
 func (s LinuxSmeltingConfig) CompilerPath() string {

@@ -11,7 +11,7 @@
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry-incubator/runtime-schema/models",
-			"Rev": "2404dfde94c2898ead2a3ed5716915d52d495777"
+			"Rev": "ddfec06828d48ae0aa0c7cffd6362260bbff459c"
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry/gunk/command_runner",

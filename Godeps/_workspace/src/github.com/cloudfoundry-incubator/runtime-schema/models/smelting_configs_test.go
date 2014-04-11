@@ -17,20 +17,20 @@ var _ = Describe("LinuxSmeltingConfig", func() {
 
 	Context("with defaults", func() {
 		It("generates a script for running its smelter", func() {
-			expectedScript := strings.Join(
-				[]string{
-					"/tmp/compiler/run",
-					"-appDir='/app'",
-					"-buildpackOrder='ocaml-buildpack,haskell-buildpack,bash-buildpack'",
-					"-buildpacksDir='/tmp/buildpacks'",
-					"-cacheDir='/tmp/cache'",
-					"-outputDir='/tmp/droplet'",
-					"-resultDir='/tmp/result'",
-				},
-				" ",
-			)
+			command := "/tmp/compiler/run"
+			commandFlags := []string{
+				"-appDir='/app'",
+				"-buildpackOrder='ocaml-buildpack,haskell-buildpack,bash-buildpack'",
+				"-buildpacksDir='/tmp/buildpacks'",
+				"-buildArtifactsCacheDir='/tmp/cache'",
+				"-outputDir='/tmp/droplet'",
+				"-resultDir='/tmp/result'",
+			}
 
-			Ω(smeltingConfig.Script()).To(Equal(expectedScript))
+			Ω(strings.HasPrefix(smeltingConfig.Script(), command)).To(BeTrue())
+			for _, commandFlag := range commandFlags {
+				Ω(smeltingConfig.Script()).To(ContainSubstring(commandFlag))
+			}
 		})
 	})
 
@@ -40,24 +40,24 @@ var _ = Describe("LinuxSmeltingConfig", func() {
 			smeltingConfig.Set(LinuxSmeltingOutputDirFlag, "/some/droplet/dir")
 			smeltingConfig.Set(LinuxSmeltingResultDirFlag, "/some/result/dir")
 			smeltingConfig.Set(LinuxSmeltingBuildpacksDirFlag, "/some/buildpacks/dir")
-			smeltingConfig.Set(LinuxSmeltingCacheDirFlag, "/some/cache/dir")
+			smeltingConfig.Set(LinuxSmeltingBuildArtifactsCacheDirFlag, "/some/cache/dir")
 		})
 
 		It("generates a script for running its smelter", func() {
-			expectedScript := strings.Join(
-				[]string{
-					"/tmp/compiler/run",
-					"-appDir='/some/app/dir'",
-					"-buildpackOrder='ocaml-buildpack,haskell-buildpack,bash-buildpack'",
-					"-buildpacksDir='/some/buildpacks/dir'",
-					"-cacheDir='/some/cache/dir'",
-					"-outputDir='/some/droplet/dir'",
-					"-resultDir='/some/result/dir'",
-				},
-				" ",
-			)
+			command := "/tmp/compiler/run"
+			commandFlags := []string{
+				"-appDir='/some/app/dir'",
+				"-buildpackOrder='ocaml-buildpack,haskell-buildpack,bash-buildpack'",
+				"-buildpacksDir='/some/buildpacks/dir'",
+				"-buildArtifactsCacheDir='/some/cache/dir'",
+				"-outputDir='/some/droplet/dir'",
+				"-resultDir='/some/result/dir'",
+			}
 
-			Ω(smeltingConfig.Script()).To(Equal(expectedScript))
+			Ω(strings.HasPrefix(smeltingConfig.Script(), command)).To(BeTrue())
+			for _, commandFlag := range commandFlags {
+				Ω(smeltingConfig.Script()).To(ContainSubstring(commandFlag))
+			}
 		})
 	})
 
