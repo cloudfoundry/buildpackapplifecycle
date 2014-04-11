@@ -120,7 +120,7 @@ func (s *Smelter) detect() (string, string, error) {
 func (s *Smelter) compile(buildpackDir string) error {
 	return s.runner.Run(&exec.Cmd{
 		Path:   path.Join(buildpackDir, "bin", "compile"),
-		Args:   []string{s.config.AppDir(), s.config.CacheDir()},
+		Args:   []string{s.config.AppDir(), s.config.BuildArtifactsCacheDir()},
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
 	})

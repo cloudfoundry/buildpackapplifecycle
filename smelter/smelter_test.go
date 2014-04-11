@@ -29,12 +29,12 @@ var _ = Describe("Smelter", func() {
 	var runner *fake_command_runner.FakeCommandRunner
 
 	var (
-		smeltingDir   string
-		appDir        string
-		outputDir     string
-		cacheDir      string
-		resultDir     string
-		buildpacksDir string
+		smeltingDir            string
+		appDir                 string
+		outputDir              string
+		resultDir              string
+		buildpacksDir          string
+		buildArtifactsCacheDir string
 	)
 
 	BeforeEach(func() {
@@ -47,15 +47,15 @@ var _ = Describe("Smelter", func() {
 
 		appDir = path.Join(smeltingDir, "app")
 		outputDir = path.Join(smeltingDir, "output")
-		cacheDir = path.Join(smeltingDir, "cache")
 		resultDir = path.Join(smeltingDir, "result")
 		buildpacksDir = path.Join(smeltingDir, "buildpacks")
+		buildArtifactsCacheDir = path.Join(smeltingDir, "cache")
 
 		config := models.NewLinuxSmeltingConfig([]string{"a", "b", "c"})
 		config.Set(models.LinuxSmeltingAppDirFlag, appDir)
 		config.Set(models.LinuxSmeltingOutputDirFlag, outputDir)
 		config.Set(models.LinuxSmeltingResultDirFlag, resultDir)
-		config.Set(models.LinuxSmeltingCacheDirFlag, cacheDir)
+		config.Set(models.LinuxSmeltingBuildArtifactsCacheDirFlag, buildArtifactsCacheDir)
 		config.Set(models.LinuxSmeltingBuildpacksDirFlag, buildpacksDir)
 
 		smelter = New(&config, runner)
@@ -136,7 +136,7 @@ var _ = Describe("Smelter", func() {
 					},
 					fake_command_runner.CommandSpec{
 						Path: buildpacksDir + "/b/bin/compile",
-						Args: []string{appDir, cacheDir},
+						Args: []string{appDir, buildArtifactsCacheDir},
 					},
 				))
 			})

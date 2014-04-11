@@ -18,12 +18,12 @@ var _ = Describe("Smelting", func() {
 	appFixtures := "fixtures/apps"
 
 	var (
-		smelterCmd    *exec.Cmd
-		appDir        string
-		buildpacksDir string
-		outputDir     string
-		cacheDir      string
-		resultDir     string
+		smelterCmd             *exec.Cmd
+		appDir                 string
+		buildpacksDir          string
+		outputDir              string
+		buildArtifactsCacheDir string
+		resultDir              string
 	)
 
 	smelt := func() *cmdtest.Session {
@@ -49,7 +49,7 @@ var _ = Describe("Smelting", func() {
 		outputDir, err = ioutil.TempDir(os.TempDir(), "smelting-droplet")
 		Ω(err).ShouldNot(HaveOccurred())
 
-		cacheDir, err = ioutil.TempDir(os.TempDir(), "smelting-cache")
+		buildArtifactsCacheDir, err = ioutil.TempDir(os.TempDir(), "smelting-cache")
 		Ω(err).ShouldNot(HaveOccurred())
 
 		resultDir, err = ioutil.TempDir(os.TempDir(), "smelting-result")
@@ -59,7 +59,7 @@ var _ = Describe("Smelting", func() {
 			"-appDir", appDir,
 			"-buildpacksDir", buildpacksDir,
 			"-outputDir", outputDir,
-			"-cacheDir", cacheDir,
+			"-buildArtifactsCacheDir", buildArtifactsCacheDir,
 			"-buildpackOrder", "always-detects",
 			"-resultDir", resultDir)
 		smelterCmd.Env = os.Environ()
