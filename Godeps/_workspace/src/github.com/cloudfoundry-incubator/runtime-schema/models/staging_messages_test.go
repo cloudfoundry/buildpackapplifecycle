@@ -2,8 +2,8 @@ package models_test
 
 import (
 	"encoding/json"
+	"github.com/cloudfoundry-incubator/candiedyaml"
 	. "github.com/cloudfoundry-incubator/runtime-schema/models"
-	"github.com/fraenkel/candiedyaml"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )

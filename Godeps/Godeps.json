@@ -11,15 +11,15 @@
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry-incubator/runtime-schema/models",
-			"Rev": "ddfec06828d48ae0aa0c7cffd6362260bbff459c"
+			"Rev": "c716df8466bd2f2baffeaef5faf80629d069a922"
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry/gunk/command_runner",
-			"Rev": "0dfce73f2060a23c01134f5880295b70cc325e14"
+			"Rev": "02c643e319e71ac034d3d96b0c1147e2a037a8f2"
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry/gunk/runner_support",
-			"Rev": "0dfce73f2060a23c01134f5880295b70cc325e14"
+			"Rev": "02c643e319e71ac034d3d96b0c1147e2a037a8f2"
 		},
 		{
 			"ImportPath": "github.com/onsi/ginkgo",
