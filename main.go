@@ -4,7 +4,7 @@ import (
 	"flag"
 	"os"
 
-	"github.com/cloudfoundry/gunk/command_runner"
+	"github.com/cloudfoundry/gunk/command_runner/linux_command_runner"
 
 	"github.com/cloudfoundry-incubator/linux-smelter/smelter"
 	"github.com/cloudfoundry-incubator/runtime-schema/models"
@@ -29,7 +29,7 @@ func main() {
 		usage()
 	}
 
-	smelter := smelter.New(&theLinuxSmeltingConfig, command_runner.New(*debug))
+	smelter := smelter.New(&theLinuxSmeltingConfig, linux_command_runner.New(*debug))
 
 	err := smelter.Smelt()
 	if err != nil {
