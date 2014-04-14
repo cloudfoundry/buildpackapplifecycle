@@ -68,6 +68,10 @@ func (s *Smelter) Smelt() error {
 		return err
 	}
 
+	if err := os.MkdirAll(s.config.BuildArtifactsCacheDir(), 0755); err != nil {
+		return err
+	}
+
 	detectedBuildpackDir, detectedName, err := s.detect()
 	if err != nil {
 		return err
