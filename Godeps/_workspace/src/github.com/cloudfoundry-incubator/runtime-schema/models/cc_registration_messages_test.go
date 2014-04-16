@@ -12,7 +12,8 @@ var _ = Describe("CCRegistrationMessages", func() {
 	Describe("CCRegistrationMessage", func() {
 		var ccJSON = `{
         "host": "127.0.0.1",
-        "port": 4567
+        "port": 4567,
+        "tags": ["tag1", "tag2"]
       }`
 
 		It("should be mapped to the CC's registration JSON", func() {
@@ -23,6 +24,7 @@ var _ = Describe("CCRegistrationMessages", func() {
 			Ω(registrationMessage).Should(Equal(CCRegistrationMessage{
 				Host: "127.0.0.1",
 				Port: 4567,
+				Tags: []string{"tag1", "tag2"},
 			}))
 		})
 	})
