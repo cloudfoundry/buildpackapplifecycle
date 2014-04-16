@@ -51,6 +51,10 @@ var _ = Describe("Smelter", func() {
 		buildpacksDir = path.Join(smeltingDir, "buildpacks")
 		buildArtifactsCacheDir = path.Join(smeltingDir, "cache")
 
+		os.MkdirAll(path.Join(buildpacksDir, "a", "bin"), 0777)
+		os.MkdirAll(path.Join(buildpacksDir, "b", "bin"), 0777)
+		os.MkdirAll(path.Join(buildpacksDir, "c", "inner", "bin"), 0777)
+
 		config := models.NewLinuxSmeltingConfig([]string{"a", "b", "c"})
 		config.Set(models.LinuxSmeltingAppDirFlag, appDir)
 		config.Set(models.LinuxSmeltingOutputDirFlag, outputDir)
@@ -304,16 +308,73 @@ var _ = Describe("Smelter", func() {
 			})
 		})
 
+		Context("when the buildpack is nested under a directory (can happen with zip buildpacks served by github)", func() {
+			It("should dive into the nested directory", func() {
+				runner.WhenRunning(fake_command_runner.CommandSpec{
+					Path: buildpacksDir + "/a/bin/detect",
+				}, func(*exec.Cmd) error {
+					// detection failed
+					return errors.New("exit status 1")
+				})
+
+				runner.WhenRunning(fake_command_runner.CommandSpec{
+					Path: buildpacksDir + "/b/bin/detect",
+				}, func(*exec.Cmd) error {
+					// detection failed
+					return errors.New("exit status 1")
+				})
+
+				runner.WhenRunning(fake_command_runner.CommandSpec{
+					Path: buildpacksDir + "/c/inner/bin/detect",
+				}, func(cmd *exec.Cmd) error {
+					cmd.Stdout.Write([]byte("C Buildpack\n"))
+					return nil
+				})
+
+				runner.WhenRunning(fake_command_runner.CommandSpec{
+					Path: buildpacksDir + "/c/inner/bin/release",
+				}, func(cmd *exec.Cmd) error {
+					cmd.Stdout.Write([]byte("--- {}\n"))
+					return nil
+				})
+
+				err := smelter.Smelt()
+				Ω(err).ShouldNot(HaveOccurred())
+
+				file, err := os.Open(path.Join(outputDir, "staging_info.yml"))
+				Ω(err).ShouldNot(HaveOccurred())
+
+				var output ExpectedStagingResult
+
+				err = candiedyaml.NewDecoder(file).Decode(&output)
+				Ω(err).ShouldNot(HaveOccurred())
+
+				Ω(output.DetectedBuildpack).Should(Equal("C Buildpack"))
+			})
+		})
+
 		Context("when no buildpacks match the app", func() {
 			It("returns a NoneDetectedError", func() {
-				for _, name := range []string{"a", "b", "c"} {
-					runner.WhenRunning(fake_command_runner.CommandSpec{
-						Path: buildpacksDir + "/" + name + "/bin/detect",
-					}, func(*exec.Cmd) error {
-						// detection failed
-						return errors.New("exit status 1")
-					})
-				}
+				runner.WhenRunning(fake_command_runner.CommandSpec{
+					Path: buildpacksDir + "/a/bin/detect",
+				}, func(*exec.Cmd) error {
+					// detection failed
+					return errors.New("exit status 1")
+				})
+
+				runner.WhenRunning(fake_command_runner.CommandSpec{
+					Path: buildpacksDir + "/b/bin/detect",
+				}, func(*exec.Cmd) error {
+					// detection failed
+					return errors.New("exit status 1")
+				})
+
+				runner.WhenRunning(fake_command_runner.CommandSpec{
+					Path: buildpacksDir + "/c/inner/bin/detect",
+				}, func(*exec.Cmd) error {
+					// detection failed
+					return errors.New("exit status 1")
+				})
 
 				err := smelter.Smelt()
 				Ω(err).Should(Equal(NoneDetectedError{AppDir: appDir}))

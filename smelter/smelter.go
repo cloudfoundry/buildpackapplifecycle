@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -29,7 +30,7 @@ type NoneDetectedError struct {
 }
 
 func (e NoneDetectedError) Error() string {
-	return fmt.Sprintf("no buildpack detected for %s", e.AppDir)
+	return fmt.Sprintf("no valid buildpacks detected for %s", e.AppDir)
 }
 
 type MalformedReleaseYAMLError struct {
@@ -40,6 +41,17 @@ func (e MalformedReleaseYAMLError) Error() string {
 	return fmt.Sprintf(
 		"buildpack's release output invalid: %s",
 		e.ParseError,
+	)
+}
+
+type MalformedBuildpackError struct {
+	Buildpack string
+}
+
+func (e MalformedBuildpackError) Error() string {
+	return fmt.Sprintf(
+		"buildpack does not contain a /bin dir: %s",
+		e.Buildpack,
 	)
 }
 
@@ -102,19 +114,54 @@ func (s *Smelter) Smelt() error {
 	return nil
 }
 
+func (s *Smelter) buildpackPath(buildpack string) (string, error) {
+	buildpackPath := s.config.BuildpackPath(buildpack)
+
+	if s.pathHasBinDirectory(buildpackPath) {
+		return buildpackPath, nil
+	}
+
+	files, err := ioutil.ReadDir(buildpackPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to read buildpack directory for buildpack: %s", buildpack)
+	}
+
+	if len(files) == 1 {
+		nestedPath := path.Join(buildpackPath, files[0].Name())
+
+		if s.pathHasBinDirectory(nestedPath) {
+			return nestedPath, nil
+		}
+	}
+
+	return "", MalformedBuildpackError{buildpack}
+}
+
+func (s *Smelter) pathHasBinDirectory(pathToTest string) bool {
+	_, err := os.Stat(path.Join(pathToTest, "bin"))
+	return err == nil
+}
+
 func (s *Smelter) detect() (string, string, error) {
 	for _, buildpack := range s.config.BuildpackOrder() {
 		output := new(bytes.Buffer)
 
-		err := s.runner.Run(&exec.Cmd{
-			Path:   path.Join(s.config.BuildpackPath(buildpack), "bin", "detect"),
+		buildpackPath, err := s.buildpackPath(buildpack)
+
+		if err != nil {
+			fmt.Println(err.Error())
+			continue
+		}
+
+		err = s.runner.Run(&exec.Cmd{
+			Path:   path.Join(buildpackPath, "bin", "detect"),
 			Args:   []string{s.config.AppDir()},
 			Stdout: output,
 			Stderr: os.Stderr,
 		})
 
 		if err == nil {
-			return s.config.BuildpackPath(buildpack), strings.TrimRight(output.String(), "\n"), nil
+			return buildpackPath, strings.TrimRight(output.String(), "\n"), nil
 		}
 	}
 
