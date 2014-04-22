@@ -20,6 +20,7 @@ import (
 )
 
 type ExpectedStagingResult struct {
+	BuildpackKey      string `yaml:"-" json:"buildpack_key"`
 	DetectedBuildpack string `yaml:"detected_buildpack" json:"detected_buildpack"`
 	StartCommand      string `yaml:"start_command" json:"-"`
 }
@@ -208,6 +209,23 @@ var _ = Describe("Smelter", func() {
 				Ω(output.DetectedBuildpack).Should(Equal("Always Matching"))
 			})
 
+			It("writes the buildpack key to result.json in the result dir", func() {
+				setupSuccessfulRelease()
+
+				err := smelter.Smelt()
+				Ω(err).ShouldNot(HaveOccurred())
+
+				file, err := os.Open(path.Join(resultDir, "result.json"))
+				Ω(err).ShouldNot(HaveOccurred())
+
+				var output ExpectedStagingResult
+
+				err = json.NewDecoder(file).Decode(&output)
+				Ω(err).ShouldNot(HaveOccurred())
+
+				Ω(output.BuildpackKey).Should(Equal("b"))
+			})
+
 			Context("when bin/release has a start command", func() {
 				BeforeEach(func() {
 					runner.WhenRunning(fake_command_runner.CommandSpec{
@@ -309,7 +327,7 @@ var _ = Describe("Smelter", func() {
 		})
 
 		Context("when the buildpack is nested under a directory (can happen with zip buildpacks served by github)", func() {
-			It("should dive into the nested directory", func() {
+			BeforeEach(func() {
 				runner.WhenRunning(fake_command_runner.CommandSpec{
 					Path: buildpacksDir + "/a/bin/detect",
 				}, func(*exec.Cmd) error {
@@ -337,7 +355,9 @@ var _ = Describe("Smelter", func() {
 					cmd.Stdout.Write([]byte("--- {}\n"))
 					return nil
 				})
+			})
 
+			It("should dive into the nested directory", func() {
 				err := smelter.Smelt()
 				Ω(err).ShouldNot(HaveOccurred())
 
@@ -350,6 +370,21 @@ var _ = Describe("Smelter", func() {
 				Ω(err).ShouldNot(HaveOccurred())
 
 				Ω(output.DetectedBuildpack).Should(Equal("C Buildpack"))
+			})
+
+			It("writes the correct buildpack key to result.json", func() {
+				err := smelter.Smelt()
+				Ω(err).ShouldNot(HaveOccurred())
+
+				file, err := os.Open(path.Join(resultDir, "result.json"))
+				Ω(err).ShouldNot(HaveOccurred())
+
+				var output ExpectedStagingResult
+
+				err = json.NewDecoder(file).Decode(&output)
+				Ω(err).ShouldNot(HaveOccurred())
+
+				Ω(output.BuildpackKey).Should(Equal("c"))
 			})
 		})
 

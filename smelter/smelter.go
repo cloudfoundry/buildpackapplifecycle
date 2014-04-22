@@ -84,7 +84,7 @@ func (s *Smelter) Smelt() error {
 		return err
 	}
 
-	detectedBuildpackDir, detectedName, err := s.detect()
+	detectedBuildpack, detectedBuildpackDir, detectOutput, err := s.detect()
 	if err != nil {
 		return err
 	}
@@ -99,7 +99,7 @@ func (s *Smelter) Smelt() error {
 		return err
 	}
 
-	err = s.saveInfo(detectedName, releaseInfo)
+	err = s.saveInfo(detectedBuildpack, detectOutput, releaseInfo)
 	if err != nil {
 		return err
 	}
@@ -142,7 +142,7 @@ func (s *Smelter) pathHasBinDirectory(pathToTest string) bool {
 	return err == nil
 }
 
-func (s *Smelter) detect() (string, string, error) {
+func (s *Smelter) detect() (string, string, string, error) {
 	for _, buildpack := range s.config.BuildpackOrder() {
 		output := new(bytes.Buffer)
 
@@ -161,11 +161,11 @@ func (s *Smelter) detect() (string, string, error) {
 		})
 
 		if err == nil {
-			return buildpackPath, strings.TrimRight(output.String(), "\n"), nil
+			return buildpack, buildpackPath, strings.TrimRight(output.String(), "\n"), nil
 		}
 	}
 
-	return "", "", NoneDetectedError{AppDir: s.config.AppDir()}
+	return "", "", "", NoneDetectedError{AppDir: s.config.AppDir()}
 }
 
 func (s *Smelter) compile(buildpackDir string) error {
@@ -204,7 +204,7 @@ func (s *Smelter) release(buildpackDir string) (Release, error) {
 	return parsedRelease, nil
 }
 
-func (s *Smelter) saveInfo(detectedName string, releaseInfo Release) error {
+func (s *Smelter) saveInfo(buildpack string, detectOutput string, releaseInfo Release) error {
 	infoFile, err := os.Create(filepath.Join(s.config.OutputDir(), "staging_info.yml"))
 	if err != nil {
 		return err
@@ -220,7 +220,8 @@ func (s *Smelter) saveInfo(detectedName string, releaseInfo Release) error {
 	defer resultFile.Close()
 
 	info := models.StagingInfo{
-		DetectedBuildpack: detectedName,
+		BuildpackKey:      buildpack,
+		DetectedBuildpack: detectOutput,
 		StartCommand:      releaseInfo.DefaultProcessTypes.Web,
 	}
 
