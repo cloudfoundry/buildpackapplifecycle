@@ -54,14 +54,12 @@ var _ = Describe("ExecutorAction", func() {
 				"action": "download",
 				"args": {
 					"from": "web_location",
-					"name": "some asset",
 					"to": "local_location",
 					"extract": true
 				}
 			}`,
 			ExecutorAction{
 				Action: DownloadAction{
-					Name:    "some asset",
 					From:    "web_location",
 					To:      "local_location",
 					Extract: true,
@@ -75,7 +73,6 @@ var _ = Describe("ExecutorAction", func() {
 			`{
 				"action": "upload",
 				"args": {
-					"name": "some output",
 					"from": "local_location",
 					"to": "web_location",
 					"compress": true
@@ -83,7 +80,6 @@ var _ = Describe("ExecutorAction", func() {
 			}`,
 			ExecutorAction{
 				Action: UploadAction{
-					Name:     "some output",
 					From:     "local_location",
 					To:       "web_location",
 					Compress: true,
@@ -97,21 +93,19 @@ var _ = Describe("ExecutorAction", func() {
 			`{
 				"action": "run",
 				"args": {
-					"name": "nuke",
 					"script": "rm -rf /",
 					"timeout": 10000000,
 					"env": [
-						["FOO", "1"],
-						["BAR", "2"]
+						{"key":"FOO", "value":"1"},
+						{"key":"BAR", "value":"2"}
 					]
 				}
 			}`,
 			ExecutorAction{
 				Action: RunAction{
-					Name:    "nuke",
 					Script:  "rm -rf /",
 					Timeout: 10 * time.Millisecond,
-					Env: [][]string{
+					Env: []EnvironmentVariable{
 						{"FOO", "1"},
 						{"BAR", "2"},
 					},
@@ -125,16 +119,41 @@ var _ = Describe("ExecutorAction", func() {
 			`{
 				"action": "fetch_result",
 				"args": {
-					"name": "fetching temp file",
 					"file": "/tmp/foo"
 				}
 			}`,
 			ExecutorAction{
 				Action: FetchResultAction{
-					Name: "fetching temp file",
 					File: "/tmp/foo",
 				},
 			},
+		)
+	})
+
+	Describe("EmitProgressAction", func() {
+		itSerializesAndDeserializes(
+			`{
+				"action": "emit_progress",
+				"args": {
+					"start_message": "reticulating splines",
+					"success_message": "reticulated splines",
+					"failure_message": "reticulation failed",
+					"action": {
+						"action": "run",
+						"args": {
+							"script": "echo",
+							"timeout": 0,
+							"env": null
+						}
+					}
+				}
+			}`,
+			EmitProgressFor(
+				ExecutorAction{
+					RunAction{
+						Script: "echo",
+					},
+				}, "reticulating splines", "reticulated splines", "reticulation failed"),
 		)
 	})
 
@@ -146,32 +165,16 @@ var _ = Describe("ExecutorAction", func() {
 					"action": {
 						"action": "run",
 						"args": {
-							"name": "nuke",
-							"script": "rm -rf /",
-							"timeout": 10000000,
-							"env": [
-								["FOO", "1"],
-								["BAR", "2"]
-							]
+							"script": "echo",
+							"timeout": 0,
+							"env": null
 						}
 					}
 				}
 			}`,
-			ExecutorAction{
-				Action: TryAction{
-					Action: ExecutorAction{
-						Action: RunAction{
-							Name:    "nuke",
-							Script:  "rm -rf /",
-							Timeout: 10 * time.Millisecond,
-							Env: [][]string{
-								{"FOO", "1"},
-								{"BAR", "2"},
-							},
-						},
-					},
-				},
-			},
+			Try(ExecutorAction{
+				RunAction{Script: "echo"},
+			}),
 		)
 	})
 })

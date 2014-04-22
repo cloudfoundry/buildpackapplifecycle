@@ -4,18 +4,18 @@ import (
 	"encoding/json"
 )
 
-type RunOnceState int
+type TaskState int
 
 const (
-	RunOnceStateInvalid RunOnceState = iota
-	RunOnceStatePending
-	RunOnceStateClaimed
-	RunOnceStateRunning
-	RunOnceStateCompleted
-	RunOnceStateResolving
+	TaskStateInvalid TaskState = iota
+	TaskStatePending
+	TaskStateClaimed
+	TaskStateRunning
+	TaskStateCompleted
+	TaskStateResolving
 )
 
-type RunOnce struct {
+type Task struct {
 	Guid            string           `json:"guid"`
 	Actions         []ExecutorAction `json:"actions"`
 	Stack           string           `json:"stack"`
@@ -26,7 +26,7 @@ type RunOnce struct {
 	CreatedAt       int64            `json:"created_at"` //  the number of nanoseconds elapsed since January 1, 1970 UTC
 	UpdatedAt       int64            `json:"updated_at"`
 
-	State RunOnceState `json:"state"`
+	State TaskState `json:"state"`
 
 	// this is so that any stager can process a complete event,
 	// because the CC <-> Stager interaction is a one-to-one request-response
@@ -49,18 +49,18 @@ type LogConfig struct {
 	Index      *int   `json:"index"`
 }
 
-func NewRunOnceFromJSON(payload []byte) (RunOnce, error) {
-	var runOnce RunOnce
+func NewTaskFromJSON(payload []byte) (Task, error) {
+	var task Task
 
-	err := json.Unmarshal(payload, &runOnce)
+	err := json.Unmarshal(payload, &task)
 	if err != nil {
-		return RunOnce{}, err
+		return Task{}, err
 	}
 
-	return runOnce, nil
+	return task, nil
 }
 
-func (self RunOnce) ToJSON() []byte {
+func (self Task) ToJSON() []byte {
 	bytes, err := json.Marshal(self)
 	if err != nil {
 		panic(err)

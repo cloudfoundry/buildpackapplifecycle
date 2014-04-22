@@ -2,6 +2,7 @@ package models_test
 
 import (
 	"encoding/json"
+
 	"github.com/cloudfoundry-incubator/candiedyaml"
 	. "github.com/cloudfoundry-incubator/runtime-schema/models"
 	. "github.com/onsi/ginkgo"
@@ -16,9 +17,10 @@ var _ = Describe("StagingMessages", func() {
            "memory_mb" : 1024,
            "disk_mb" : 10000,
            "file_descriptors" : 3,
-           "environment" : [["FOO", "BAR"]],
+           "environment" : [{"key": "FOO", "value":"BAR"}],
            "stack" : "fake-stack",
            "app_bits_download_uri" : "http://fake-download_uri",
+           "build_artifacts_cache_download_uri" : "http://a-nice-place-to-get-valuable-artifacts.com",
            "buildpacks" : [{"key":"fake-buildpack-key" ,"url":"fake-buildpack-url"}]
         }`
 
@@ -28,21 +30,22 @@ var _ = Describe("StagingMessages", func() {
 			Ω(err).ShouldNot(HaveOccurred())
 
 			Ω(stagingRequest).Should(Equal(StagingRequestFromCC{
-				AppId:              "fake-app_id",
-				TaskId:             "fake-task_id",
-				Stack:              "fake-stack",
-				AppBitsDownloadUri: "http://fake-download_uri",
-				MemoryMB:           1024,
-				FileDescriptors:    3,
-				DiskMB:             10000,
+				AppId:                          "fake-app_id",
+				TaskId:                         "fake-task_id",
+				Stack:                          "fake-stack",
+				AppBitsDownloadUri:             "http://fake-download_uri",
+				BuildArtifactsCacheDownloadUri: "http://a-nice-place-to-get-valuable-artifacts.com",
+				MemoryMB:                       1024,
+				FileDescriptors:                3,
+				DiskMB:                         10000,
 				Buildpacks: []Buildpack{
 					{
 						Key: "fake-buildpack-key",
 						Url: "fake-buildpack-url",
 					},
 				},
-				Environment: [][]string{
-					{"FOO", "BAR"},
+				Environment: []EnvironmentVariable{
+					{Key: "FOO", Value: "BAR"},
 				},
 			}))
 		})

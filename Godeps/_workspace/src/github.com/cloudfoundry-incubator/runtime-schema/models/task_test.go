@@ -9,10 +9,10 @@ import (
 	. "github.com/cloudfoundry-incubator/runtime-schema/models"
 )
 
-var _ = Describe("RunOnce", func() {
-	var runOnce RunOnce
+var _ = Describe("Task", func() {
+	var task Task
 
-	runOncePayload := `{
+	taskPayload := `{
 		"guid":"some-guid",
 		"reply_to":"some-requester",
 		"stack":"some-stack",
@@ -20,7 +20,7 @@ var _ = Describe("RunOnce", func() {
 		"actions":[
 			{
 				"action":"download",
-				"args":{"name":"thingy","from":"old_location","to":"new_location","extract":true}
+				"args":{"from":"old_location","to":"new_location","extract":true}
 			}
 		],
 		"container_handle":"17fgsafdfcvc",
@@ -43,14 +43,13 @@ var _ = Describe("RunOnce", func() {
 	BeforeEach(func() {
 		index := 42
 
-		runOnce = RunOnce{
+		task = Task{
 			Guid:    "some-guid",
 			ReplyTo: "some-requester",
 			Stack:   "some-stack",
 			Actions: []ExecutorAction{
 				{
 					Action: DownloadAction{
-						Name:    "thingy",
 						From:    "old_location",
 						To:      "new_location",
 						Extract: true,
@@ -72,31 +71,31 @@ var _ = Describe("RunOnce", func() {
 			DiskMB:          1024,
 			CreatedAt:       time.Date(2014, time.February, 25, 23, 46, 11, 00, time.UTC).UnixNano(),
 			UpdatedAt:       time.Date(2014, time.February, 25, 23, 46, 11, 10, time.UTC).UnixNano(),
-			State:           RunOnceStatePending,
+			State:           TaskStatePending,
 		}
 	})
 
 	Describe("ToJSON", func() {
 		It("should JSONify", func() {
-			json := runOnce.ToJSON()
-			Ω(string(json)).Should(MatchJSON(runOncePayload))
+			json := task.ToJSON()
+			Ω(string(json)).Should(MatchJSON(taskPayload))
 		})
 	})
 
-	Describe("NewRunOnceFromJSON", func() {
-		It("returns a RunOnce with correct fields", func() {
-			decodedRunOnce, err := NewRunOnceFromJSON([]byte(runOncePayload))
+	Describe("NewTaskFromJSON", func() {
+		It("returns a Task with correct fields", func() {
+			decodedTask, err := NewTaskFromJSON([]byte(taskPayload))
 			Ω(err).ShouldNot(HaveOccurred())
 
-			Ω(decodedRunOnce).Should(Equal(runOnce))
+			Ω(decodedTask).Should(Equal(task))
 		})
 
 		Context("with an invalid payload", func() {
 			It("returns the error", func() {
-				decodedRunOnce, err := NewRunOnceFromJSON([]byte("butts lol"))
+				decodedTask, err := NewTaskFromJSON([]byte("butts lol"))
 				Ω(err).Should(HaveOccurred())
 
-				Ω(decodedRunOnce).Should(BeZero())
+				Ω(decodedTask).Should(BeZero())
 			})
 		})
 	})

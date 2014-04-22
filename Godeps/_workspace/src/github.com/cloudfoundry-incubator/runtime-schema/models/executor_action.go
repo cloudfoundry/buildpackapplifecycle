@@ -9,33 +9,55 @@ import (
 var InvalidActionConversion = errors.New("Invalid Action Conversion")
 
 type DownloadAction struct {
-	Name    string `json:"name"`
 	From    string `json:"from"`
 	To      string `json:"to"`
 	Extract bool   `json:"extract"`
 }
 
 type UploadAction struct {
-	Name     string `json:"name"`
 	To       string `json:"to"`
 	From     string `json:"from"`
 	Compress bool   `json:"compress"`
 }
 
 type RunAction struct {
-	Name    string        `json:"name"`
-	Script  string        `json:"script"`
-	Env     [][]string    `json:"env"`
-	Timeout time.Duration `json:"timeout"`
+	Script  string                `json:"script"`
+	Env     []EnvironmentVariable `json:"env"`
+	Timeout time.Duration         `json:"timeout"`
+}
+
+type FetchResultAction struct {
+	File string `json:"file"`
 }
 
 type TryAction struct {
 	Action ExecutorAction `json:"action"`
 }
 
-type FetchResultAction struct {
-	Name string `json:"name"`
-	File string `json:"file"`
+type EmitProgressAction struct {
+	Action         ExecutorAction `json:"action"`
+	StartMessage   string         `json:"start_message"`
+	SuccessMessage string         `json:"success_message"`
+	FailureMessage string         `json:"failure_message"`
+}
+
+func EmitProgressFor(action ExecutorAction, startMessage string, successMessage string, failureMessage string) ExecutorAction {
+	return ExecutorAction{
+		EmitProgressAction{
+			Action:         action,
+			StartMessage:   startMessage,
+			SuccessMessage: successMessage,
+			FailureMessage: failureMessage,
+		},
+	}
+}
+
+func Try(action ExecutorAction) ExecutorAction {
+	return ExecutorAction{
+		TryAction{
+			Action: action,
+		},
+	}
 }
 
 type executorActionEnvelope struct {
@@ -65,6 +87,8 @@ func (a ExecutorAction) MarshalJSON() ([]byte, error) {
 		envelope.Name = "upload"
 	case FetchResultAction:
 		envelope.Name = "fetch_result"
+	case EmitProgressAction:
+		envelope.Name = "emit_progress"
 	case TryAction:
 		envelope.Name = "try"
 	default:
@@ -101,6 +125,10 @@ func (a *ExecutorAction) UnmarshalJSON(bytes []byte) error {
 		fetchResultAction := FetchResultAction{}
 		err = json.Unmarshal(*envelope.ActionPayload, &fetchResultAction)
 		a.Action = fetchResultAction
+	case "emit_progress":
+		emitProgressAction := EmitProgressAction{}
+		err = json.Unmarshal(*envelope.ActionPayload, &emitProgressAction)
+		a.Action = emitProgressAction
 	case "try":
 		tryAction := TryAction{}
 		err = json.Unmarshal(*envelope.ActionPayload, &tryAction)
