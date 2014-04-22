@@ -116,8 +116,9 @@ var _ = Describe("Smelting", func() {
 				resultInfo, err := ioutil.ReadFile(resultLocation)
 				Ω(err).ShouldNot(HaveOccurred())
 				expectedJSON := `{
-			"detected_buildpack": "Always Matching"
-		}`
+					"detected_buildpack": "Always Matching",
+					"buildpack_key": "always-detects"
+				}`
 
 				Ω(resultInfo).Should(MatchJSON(expectedJSON))
 			})
