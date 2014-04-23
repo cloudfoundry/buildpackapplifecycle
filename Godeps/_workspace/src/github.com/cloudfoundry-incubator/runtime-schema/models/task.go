@@ -22,6 +22,7 @@ type Task struct {
 	FileDescriptors int              `json:"file_descriptors"`
 	MemoryMB        int              `json:"memory_mb"`
 	DiskMB          int              `json:"disk_mb"`
+	CpuPercent      float64          `json:"cpu_percent"`
 	Log             LogConfig        `json:"log"`
 	CreatedAt       int64            `json:"created_at"` //  the number of nanoseconds elapsed since January 1, 1970 UTC
 	UpdatedAt       int64            `json:"updated_at"`

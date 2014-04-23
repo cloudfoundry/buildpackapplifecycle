@@ -30,6 +30,7 @@ var _ = Describe("Task", func() {
 		"file_descriptors":9001,
 		"memory_mb":256,
 		"disk_mb":1024,
+		"cpu_percent": 42.25,
 		"log": {
 			"guid": "123",
 			"source_name": "APP",
@@ -69,6 +70,7 @@ var _ = Describe("Task", func() {
 			FileDescriptors: 9001,
 			MemoryMB:        256,
 			DiskMB:          1024,
+			CpuPercent:      42.25,
 			CreatedAt:       time.Date(2014, time.February, 25, 23, 46, 11, 00, time.UTC).UnixNano(),
 			UpdatedAt:       time.Date(2014, time.February, 25, 23, 46, 11, 10, time.UTC).UnixNano(),
 			State:           TaskStatePending,

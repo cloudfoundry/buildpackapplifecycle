@@ -73,17 +73,19 @@ var _ = Describe("StagingMessages", func() {
 	Describe("StagingInfo", func() {
 		Context("when json", func() {
 			stagingJSON := `{
-            "detected_buildpack": "ocaml-buildpack",
-            "start_command": "ocaml-my-camel"
-          }`
+				"buildpack_key": "buildpack-key",
+				"detected_buildpack": "ocaml-buildpack",
+				"start_command": "ocaml-my-camel"
+			}`
 
-			It("exposes an extracted `detected_buildpack` property", func() {
+			It("does not extract the `start_command` property", func() {
 				var stagingInfo StagingInfo
 
 				err := json.Unmarshal([]byte(stagingJSON), &stagingInfo)
 				Ω(err).ShouldNot(HaveOccurred())
 
 				Ω(stagingInfo).Should(Equal(StagingInfo{
+					BuildpackKey:      "buildpack-key",
 					DetectedBuildpack: "ocaml-buildpack",
 				}))
 			})
@@ -116,6 +118,24 @@ start_command: yaml-ize -d`
 				}
 
 				Ω(json.Marshal(stagingResponseForCC)).Should(MatchJSON(`{"detected_buildpack": "ocaml-buildpack"}`))
+			})
+		})
+
+		Context("with an admin buildpack key", func() {
+			It("generates valid JSON with the buildpack key", func() {
+				stagingResponseForCC := StagingResponseForCC{
+					BuildpackKey: "admin-buildpack-key",
+				}
+
+				Ω(json.Marshal(stagingResponseForCC)).Should(MatchJSON(`{"buildpack_key": "admin-buildpack-key"}`))
+			})
+		})
+
+		Context("without an admin buildpack key", func() {
+			It("generates valid JSON and omits the buildpack key", func() {
+				stagingResponseForCC := StagingResponseForCC{}
+
+				Ω(json.Marshal(stagingResponseForCC)).Should(MatchJSON(`{}`))
 			})
 		})
 

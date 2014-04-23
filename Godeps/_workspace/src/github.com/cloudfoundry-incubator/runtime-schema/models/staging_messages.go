@@ -24,11 +24,13 @@ type EnvironmentVariable struct {
 }
 
 type StagingInfo struct {
+	BuildpackKey      string `yaml:"-" json:"buildpack_key,omitempty"`
 	DetectedBuildpack string `yaml:"detected_buildpack" json:"detected_buildpack"`
 	StartCommand      string `yaml:"start_command" json:"-"`
 }
 
 type StagingResponseForCC struct {
+	BuildpackKey      string `json:"buildpack_key,omitempty"`
 	DetectedBuildpack string `json:"detected_buildpack,omitempty"`
 	Error             string `json:"error,omitempty"`
 }
