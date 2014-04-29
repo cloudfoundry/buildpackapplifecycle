@@ -5,17 +5,24 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/vito/cmdtest"
+	"github.com/onsi/gomega/gexec"
 )
 
 var smelterPath string
 
 func TestLinuxSmelter(t *testing.T) {
-	var err error
-
-	smelterPath, err = cmdtest.Build("github.com/cloudfoundry-incubator/linux-smelter")
-	Ω(err).ShouldNot(HaveOccurred())
-
 	RegisterFailHandler(Fail)
+
+	BeforeSuite(func() {
+		var err error
+
+		smelterPath, err = gexec.Build("github.com/cloudfoundry-incubator/linux-smelter")
+		Ω(err).ShouldNot(HaveOccurred())
+	})
+
+	AfterSuite(func() {
+		gexec.CleanupBuildArtifacts()
+	})
+
 	RunSpecs(t, "Linux-Smelter Suite")
 }

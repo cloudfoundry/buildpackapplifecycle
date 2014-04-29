@@ -5,12 +5,9 @@ import (
 	"os"
 	"os/exec"
 	"path"
-
-	"github.com/cloudfoundry/gunk/runner_support"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/vito/cmdtest"
-	. "github.com/vito/cmdtest/matchers"
+	"github.com/onsi/gomega/gexec"
 )
 
 var _ = Describe("Smelting", func() {
@@ -26,11 +23,11 @@ var _ = Describe("Smelting", func() {
 		resultDir              string
 	)
 
-	smelt := func() *cmdtest.Session {
-		session, err := cmdtest.StartWrapped(
+	smelt := func() *gexec.Session {
+		session, err := gexec.Start(
 			smelterCmd,
-			runner_support.TeeToGinkgoWriter,
-			runner_support.TeeToGinkgoWriter,
+			GinkgoWriter,
+			GinkgoWriter,
 		)
 		Ω(err).ShouldNot(HaveOccurred())
 
@@ -76,7 +73,7 @@ var _ = Describe("Smelting", func() {
 			cp(path.Join(buildpackFixtures, "always-detects"), buildpacksDir)
 			cp(path.Join(appFixtures, "bash-app", "app.sh"), appDir)
 
-			Ω(smelt()).Should(ExitWith(0))
+			Eventually(smelt()).Should(gexec.Exit(0))
 		})
 
 		Describe("the contents of the output dir", func() {
@@ -145,17 +142,17 @@ var _ = Describe("Smelting", func() {
 		})
 
 		It("should detect the nested buildpack", func() {
-			Ω(smelt()).Should(ExitWith(0))
+			Eventually(smelt()).Should(gexec.Exit(0))
 		})
 	})
 })
 
 func cp(src string, dst string) {
-	session, err := cmdtest.StartWrapped(
+	session, err := gexec.Start(
 		exec.Command("cp", "-a", src, dst),
-		runner_support.TeeToGinkgoWriter,
-		runner_support.TeeToGinkgoWriter,
+		GinkgoWriter,
+		GinkgoWriter,
 	)
 	Ω(err).ShouldNot(HaveOccurred())
-	Ω(session).Should(ExitWith(0))
+	Eventually(session).Should(gexec.Exit(0))
 }
