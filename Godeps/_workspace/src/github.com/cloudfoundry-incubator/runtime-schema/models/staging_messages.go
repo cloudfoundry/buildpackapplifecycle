@@ -14,8 +14,9 @@ type StagingRequestFromCC struct {
 }
 
 type Buildpack struct {
-	Key string `json:"key"`
-	Url string `json:"url"`
+	Name string `json:"name"`
+	Key  string `json:"key"`
+	Url  string `json:"url"`
 }
 
 type EnvironmentVariable struct {
@@ -30,6 +31,8 @@ type StagingInfo struct {
 }
 
 type StagingResponseForCC struct {
+	AppId             string `json:"app_id,omitempty"`
+	TaskId            string `json:"task_id,omitempty"`
 	BuildpackKey      string `json:"buildpack_key,omitempty"`
 	DetectedBuildpack string `json:"detected_buildpack,omitempty"`
 	Error             string `json:"error,omitempty"`

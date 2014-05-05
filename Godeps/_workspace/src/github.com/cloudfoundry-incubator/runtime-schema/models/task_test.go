@@ -14,13 +14,17 @@ var _ = Describe("Task", func() {
 
 	taskPayload := `{
 		"guid":"some-guid",
-		"reply_to":"some-requester",
 		"stack":"some-stack",
 		"executor_id":"executor",
 		"actions":[
 			{
 				"action":"download",
-				"args":{"from":"old_location","to":"new_location","extract":true}
+				"args":{
+					"from":"old_location",
+					"to":"new_location",
+					"cache_key":"the-cache-key",
+					"extract":true
+				}
 			}
 		],
 		"container_handle":"17fgsafdfcvc",
@@ -45,15 +49,15 @@ var _ = Describe("Task", func() {
 		index := 42
 
 		task = Task{
-			Guid:    "some-guid",
-			ReplyTo: "some-requester",
-			Stack:   "some-stack",
+			Guid:  "some-guid",
+			Stack: "some-stack",
 			Actions: []ExecutorAction{
 				{
 					Action: DownloadAction{
-						From:    "old_location",
-						To:      "new_location",
-						Extract: true,
+						From:     "old_location",
+						To:       "new_location",
+						CacheKey: "the-cache-key",
+						Extract:  true,
 					},
 				},
 			},

@@ -70,7 +70,8 @@ var _ = Describe("LinuxSmeltingConfig", func() {
 	})
 
 	It("returns the path to a given buildpack", func() {
-		Ω(smeltingConfig.BuildpackPath("my-buildpack")).To(Equal("/tmp/buildpacks/my-buildpack"))
+		key := "my-buildpack/key/::"
+		Ω(smeltingConfig.BuildpackPath(key)).To(Equal("/tmp/buildpacks/8b2f72a0702aed614f8b5d8f7f5b431b"))
 	})
 
 	It("returns the path to the result.json", func() {

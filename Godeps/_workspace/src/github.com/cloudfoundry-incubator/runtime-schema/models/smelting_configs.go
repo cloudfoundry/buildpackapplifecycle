@@ -1,6 +1,7 @@
 package models
 
 import (
+	"crypto/md5"
 	"flag"
 	"fmt"
 	"path"
@@ -140,7 +141,7 @@ func (s LinuxSmeltingConfig) AppDir() string {
 }
 
 func (s LinuxSmeltingConfig) BuildpackPath(buildpackName string) string {
-	return path.Join(s.BuildpacksDir(), buildpackName)
+	return path.Join(s.BuildpacksDir(), fmt.Sprintf("%x", md5.Sum([]byte(buildpackName))))
 }
 
 func (s LinuxSmeltingConfig) BuildpackOrder() []string {

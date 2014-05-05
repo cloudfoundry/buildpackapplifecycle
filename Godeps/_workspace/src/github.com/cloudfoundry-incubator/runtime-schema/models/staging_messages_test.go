@@ -21,7 +21,7 @@ var _ = Describe("StagingMessages", func() {
            "stack" : "fake-stack",
            "app_bits_download_uri" : "http://fake-download_uri",
            "build_artifacts_cache_download_uri" : "http://a-nice-place-to-get-valuable-artifacts.com",
-           "buildpacks" : [{"key":"fake-buildpack-key" ,"url":"fake-buildpack-url"}]
+           "buildpacks" : [{"name":"fake-buildpack-name", "key":"fake-buildpack-key" ,"url":"fake-buildpack-url"}]
         }`
 
 		It("should be mapped to the CC's staging request JSON", func() {
@@ -40,8 +40,9 @@ var _ = Describe("StagingMessages", func() {
 				DiskMB:                         10000,
 				Buildpacks: []Buildpack{
 					{
-						Key: "fake-buildpack-key",
-						Url: "fake-buildpack-url",
+						Name: "fake-buildpack-name",
+						Key:  "fake-buildpack-key",
+						Url:  "fake-buildpack-url",
 					},
 				},
 				Environment: []EnvironmentVariable{
@@ -53,7 +54,8 @@ var _ = Describe("StagingMessages", func() {
 
 	Describe("Buildpack", func() {
 		ccJSONFragment := `{
-            "key": "ocaml-buildpack",
+						"name": "ocaml-buildpack",
+            "key": "ocaml-buildpack-guid",
             "url": "http://ocaml.org/buildpack.zip"
           }`
 
@@ -64,8 +66,9 @@ var _ = Describe("StagingMessages", func() {
 			Ω(err).ShouldNot(HaveOccurred())
 
 			Ω(buildpack).To(Equal(Buildpack{
-				Key: "ocaml-buildpack",
-				Url: "http://ocaml.org/buildpack.zip",
+				Name: "ocaml-buildpack",
+				Key:  "ocaml-buildpack-guid",
+				Url:  "http://ocaml.org/buildpack.zip",
 			}))
 		})
 	})
