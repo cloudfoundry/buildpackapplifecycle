@@ -13,6 +13,7 @@ import (
 var _ = Describe("Smelting", func() {
 	buildpackFixtures := "fixtures/buildpacks"
 	appFixtures := "fixtures/apps"
+	alwaysDetectsHash := "4a32704add4e2bd294c35ce4ed262f62" //md5 hash of "always-detects"
 
 	var (
 		smelterCmd             *exec.Cmd
@@ -70,7 +71,7 @@ var _ = Describe("Smelting", func() {
 				"-resultDir", resultDir)
 			smelterCmd.Env = os.Environ()
 
-			cp(path.Join(buildpackFixtures, "always-detects"), buildpacksDir)
+			cp(path.Join(buildpackFixtures, "always-detects"), path.Join(buildpacksDir, alwaysDetectsHash))
 			cp(path.Join(appFixtures, "bash-app", "app.sh"), appDir)
 
 			Eventually(smelt()).Should(gexec.Exit(0))
@@ -124,7 +125,10 @@ var _ = Describe("Smelting", func() {
 
 	Context("with a nested buildpack", func() {
 		BeforeEach(func() {
-			nestedBuildpackDir := path.Join(buildpacksDir, "nested-buildpack")
+			nestedBuildpack := "nested-buildpack"
+			nestedBuildpackHash := "70d137ae4ee01fbe39058ccdebf48460"
+
+			nestedBuildpackDir := path.Join(buildpacksDir, nestedBuildpackHash)
 			err := os.MkdirAll(nestedBuildpackDir, 0777)
 			Ω(err).ShouldNot(HaveOccurred())
 
@@ -133,7 +137,7 @@ var _ = Describe("Smelting", func() {
 				"-buildpacksDir", buildpacksDir,
 				"-outputDir", outputDir,
 				"-buildArtifactsCacheDir", buildArtifactsCacheDir,
-				"-buildpackOrder", "nested-buildpack",
+				"-buildpackOrder", nestedBuildpack,
 				"-resultDir", resultDir)
 			smelterCmd.Env = os.Environ()
 
