@@ -37,3 +37,8 @@ type StagingResponseForCC struct {
 	DetectedBuildpack string `json:"detected_buildpack,omitempty"`
 	Error             string `json:"error,omitempty"`
 }
+
+type StagingTaskAnnotation struct {
+	AppId  string `json:"app_id"`
+	TaskId string `json:"task_id"`
+}

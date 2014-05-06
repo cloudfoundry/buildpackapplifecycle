@@ -42,7 +42,8 @@ var _ = Describe("Task", func() {
 		},
 		"created_at": 1393371971000000000,
 		"updated_at": 1393371971000000010,
-		"state": 1
+		"state": 1,
+		"annotation": "[{\"anything\": \"you want!\"}]... dude"
 	}`
 
 	BeforeEach(func() {
@@ -78,6 +79,7 @@ var _ = Describe("Task", func() {
 			CreatedAt:       time.Date(2014, time.February, 25, 23, 46, 11, 00, time.UTC).UnixNano(),
 			UpdatedAt:       time.Date(2014, time.February, 25, 23, 46, 11, 10, time.UTC).UnixNano(),
 			State:           TaskStatePending,
+			Annotation:      `[{"anything": "you want!"}]... dude`,
 		}
 	})
 

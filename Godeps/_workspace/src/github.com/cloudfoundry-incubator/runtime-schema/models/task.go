@@ -36,6 +36,8 @@ type Task struct {
 	Result        string `json:"result"`
 	Failed        bool   `json:"failed"`
 	FailureReason string `json:"failure_reason"`
+
+	Annotation string `json:"annotation,omitempty"`
 }
 
 type LogConfig struct {
