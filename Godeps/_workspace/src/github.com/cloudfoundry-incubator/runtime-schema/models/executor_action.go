@@ -22,9 +22,14 @@ type UploadAction struct {
 }
 
 type RunAction struct {
-	Script  string                `json:"script"`
-	Env     []EnvironmentVariable `json:"env"`
-	Timeout time.Duration         `json:"timeout"`
+	Script         string                `json:"script"`
+	Env            []EnvironmentVariable `json:"env"`
+	Timeout        time.Duration         `json:"timeout"`
+	ResourceLimits ResourceLimits        `json:"resource_limits"`
+}
+
+type ResourceLimits struct {
+	Nofile *uint64 `json:"nofile,omitempty"`
 }
 
 type FetchResultAction struct {

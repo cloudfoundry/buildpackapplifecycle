@@ -100,7 +100,8 @@ var _ = Describe("ExecutorAction", func() {
 					"env": [
 						{"key":"FOO", "value":"1"},
 						{"key":"BAR", "value":"2"}
-					]
+					],
+					"resource_limits":{}
 				}
 			}`,
 			ExecutorAction{
@@ -145,7 +146,8 @@ var _ = Describe("ExecutorAction", func() {
 						"args": {
 							"script": "echo",
 							"timeout": 0,
-							"env": null
+							"env": null,
+							"resource_limits":{}
 						}
 					}
 				}
@@ -169,7 +171,8 @@ var _ = Describe("ExecutorAction", func() {
 						"args": {
 							"script": "echo",
 							"timeout": 0,
-							"env": null
+							"env": null,
+							"resource_limits":{}
 						}
 					}
 				}
