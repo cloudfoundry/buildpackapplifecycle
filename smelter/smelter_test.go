@@ -20,12 +20,6 @@ import (
 	. "github.com/cloudfoundry-incubator/linux-smelter/smelter"
 )
 
-type ExpectedStagingResult struct {
-	BuildpackKey      string `yaml:"-" json:"buildpack_key"`
-	DetectedBuildpack string `yaml:"detected_buildpack" json:"detected_buildpack"`
-	StartCommand      string `yaml:"start_command" json:"-"`
-}
-
 var _ = Describe("Smelter", func() {
 	var smelter *Smelter
 	var runner *fake_command_runner.FakeCommandRunner
@@ -95,7 +89,10 @@ var _ = Describe("Smelter", func() {
 				runner.WhenRunning(fake_command_runner.CommandSpec{
 					Path: filepath.Join(config.BuildpackPath("b"), "bin", "release"),
 				}, func(cmd *exec.Cmd) error {
-					cmd.Stdout.Write([]byte("--- {}\n"))
+					cmd.Stdout.Write([]byte(`---
+default_process_types:
+  web: ./some-start-command
+`))
 					return nil
 				})
 			}
@@ -183,7 +180,7 @@ var _ = Describe("Smelter", func() {
 				err := smelter.Smelt()
 				Ω(err).ShouldNot(HaveOccurred())
 
-				var output ExpectedStagingResult
+				var output models.StagingInfo
 
 				file, err := os.Open(path.Join(outputDir, "staging_info.yml"))
 				Ω(err).ShouldNot(HaveOccurred())
@@ -203,12 +200,46 @@ var _ = Describe("Smelter", func() {
 				file, err := os.Open(path.Join(resultDir, "result.json"))
 				Ω(err).ShouldNot(HaveOccurred())
 
-				var output ExpectedStagingResult
+				var output models.StagingInfo
 
 				err = json.NewDecoder(file).Decode(&output)
 				Ω(err).ShouldNot(HaveOccurred())
 
 				Ω(output.DetectedBuildpack).Should(Equal("Always Matching"))
+			})
+
+			It("writes the detected start command to staging_info.yml in the output dir", func() {
+				setupSuccessfulRelease()
+
+				err := smelter.Smelt()
+				Ω(err).ShouldNot(HaveOccurred())
+
+				var output models.StagingInfo
+
+				file, err := os.Open(path.Join(outputDir, "staging_info.yml"))
+				Ω(err).ShouldNot(HaveOccurred())
+
+				err = candiedyaml.NewDecoder(file).Decode(&output)
+				Ω(err).ShouldNot(HaveOccurred())
+
+				Ω(output.DetectedStartCommand).Should(Equal("./some-start-command"))
+			})
+
+			It("writes the detected start command to result.json in the result dir", func() {
+				setupSuccessfulRelease()
+
+				err := smelter.Smelt()
+				Ω(err).ShouldNot(HaveOccurred())
+
+				file, err := os.Open(path.Join(resultDir, "result.json"))
+				Ω(err).ShouldNot(HaveOccurred())
+
+				var output models.StagingInfo
+
+				err = json.NewDecoder(file).Decode(&output)
+				Ω(err).ShouldNot(HaveOccurred())
+
+				Ω(output.DetectedStartCommand).Should(Equal("./some-start-command"))
 			})
 
 			It("writes the buildpack key to result.json in the result dir", func() {
@@ -220,7 +251,7 @@ var _ = Describe("Smelter", func() {
 				file, err := os.Open(path.Join(resultDir, "result.json"))
 				Ω(err).ShouldNot(HaveOccurred())
 
-				var output ExpectedStagingResult
+				var output models.StagingInfo
 
 				err = json.NewDecoder(file).Decode(&output)
 				Ω(err).ShouldNot(HaveOccurred())
@@ -247,12 +278,12 @@ var _ = Describe("Smelter", func() {
 					file, err := os.Open(path.Join(outputDir, "staging_info.yml"))
 					Ω(err).ShouldNot(HaveOccurred())
 
-					var output ExpectedStagingResult
+					var output models.StagingInfo
 
 					err = candiedyaml.NewDecoder(file).Decode(&output)
 					Ω(err).ShouldNot(HaveOccurred())
 
-					Ω(output.StartCommand).Should(Equal("some-command"))
+					Ω(output.DetectedStartCommand).Should(Equal("some-command"))
 				})
 			})
 
@@ -366,7 +397,7 @@ var _ = Describe("Smelter", func() {
 				file, err := os.Open(path.Join(outputDir, "staging_info.yml"))
 				Ω(err).ShouldNot(HaveOccurred())
 
-				var output ExpectedStagingResult
+				var output models.StagingInfo
 
 				err = candiedyaml.NewDecoder(file).Decode(&output)
 				Ω(err).ShouldNot(HaveOccurred())
@@ -381,7 +412,7 @@ var _ = Describe("Smelter", func() {
 				file, err := os.Open(path.Join(resultDir, "result.json"))
 				Ω(err).ShouldNot(HaveOccurred())
 
-				var output ExpectedStagingResult
+				var output models.StagingInfo
 
 				err = json.NewDecoder(file).Decode(&output)
 				Ω(err).ShouldNot(HaveOccurred())

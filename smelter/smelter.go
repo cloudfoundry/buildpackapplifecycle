@@ -220,9 +220,9 @@ func (s *Smelter) saveInfo(buildpack string, detectOutput string, releaseInfo Re
 	defer resultFile.Close()
 
 	info := models.StagingInfo{
-		BuildpackKey:      buildpack,
-		DetectedBuildpack: detectOutput,
-		StartCommand:      releaseInfo.DefaultProcessTypes.Web,
+		BuildpackKey:         buildpack,
+		DetectedBuildpack:    detectOutput,
+		DetectedStartCommand: releaseInfo.DefaultProcessTypes.Web,
 	}
 
 	err = candiedyaml.NewEncoder(infoFile).Encode(info)
