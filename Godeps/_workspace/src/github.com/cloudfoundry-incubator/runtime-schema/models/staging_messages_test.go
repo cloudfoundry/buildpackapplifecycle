@@ -86,8 +86,8 @@ start_command: yaml-ize -d`
 				Ω(err).ShouldNot(HaveOccurred())
 
 				Ω(stagingInfo).Should(Equal(StagingInfo{
-					DetectedBuildpack: "yaml-buildpack",
-					StartCommand:      "yaml-ize -d",
+					DetectedBuildpack:    "yaml-buildpack",
+					DetectedStartCommand: "yaml-ize -d",
 				}))
 			})
 		})

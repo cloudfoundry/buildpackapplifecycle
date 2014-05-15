@@ -14,9 +14,8 @@ import (
 	"github.com/cloudfoundry-incubator/runtime-schema/models"
 
 	"github.com/cloudfoundry-incubator/candiedyaml"
+	"github.com/cloudfoundry/gofileutils/fileutils"
 	"github.com/cloudfoundry/gunk/command_runner"
-
-	"github.com/cloudfoundry-incubator/linux-smelter/droplet"
 )
 
 type Smelter struct {
@@ -72,18 +71,13 @@ func New(
 }
 
 func (s *Smelter) Smelt() error {
-	if err := os.MkdirAll(s.config.OutputDir(), 0755); err != nil {
+	//set up the world
+	err := s.makeDirectories()
+	if err != nil {
 		return err
 	}
 
-	if err := os.MkdirAll(s.config.ResultJsonDir(), 0755); err != nil {
-		return err
-	}
-
-	if err := os.MkdirAll(s.config.BuildArtifactsCacheDir(), 0755); err != nil {
-		return err
-	}
-
+	//detect, compile, release
 	detectedBuildpack, detectedBuildpackDir, detectOutput, err := s.detect()
 	if err != nil {
 		return err
@@ -99,15 +93,42 @@ func (s *Smelter) Smelt() error {
 		return err
 	}
 
+	//generate staging_info.yml and result json file
 	err = s.saveInfo(detectedBuildpack, detectOutput, releaseInfo)
 	if err != nil {
 		return err
 	}
 
-	dropletFS := droplet.NewFileSystem(s.runner)
+	//prepare the final droplet directory
+	err = fileutils.CopyPathToPath(s.config.AppDir(), path.Join(s.config.OutputDir(), "app"))
 
-	err = dropletFS.GenerateFiles(s.config.AppDir(), s.config.OutputDir())
 	if err != nil {
+		return err
+	}
+
+	err = os.MkdirAll(path.Join(s.config.OutputDir(), "tmp"), 0755)
+	if err != nil {
+		return err
+	}
+
+	err = os.MkdirAll(path.Join(s.config.OutputDir(), "logs"), 0755)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *Smelter) makeDirectories() error {
+	if err := os.MkdirAll(s.config.OutputDir(), 0755); err != nil {
+		return err
+	}
+
+	if err := os.MkdirAll(s.config.ResultJsonDir(), 0755); err != nil {
+		return err
+	}
+
+	if err := os.MkdirAll(s.config.BuildArtifactsCacheDir(), 0755); err != nil {
 		return err
 	}
 

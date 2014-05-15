@@ -34,12 +34,12 @@ type StagingInfo struct {
 }
 
 type StagingResponseForCC struct {
-	AppId             string `json:"app_id,omitempty"`
-	TaskId            string `json:"task_id,omitempty"`
-	BuildpackKey      string `json:"buildpack_key,omitempty"`
-	DetectedBuildpack string `json:"detected_buildpack,omitempty"`
-	StartCommand      string `json:"start_command,omitempty"`
-	Error             string `json:"error,omitempty"`
+	AppId                string `json:"app_id,omitempty"`
+	TaskId               string `json:"task_id,omitempty"`
+	BuildpackKey         string `json:"buildpack_key,omitempty"`
+	DetectedBuildpack    string `json:"detected_buildpack,omitempty"`
+	DetectedStartCommand string `json:"detected_start_command,omitempty"`
+	Error                string `json:"error,omitempty"`
 }
 
 type StagingTaskAnnotation struct {

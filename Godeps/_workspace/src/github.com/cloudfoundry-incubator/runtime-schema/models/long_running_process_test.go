@@ -13,6 +13,8 @@ var _ = Describe("LongRunningProcess", func() {
 	longRunningProcessPayload := `{
     "guid":"some-guid",
     "stack":"some-stack",
+    "memory_mb" : 128,
+    "disk_mb" : 512,
     "actions":[
       {
         "action":"download",
@@ -36,8 +38,10 @@ var _ = Describe("LongRunningProcess", func() {
 		index := 42
 
 		longRunningProcess = TransitionalLongRunningProcess{
-			Guid:  "some-guid",
-			Stack: "some-stack",
+			Guid:     "some-guid",
+			Stack:    "some-stack",
+			MemoryMB: 128,
+			DiskMB:   512,
 			Actions: []ExecutorAction{
 				{
 					Action: DownloadAction{

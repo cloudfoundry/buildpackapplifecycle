@@ -1,19 +1,21 @@
 package main_test
 
 import (
+	"crypto/md5"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 )
 
 var _ = Describe("Smelting", func() {
 	buildpackFixtures := "fixtures/buildpacks"
 	appFixtures := "fixtures/apps"
-	alwaysDetectsHash := "4a32704add4e2bd294c35ce4ed262f62" //md5 hash of "always-detects"
 
 	var (
 		smelterCmd             *exec.Cmd
@@ -33,6 +35,11 @@ var _ = Describe("Smelting", func() {
 		Ω(err).ShouldNot(HaveOccurred())
 
 		return session
+	}
+
+	cpBuildpack := func(buildpack string) {
+		hash := fmt.Sprintf("%x", md5.Sum([]byte(buildpack)))
+		cp(path.Join(buildpackFixtures, buildpack), path.Join(buildpacksDir, hash))
 	}
 
 	BeforeEach(func() {
@@ -67,11 +74,12 @@ var _ = Describe("Smelting", func() {
 				"-buildpacksDir", buildpacksDir,
 				"-outputDir", outputDir,
 				"-buildArtifactsCacheDir", buildArtifactsCacheDir,
-				"-buildpackOrder", "always-detects",
+				"-buildpackOrder", "always-detects,also-always-detects",
 				"-resultDir", resultDir)
 			smelterCmd.Env = os.Environ()
 
-			cp(path.Join(buildpackFixtures, "always-detects"), path.Join(buildpacksDir, alwaysDetectsHash))
+			cpBuildpack("always-detects")
+			cpBuildpack("also-always-detects")
 			cp(path.Join(appFixtures, "bash-app", "app.sh"), appDir)
 
 			Eventually(smelt()).Should(gexec.Exit(0))
@@ -98,13 +106,13 @@ var _ = Describe("Smelting", func() {
 				Ω(ioutil.ReadDir(logsDirLocation)).Should(BeEmpty())
 			})
 
-			It("should contain a staging_info.yml with the detected buildpack and start command", func() {
+			It("should stop after detecting, and contain a staging_info.yml with the detected buildpack", func() {
 				stagingInfoLocation := path.Join(outputDir, "staging_info.yml")
 				stagingInfo, err := ioutil.ReadFile(stagingInfoLocation)
 				Ω(err).ShouldNot(HaveOccurred())
 
-				expectedYAML := `detected_buildpack: Always Matching
-start_command: the start command
+				expectedYAML := `"detected_buildpack": "Always Matching"
+"start_command": "the start command"
 `
 				Ω(string(stagingInfo)).Should(Equal(expectedYAML))
 			})
@@ -123,6 +131,94 @@ start_command: the start command
 
 				Ω(resultInfo).Should(MatchJSON(expectedJSON))
 			})
+		})
+	})
+
+	Context("when no buildpacks match", func() {
+		BeforeEach(func() {
+			smelterCmd = exec.Command(smelterPath,
+				"-appDir", appDir,
+				"-buildpacksDir", buildpacksDir,
+				"-outputDir", outputDir,
+				"-buildArtifactsCacheDir", buildArtifactsCacheDir,
+				"-buildpackOrder", "always-fails",
+				"-resultDir", resultDir)
+			smelterCmd.Env = os.Environ()
+
+			cp(path.Join(appFixtures, "bash-app", "app.sh"), appDir)
+			cpBuildpack("always-fails")
+		})
+
+		It("should exit with an error", func() {
+			session := smelt()
+			Eventually(session.Err).Should(gbytes.Say("no valid buildpacks detected"))
+			Eventually(session).Should(gexec.Exit(1))
+		})
+	})
+
+	Context("when the buildpack fails in compile", func() {
+		BeforeEach(func() {
+			smelterCmd = exec.Command(smelterPath,
+				"-appDir", appDir,
+				"-buildpacksDir", buildpacksDir,
+				"-outputDir", outputDir,
+				"-buildArtifactsCacheDir", buildArtifactsCacheDir,
+				"-buildpackOrder", "fails-to-compile",
+				"-resultDir", resultDir)
+			smelterCmd.Env = os.Environ()
+
+			cpBuildpack("fails-to-compile")
+			cp(path.Join(appFixtures, "bash-app", "app.sh"), appDir)
+		})
+
+		It("should exit with an error", func() {
+			session := smelt()
+			Eventually(session.Err).Should(gbytes.Say("exit status 1"))
+			Eventually(session).Should(gexec.Exit(1))
+		})
+	})
+
+	Context("when the buildpack release generates invalid yaml", func() {
+		BeforeEach(func() {
+			smelterCmd = exec.Command(smelterPath,
+				"-appDir", appDir,
+				"-buildpacksDir", buildpacksDir,
+				"-outputDir", outputDir,
+				"-buildArtifactsCacheDir", buildArtifactsCacheDir,
+				"-buildpackOrder", "release-generates-bad-yaml",
+				"-resultDir", resultDir)
+			smelterCmd.Env = os.Environ()
+
+			cpBuildpack("release-generates-bad-yaml")
+			cp(path.Join(appFixtures, "bash-app", "app.sh"), appDir)
+		})
+
+		It("should exit with an error", func() {
+			session := smelt()
+			Eventually(session.Err).Should(gbytes.Say("buildpack's release output invalid"))
+			Eventually(session).Should(gexec.Exit(1))
+		})
+	})
+
+	Context("when the buildpack fails to release", func() {
+		BeforeEach(func() {
+			smelterCmd = exec.Command(smelterPath,
+				"-appDir", appDir,
+				"-buildpacksDir", buildpacksDir,
+				"-outputDir", outputDir,
+				"-buildArtifactsCacheDir", buildArtifactsCacheDir,
+				"-buildpackOrder", "fails-to-release",
+				"-resultDir", resultDir)
+			smelterCmd.Env = os.Environ()
+
+			cpBuildpack("fails-to-release")
+			cp(path.Join(appFixtures, "bash-app", "app.sh"), appDir)
+		})
+
+		It("should exit with an error", func() {
+			session := smelt()
+			Eventually(session.Err).Should(gbytes.Say("exit status 1"))
+			Eventually(session).Should(gexec.Exit(1))
 		})
 	})
 
