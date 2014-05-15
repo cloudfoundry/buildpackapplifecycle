@@ -173,7 +173,7 @@ var _ = Describe("Smelting", func() {
 
 		It("should exit with an error", func() {
 			session := smelt()
-			Eventually(session.Err).Should(gbytes.Say("exit status 1"))
+			Eventually(session.Err).Should(gbytes.Say("failed to compile droplet: exit status 1"))
 			Eventually(session).Should(gexec.Exit(1))
 		})
 	})
@@ -217,7 +217,7 @@ var _ = Describe("Smelting", func() {
 
 		It("should exit with an error", func() {
 			session := smelt()
-			Eventually(session.Err).Should(gbytes.Say("exit status 1"))
+			Eventually(session.Err).Should(gbytes.Say("failed to build droplet release: exit status 1"))
 			Eventually(session).Should(gexec.Exit(1))
 		})
 	})

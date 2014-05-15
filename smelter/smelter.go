@@ -24,34 +24,23 @@ type Smelter struct {
 	runner command_runner.CommandRunner
 }
 
-type NoneDetectedError struct {
-	AppDir string
+type descriptiveError struct {
+	message string
+	err     error
 }
 
-func (e NoneDetectedError) Error() string {
-	return fmt.Sprintf("no valid buildpacks detected for %s", e.AppDir)
+func (e descriptiveError) Error() string {
+	if e.err == nil {
+		return e.message
+	}
+	return fmt.Sprintf("%s: %s", e.message, e.err.Error())
 }
 
-type MalformedReleaseYAMLError struct {
-	ParseError error
-}
-
-func (e MalformedReleaseYAMLError) Error() string {
-	return fmt.Sprintf(
-		"buildpack's release output invalid: %s",
-		e.ParseError,
-	)
-}
-
-type MalformedBuildpackError struct {
-	Buildpack string
-}
-
-func (e MalformedBuildpackError) Error() string {
-	return fmt.Sprintf(
-		"buildpack does not contain a /bin dir: %s",
-		e.Buildpack,
-	)
+func newDescriptiveError(err error, message string, args ...interface{}) error {
+	if len(args) == 0 {
+		return descriptiveError{message: message, err: err}
+	}
+	return descriptiveError{message: fmt.Sprintf(message, args...), err: err}
 }
 
 type Release struct {
@@ -74,7 +63,7 @@ func (s *Smelter) Smelt() error {
 	//set up the world
 	err := s.makeDirectories()
 	if err != nil {
-		return err
+		return newDescriptiveError(err, "failed to set up filesystem when generating droplet")
 	}
 
 	//detect, compile, release
@@ -85,35 +74,35 @@ func (s *Smelter) Smelt() error {
 
 	err = s.compile(detectedBuildpackDir)
 	if err != nil {
-		return err
+		return newDescriptiveError(err, "failed to compile droplet")
 	}
 
 	releaseInfo, err := s.release(detectedBuildpackDir)
 	if err != nil {
-		return err
+		return newDescriptiveError(err, "failed to build droplet release")
 	}
 
 	//generate staging_info.yml and result json file
 	err = s.saveInfo(detectedBuildpack, detectOutput, releaseInfo)
 	if err != nil {
-		return err
+		return newDescriptiveError(err, "failed to encode generated metadata")
 	}
 
 	//prepare the final droplet directory
 	err = fileutils.CopyPathToPath(s.config.AppDir(), path.Join(s.config.OutputDir(), "app"))
 
 	if err != nil {
-		return err
+		return newDescriptiveError(err, "failed to copy compiled droplet")
 	}
 
 	err = os.MkdirAll(path.Join(s.config.OutputDir(), "tmp"), 0755)
 	if err != nil {
-		return err
+		return newDescriptiveError(err, "failed to set up droplet filesystem")
 	}
 
 	err = os.MkdirAll(path.Join(s.config.OutputDir(), "logs"), 0755)
 	if err != nil {
-		return err
+		return newDescriptiveError(err, "failed to set up droplet filesystem")
 	}
 
 	return nil
@@ -144,7 +133,7 @@ func (s *Smelter) buildpackPath(buildpack string) (string, error) {
 
 	files, err := ioutil.ReadDir(buildpackPath)
 	if err != nil {
-		return "", fmt.Errorf("failed to read buildpack directory for buildpack: %s", buildpack)
+		return "", newDescriptiveError(nil, "failed to read buildpack directory for buildpack: %s", buildpack)
 	}
 
 	if len(files) == 1 {
@@ -155,7 +144,7 @@ func (s *Smelter) buildpackPath(buildpack string) (string, error) {
 		}
 	}
 
-	return "", MalformedBuildpackError{buildpack}
+	return "", newDescriptiveError(nil, "malformed buildpack does not contain a /bin dir: %s", buildpack)
 }
 
 func (s *Smelter) pathHasBinDirectory(pathToTest string) bool {
@@ -186,7 +175,7 @@ func (s *Smelter) detect() (string, string, string, error) {
 		}
 	}
 
-	return "", "", "", NoneDetectedError{AppDir: s.config.AppDir()}
+	return "", "", "", newDescriptiveError(nil, "no valid buildpacks detected")
 }
 
 func (s *Smelter) compile(buildpackDir string) error {
@@ -219,7 +208,7 @@ func (s *Smelter) release(buildpackDir string) (Release, error) {
 
 	err = decoder.Decode(&parsedRelease)
 	if err != nil {
-		return Release{}, MalformedReleaseYAMLError{err}
+		return Release{}, newDescriptiveError(err, "buildpack's release output invalid")
 	}
 
 	return parsedRelease, nil
