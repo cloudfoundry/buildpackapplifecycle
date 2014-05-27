@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -14,13 +15,10 @@ import (
 	"github.com/cloudfoundry-incubator/runtime-schema/models"
 
 	"github.com/cloudfoundry-incubator/candiedyaml"
-	"github.com/cloudfoundry/gunk/command_runner"
 )
 
 type Smelter struct {
 	config *models.LinuxSmeltingConfig
-
-	runner command_runner.CommandRunner
 }
 
 type descriptiveError struct {
@@ -48,13 +46,9 @@ type Release struct {
 	} `yaml:"default_process_types"`
 }
 
-func New(
-	config *models.LinuxSmeltingConfig,
-	runner command_runner.CommandRunner,
-) *Smelter {
+func New(config *models.LinuxSmeltingConfig) *Smelter {
 	return &Smelter{
 		config: config,
-		runner: runner,
 	}
 }
 
@@ -155,18 +149,12 @@ func (s *Smelter) detect() (string, string, string, error) {
 		output := new(bytes.Buffer)
 
 		buildpackPath, err := s.buildpackPath(buildpack)
-
 		if err != nil {
 			fmt.Println(err.Error())
 			continue
 		}
 
-		err = s.runner.Run(&exec.Cmd{
-			Path:   path.Join(buildpackPath, "bin", "detect"),
-			Args:   []string{s.config.AppDir()},
-			Stdout: output,
-			Stderr: os.Stderr,
-		})
+		err = s.run(exec.Command(path.Join(buildpackPath, "bin", "detect"), s.config.AppDir()), output)
 
 		if err == nil {
 			return buildpack, buildpackPath, strings.TrimRight(output.String(), "\n"), nil
@@ -177,30 +165,18 @@ func (s *Smelter) detect() (string, string, string, error) {
 }
 
 func (s *Smelter) compile(buildpackDir string) error {
-	return s.runner.Run(&exec.Cmd{
-		Path:   path.Join(buildpackDir, "bin", "compile"),
-		Args:   []string{s.config.AppDir(), s.config.BuildArtifactsCacheDir()},
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
-	})
+	return s.run(exec.Command(path.Join(buildpackDir, "bin", "compile"), s.config.AppDir(), s.config.BuildArtifactsCacheDir()), os.Stdout)
 }
 
 func (s *Smelter) release(buildpackDir string) (Release, error) {
-	releaseOut := new(bytes.Buffer)
+	output := new(bytes.Buffer)
 
-	release := &exec.Cmd{
-		Path:   path.Join(buildpackDir, "bin", "release"),
-		Args:   []string{s.config.AppDir()},
-		Stderr: os.Stderr,
-		Stdout: releaseOut,
-	}
-
-	err := s.runner.Run(release)
+	err := s.run(exec.Command(path.Join(buildpackDir, "bin", "release"), s.config.AppDir()), output)
 	if err != nil {
 		return Release{}, err
 	}
 
-	decoder := candiedyaml.NewDecoder(releaseOut)
+	decoder := candiedyaml.NewDecoder(output)
 
 	var parsedRelease Release
 
@@ -247,10 +223,12 @@ func (s *Smelter) saveInfo(buildpack string, detectOutput string, releaseInfo Re
 }
 
 func (s *Smelter) copyApp(appDir, stageDir string) error {
-	return s.runner.Run(&exec.Cmd{
-		Path:   "cp",
-		Args:   []string{"-a", appDir, stageDir},
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
-	})
+	return s.run(exec.Command("cp", "-a", appDir, stageDir), os.Stdout)
+}
+
+func (s *Smelter) run(cmd *exec.Cmd, output io.Writer) error {
+	cmd.Stdout = output
+	cmd.Stderr = os.Stderr
+
+	return cmd.Run()
 }

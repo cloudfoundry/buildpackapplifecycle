@@ -14,10 +14,6 @@
 			"Rev": "64dda0340995d0e7274e7faf53f44906d19db58b"
 		},
 		{
-			"ImportPath": "github.com/cloudfoundry/gunk/command_runner",
-			"Rev": "7961fb4a446e96ef5a35fee37aa4b4945dca6745"
-		},
-		{
 			"ImportPath": "github.com/onsi/ginkgo",
 			"Comment": "v1.0.0-2-g4cf6831",
 			"Rev": "4cf683101c36426dc975f4db4d7f01d9c071f31a"
