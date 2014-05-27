@@ -111,8 +111,8 @@ var _ = Describe("Smelting", func() {
 				stagingInfo, err := ioutil.ReadFile(stagingInfoLocation)
 				Ω(err).ShouldNot(HaveOccurred())
 
-				expectedYAML := `"detected_buildpack": "Always Matching"
-"start_command": "the start command"
+				expectedYAML := `detected_buildpack: Always Matching
+start_command: the start command
 `
 				Ω(string(stagingInfo)).Should(Equal(expectedYAML))
 			})

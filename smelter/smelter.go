@@ -14,7 +14,6 @@ import (
 	"github.com/cloudfoundry-incubator/runtime-schema/models"
 
 	"github.com/cloudfoundry-incubator/candiedyaml"
-	"github.com/cloudfoundry/gofileutils/fileutils"
 	"github.com/cloudfoundry/gunk/command_runner"
 )
 
@@ -89,8 +88,7 @@ func (s *Smelter) Smelt() error {
 	}
 
 	//prepare the final droplet directory
-	err = fileutils.CopyPathToPath(s.config.AppDir(), path.Join(s.config.OutputDir(), "app"))
-
+	err = s.copyApp(s.config.AppDir(), path.Join(s.config.OutputDir(), "app"))
 	if err != nil {
 		return newDescriptiveError(err, "failed to copy compiled droplet")
 	}
@@ -246,4 +244,13 @@ func (s *Smelter) saveInfo(buildpack string, detectOutput string, releaseInfo Re
 	}
 
 	return nil
+}
+
+func (s *Smelter) copyApp(appDir, stageDir string) error {
+	return s.runner.Run(&exec.Cmd{
+		Path:   "cp",
+		Args:   []string{"-a", appDir, stageDir},
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	})
 }

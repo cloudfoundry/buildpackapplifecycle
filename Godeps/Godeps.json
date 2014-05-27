@@ -7,27 +7,24 @@
 	"Deps": [
 		{
 			"ImportPath": "github.com/cloudfoundry-incubator/candiedyaml",
-			"Rev": "e493791d041a7c736105f369603f61e28a1586ae"
+			"Rev": "dfcb028513f33935d16a9c278a9b38c39dae6343"
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry-incubator/runtime-schema/models",
-			"Rev": "1a8bbd7efc2bac65dfc17cd46d7bc2cd6bd9bb4d"
-		},
-		{
-			"ImportPath": "github.com/cloudfoundry/gofileutils/fileutils",
-			"Rev": "a4a0cae5ff8a342ba01fce700b9e41c6942c0e5e"
+			"Rev": "64dda0340995d0e7274e7faf53f44906d19db58b"
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry/gunk/command_runner",
-			"Rev": "21adc866d245fff747352415cc036b5ec3c3d4f5"
+			"Rev": "7961fb4a446e96ef5a35fee37aa4b4945dca6745"
 		},
 		{
 			"ImportPath": "github.com/onsi/ginkgo",
-			"Rev": "51ddbbc2ace9f9ad4cf06ba63442ea2ef2019837"
+			"Comment": "v1.0.0-2-g4cf6831",
+			"Rev": "4cf683101c36426dc975f4db4d7f01d9c071f31a"
 		},
 		{
 			"ImportPath": "github.com/onsi/gomega",
-			"Rev": "f5533d435ebfcf4fa0463202dc0e966b983618b8"
+			"Rev": "50bea9a608004800126b3fddab0c3608d87c0ca9"
 		}
 	]
 }

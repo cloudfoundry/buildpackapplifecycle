@@ -126,7 +126,7 @@ var _ = Describe("ExecutorAction", func() {
 				}
 			}`,
 			ExecutorAction{
-				Action: FetchResultAction{
+				FetchResultAction{
 					File: "/tmp/foo",
 				},
 			},
@@ -180,6 +180,93 @@ var _ = Describe("ExecutorAction", func() {
 			Try(ExecutorAction{
 				RunAction{Script: "echo"},
 			}),
+		)
+	})
+
+	Describe("Monitor", func() {
+		itSerializesAndDeserializes(
+			`{
+				"action": "monitor",
+				"args": {
+					"action": {
+						"action": "run",
+						"args": {
+							"resource_limits": {},
+							"env": null,
+							"timeout": 0,
+							"script": "echo"
+						}
+					},
+					"healthy_hook": {
+						"method": "POST",
+						"url": "bogus_healthy_hook"
+					},
+					"unhealthy_hook": {
+						"method": "DELETE",
+						"url": "bogus_unhealthy_hook"
+					},
+					"healthy_threshold": 2,
+					"unhealthy_threshold": 5
+				}
+			}`,
+			ExecutorAction{
+				MonitorAction{
+					Action: ExecutorAction{RunAction{Script: "echo"}},
+					HealthyHook: HealthRequest{
+						Method: "POST",
+						URL:    "bogus_healthy_hook",
+					},
+					UnhealthyHook: HealthRequest{
+						Method: "DELETE",
+						URL:    "bogus_unhealthy_hook",
+					},
+					HealthyThreshold:   2,
+					UnhealthyThreshold: 5,
+				},
+			},
+		)
+	})
+
+	Describe("Parallel", func() {
+		itSerializesAndDeserializes(
+			`{
+        "action": "parallel",
+        "args": {
+          "actions": [
+            {
+              "action": "download",
+              "args": {
+                "extract": true,
+                "cache_key": "elephant",
+                "to": "local_location",
+                "from": "web_location"
+              }
+            },
+            {
+              "action": "run",
+              "args": {
+                "resource_limits": {},
+                "env": null,
+                "timeout": 0,
+                "script": "echo"
+              }
+            }
+          ]
+        }
+      }`,
+			Parallel(
+				ExecutorAction{
+					DownloadAction{
+						From:     "web_location",
+						To:       "local_location",
+						Extract:  true,
+						CacheKey: "elephant",
+					},
+				},
+				ExecutorAction{
+					RunAction{Script: "echo"},
+				},
+			),
 		)
 	})
 })

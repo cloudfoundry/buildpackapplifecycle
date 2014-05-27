@@ -9,5 +9,7 @@ type DesireAppRequestFromCC struct {
 	Environment     []EnvironmentVariable `json:"environment"`
 	MemoryMB        int                   `json:"memory_mb"`
 	DiskMB          int                   `json:"disk_mb"`
-	FileDescriptors int                   `json:"file_descriptors"`
+	FileDescriptors uint64                `json:"file_descriptors"`
+	NumInstances    int                   `json:"num_instances"`
+	Routes          []string              `json:"routes"`
 }

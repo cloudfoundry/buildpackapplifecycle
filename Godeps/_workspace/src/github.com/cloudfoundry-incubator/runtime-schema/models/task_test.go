@@ -42,6 +42,7 @@ var _ = Describe("Task", func() {
 		"created_at": 1393371971000000000,
 		"updated_at": 1393371971000000010,
 		"state": 1,
+		"type": "Staging",
 		"annotation": "[{\"anything\": \"you want!\"}]... dude"
 	}`
 
@@ -77,6 +78,7 @@ var _ = Describe("Task", func() {
 			CreatedAt:       time.Date(2014, time.February, 25, 23, 46, 11, 00, time.UTC).UnixNano(),
 			UpdatedAt:       time.Date(2014, time.February, 25, 23, 46, 11, 10, time.UTC).UnixNano(),
 			State:           TaskStatePending,
+			Type:            TaskTypeStaging,
 			Annotation:      `[{"anything": "you want!"}]... dude`,
 		}
 	})
