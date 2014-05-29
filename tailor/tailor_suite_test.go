@@ -8,7 +8,7 @@ import (
 	"github.com/onsi/gomega/gexec"
 )
 
-var smelterPath string
+var tailorPath string
 
 func TestLinuxSmelter(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -16,7 +16,7 @@ func TestLinuxSmelter(t *testing.T) {
 	BeforeSuite(func() {
 		var err error
 
-		smelterPath, err = gexec.Build("github.com/cloudfoundry-incubator/linux-smelter")
+		tailorPath, err = gexec.Build("github.com/cloudfoundry-incubator/linux-circus/tailor")
 		Ω(err).ShouldNot(HaveOccurred())
 	})
 

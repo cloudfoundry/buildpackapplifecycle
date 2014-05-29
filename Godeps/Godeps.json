@@ -1,5 +1,5 @@
 {
-	"ImportPath": "github.com/cloudfoundry-incubator/linux-smelter",
+	"ImportPath": "github.com/cloudfoundry-incubator/linux-circus",
 	"GoVersion": "go1.2.1",
 	"Packages": [
 		"./..."
@@ -11,7 +11,7 @@
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry-incubator/runtime-schema/models",
-			"Rev": "64dda0340995d0e7274e7faf53f44906d19db58b"
+			"Rev": "71c9024380bcfb74a53d2587bd50d542c156291a"
 		},
 		{
 			"ImportPath": "github.com/onsi/ginkgo",
@@ -20,7 +20,7 @@
 		},
 		{
 			"ImportPath": "github.com/onsi/gomega",
-			"Rev": "50bea9a608004800126b3fddab0c3608d87c0ca9"
+			"Rev": "05c2b322d514282430789eb9ff8efee6c904cc77"
 		}
 	]
 }

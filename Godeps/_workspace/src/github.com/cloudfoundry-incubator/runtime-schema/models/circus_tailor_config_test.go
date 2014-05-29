@@ -8,11 +8,11 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("LinuxSmeltingConfig", func() {
-	var smeltingConfig LinuxSmeltingConfig
+var _ = Describe("LinuxCircusTailorConfig", func() {
+	var smeltingConfig LinuxCircusTailorConfig
 
 	BeforeEach(func() {
-		smeltingConfig = NewLinuxSmeltingConfig([]string{"ocaml-buildpack", "haskell-buildpack", "bash-buildpack"})
+		smeltingConfig = NewLinuxCircusTailorConfig([]string{"ocaml-buildpack", "haskell-buildpack", "bash-buildpack"})
 	})
 
 	Context("with defaults", func() {
@@ -36,11 +36,11 @@ var _ = Describe("LinuxSmeltingConfig", func() {
 
 	Context("with overrides", func() {
 		BeforeEach(func() {
-			smeltingConfig.Set(LinuxSmeltingAppDirFlag, "/some/app/dir")
-			smeltingConfig.Set(LinuxSmeltingOutputDirFlag, "/some/droplet/dir")
-			smeltingConfig.Set(LinuxSmeltingResultDirFlag, "/some/result/dir")
-			smeltingConfig.Set(LinuxSmeltingBuildpacksDirFlag, "/some/buildpacks/dir")
-			smeltingConfig.Set(LinuxSmeltingBuildArtifactsCacheDirFlag, "/some/cache/dir")
+			smeltingConfig.Set(LinuxCircusTailorAppDirFlag, "/some/app/dir")
+			smeltingConfig.Set(LinuxCircusTailorOutputDirFlag, "/some/droplet/dir")
+			smeltingConfig.Set(LinuxCircusTailorResultDirFlag, "/some/result/dir")
+			smeltingConfig.Set(LinuxCircusTailorBuildpacksDirFlag, "/some/buildpacks/dir")
+			smeltingConfig.Set(LinuxCircusTailorBuildArtifactsCacheDirFlag, "/some/cache/dir")
 		})
 
 		It("generates a script for running its smelter", func() {

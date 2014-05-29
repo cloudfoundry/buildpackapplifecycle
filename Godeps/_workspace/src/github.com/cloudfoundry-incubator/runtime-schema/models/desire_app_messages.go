@@ -1,5 +1,7 @@
 package models
 
+import "encoding/json"
+
 type DesireAppRequestFromCC struct {
 	AppId           string                `json:"app_id"`
 	AppVersion      string                `json:"app_version"`
@@ -12,4 +14,9 @@ type DesireAppRequestFromCC struct {
 	FileDescriptors uint64                `json:"file_descriptors"`
 	NumInstances    int                   `json:"num_instances"`
 	Routes          []string              `json:"routes"`
+}
+
+func (d DesireAppRequestFromCC) ToJSON() []byte {
+	encoded, _ := json.Marshal(d)
+	return encoded
 }
