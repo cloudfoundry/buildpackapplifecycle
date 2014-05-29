@@ -1,0 +1,19 @@
+#!/bin/bash
+
+HOME=$1
+
+if [ -z "$1" ]; then
+  echo "usage: $0 <app dir> <command to run>" >&2
+  exit 1
+fi
+
+if [ -d "$1/.profile.d" ]; then
+  for env_file in "$1"/.profile.d/*;
+  do
+    source $env_file
+  done
+fi
+
+shift
+
+"$@"
