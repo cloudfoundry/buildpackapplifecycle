@@ -3,14 +3,14 @@ package main_test
 import (
 	"crypto/md5"
 	"fmt"
-	"io/ioutil"
-	"os"
-	"os/exec"
-	"path"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
+	"io/ioutil"
+	"os"
+	"os/exec"
+	"path"
 )
 
 var _ = Describe("Smelting", func() {
@@ -21,10 +21,10 @@ var _ = Describe("Smelting", func() {
 		tailorCmd              *exec.Cmd
 		appDir                 string
 		buildpacksDir          string
-		outputDir              string
+		outputDropletDir       string
 		buildpackOrder         string
 		buildArtifactsCacheDir string
-		resultDir              string
+		outputMetadataDir      string
 	)
 
 	tailor := func() *gexec.Session {
@@ -52,13 +52,13 @@ var _ = Describe("Smelting", func() {
 		buildpacksDir, err = ioutil.TempDir(os.TempDir(), "tailoring-buildpacks")
 		Ω(err).ShouldNot(HaveOccurred())
 
-		outputDir, err = ioutil.TempDir(os.TempDir(), "tailoring-droplet")
+		outputDropletDir, err = ioutil.TempDir(os.TempDir(), "tailoring-droplet")
 		Ω(err).ShouldNot(HaveOccurred())
 
 		buildArtifactsCacheDir, err = ioutil.TempDir(os.TempDir(), "tailoring-cache")
 		Ω(err).ShouldNot(HaveOccurred())
 
-		resultDir, err = ioutil.TempDir(os.TempDir(), "tailoring-result")
+		outputMetadataDir, err = ioutil.TempDir(os.TempDir(), "tailoring-result")
 		Ω(err).ShouldNot(HaveOccurred())
 
 		buildpackOrder = ""
@@ -67,17 +67,17 @@ var _ = Describe("Smelting", func() {
 	AfterEach(func() {
 		os.RemoveAll(appDir)
 		os.RemoveAll(buildpacksDir)
-		os.RemoveAll(outputDir)
+		os.RemoveAll(outputDropletDir)
 	})
 
 	JustBeforeEach(func() {
 		tailorCmd = exec.Command(tailorPath,
 			"-appDir", appDir,
 			"-buildpacksDir", buildpacksDir,
-			"-outputDir", outputDir,
+			"-outputDropletDir", outputDropletDir,
 			"-buildArtifactsCacheDir", buildArtifactsCacheDir,
 			"-buildpackOrder", buildpackOrder,
-			"-resultDir", resultDir,
+			"-outputMetadataDir", outputMetadataDir,
 		)
 
 		tailorCmd.Env = os.Environ()
@@ -98,7 +98,7 @@ var _ = Describe("Smelting", func() {
 
 		Describe("the contents of the output dir", func() {
 			It("should contain an /app dir with the contents of the compilation", func() {
-				appDirLocation := path.Join(outputDir, "app")
+				appDirLocation := path.Join(outputDropletDir, "app")
 				contents, err := ioutil.ReadDir(appDirLocation)
 				Ω(contents, err).Should(HaveLen(2))
 
@@ -108,17 +108,17 @@ var _ = Describe("Smelting", func() {
 			})
 
 			It("should contain a droplet containing an empty /tmp directory", func() {
-				tmpDirLocation := path.Join(outputDir, "tmp")
+				tmpDirLocation := path.Join(outputDropletDir, "tmp")
 				Ω(ioutil.ReadDir(tmpDirLocation)).Should(BeEmpty())
 			})
 
 			It("should contain a droplet containing an empty /logs directory", func() {
-				logsDirLocation := path.Join(outputDir, "logs")
+				logsDirLocation := path.Join(outputDropletDir, "logs")
 				Ω(ioutil.ReadDir(logsDirLocation)).Should(BeEmpty())
 			})
 
 			It("should stop after detecting, and contain a staging_info.yml with the detected buildpack", func() {
-				stagingInfoLocation := path.Join(outputDir, "staging_info.yml")
+				stagingInfoLocation := path.Join(outputDropletDir, "staging_info.yml")
 				stagingInfo, err := ioutil.ReadFile(stagingInfoLocation)
 				Ω(err).ShouldNot(HaveOccurred())
 
@@ -131,7 +131,7 @@ start_command: the start command
 
 		Describe("the result.json, which is used to communicate back to the stager", func() {
 			It("exists, and contains the detected buildpack", func() {
-				resultLocation := path.Join(resultDir, "result.json")
+				resultLocation := path.Join(outputMetadataDir, "result.json")
 				resultInfo, err := ioutil.ReadFile(resultLocation)
 				Ω(err).ShouldNot(HaveOccurred())
 				expectedJSON := `{

@@ -82,17 +82,17 @@ func (runner *Runner) Run() error {
 	}
 
 	//prepare the final droplet directory
-	err = runner.copyApp(runner.config.AppDir(), path.Join(runner.config.OutputDir(), "app"))
+	err = runner.copyApp(runner.config.AppDir(), path.Join(runner.config.OutputDropletDir(), "app"))
 	if err != nil {
 		return newDescriptiveError(err, "failed to copy compiled droplet")
 	}
 
-	err = os.MkdirAll(path.Join(runner.config.OutputDir(), "tmp"), 0755)
+	err = os.MkdirAll(path.Join(runner.config.OutputDropletDir(), "tmp"), 0755)
 	if err != nil {
 		return newDescriptiveError(err, "failed to set up droplet filesystem")
 	}
 
-	err = os.MkdirAll(path.Join(runner.config.OutputDir(), "logs"), 0755)
+	err = os.MkdirAll(path.Join(runner.config.OutputDropletDir(), "logs"), 0755)
 	if err != nil {
 		return newDescriptiveError(err, "failed to set up droplet filesystem")
 	}
@@ -101,7 +101,7 @@ func (runner *Runner) Run() error {
 }
 
 func (runner *Runner) makeDirectories() error {
-	if err := os.MkdirAll(runner.config.OutputDir(), 0755); err != nil {
+	if err := os.MkdirAll(runner.config.OutputDropletDir(), 0755); err != nil {
 		return err
 	}
 
@@ -189,7 +189,7 @@ func (runner *Runner) release(buildpackDir string) (Release, error) {
 }
 
 func (runner *Runner) saveInfo(buildpack string, detectOutput string, releaseInfo Release) error {
-	infoFile, err := os.Create(filepath.Join(runner.config.OutputDir(), "staging_info.yml"))
+	infoFile, err := os.Create(filepath.Join(runner.config.OutputDropletDir(), "staging_info.yml"))
 	if err != nil {
 		return err
 	}

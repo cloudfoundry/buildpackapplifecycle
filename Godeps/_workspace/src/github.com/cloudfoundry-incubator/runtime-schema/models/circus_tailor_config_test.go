@@ -23,8 +23,8 @@ var _ = Describe("LinuxCircusTailorConfig", func() {
 				"-buildpackOrder='ocaml-buildpack,haskell-buildpack,bash-buildpack'",
 				"-buildpacksDir='/tmp/buildpacks'",
 				"-buildArtifactsCacheDir='/tmp/cache'",
-				"-outputDir='/tmp/droplet'",
-				"-resultDir='/tmp/result'",
+				"-outputDropletDir='/tmp/droplet'",
+				"-outputMetadataDir='/tmp/result'",
 			}
 
 			Ω(strings.HasPrefix(smeltingConfig.Script(), command)).To(BeTrue())
@@ -37,8 +37,8 @@ var _ = Describe("LinuxCircusTailorConfig", func() {
 	Context("with overrides", func() {
 		BeforeEach(func() {
 			smeltingConfig.Set(LinuxCircusTailorAppDirFlag, "/some/app/dir")
-			smeltingConfig.Set(LinuxCircusTailorOutputDirFlag, "/some/droplet/dir")
-			smeltingConfig.Set(LinuxCircusTailorResultDirFlag, "/some/result/dir")
+			smeltingConfig.Set(LinuxCircusTailorOutputDropletDirFlag, "/some/droplet/dir")
+			smeltingConfig.Set(LinuxCircusTailorOutputMetadataDirFlag, "/some/result/dir")
 			smeltingConfig.Set(LinuxCircusTailorBuildpacksDirFlag, "/some/buildpacks/dir")
 			smeltingConfig.Set(LinuxCircusTailorBuildArtifactsCacheDirFlag, "/some/cache/dir")
 		})
@@ -50,8 +50,8 @@ var _ = Describe("LinuxCircusTailorConfig", func() {
 				"-buildpackOrder='ocaml-buildpack,haskell-buildpack,bash-buildpack'",
 				"-buildpacksDir='/some/buildpacks/dir'",
 				"-buildArtifactsCacheDir='/some/cache/dir'",
-				"-outputDir='/some/droplet/dir'",
-				"-resultDir='/some/result/dir'",
+				"-outputDropletDir='/some/droplet/dir'",
+				"-outputMetadataDir='/some/result/dir'",
 			}
 
 			Ω(strings.HasPrefix(smeltingConfig.Script(), command)).To(BeTrue())

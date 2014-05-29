@@ -16,8 +16,8 @@ type LinuxCircusTailorConfig struct {
 	values map[string]*string
 
 	appDir                 *string
-	outputDir              *string
-	resultDir              *string
+	outputDropletDir       *string
+	outputMetadataDir      *string
 	buildpacksDir          *string
 	buildArtifactsCacheDir *string
 	buildpackOrder         *string
@@ -25,8 +25,8 @@ type LinuxCircusTailorConfig struct {
 
 const (
 	LinuxCircusTailorAppDirFlag                 = "appDir"
-	LinuxCircusTailorOutputDirFlag              = "outputDir"
-	LinuxCircusTailorResultDirFlag              = "resultDir"
+	LinuxCircusTailorOutputDropletDirFlag       = "outputDropletDir"
+	LinuxCircusTailorOutputMetadataDirFlag      = "outputMetadataDir"
 	LinuxCircusTailorBuildpacksDirFlag          = "buildpacksDir"
 	LinuxCircusTailorBuildArtifactsCacheDirFlag = "buildArtifactsCacheDir"
 	LinuxCircusTailorBuildpackOrderFlag         = "buildpackOrder"
@@ -34,8 +34,8 @@ const (
 
 var LinuxCircusTailorDefaults = map[string]string{
 	LinuxCircusTailorAppDirFlag:                 "/app",
-	LinuxCircusTailorOutputDirFlag:              "/tmp/droplet",
-	LinuxCircusTailorResultDirFlag:              "/tmp/result",
+	LinuxCircusTailorOutputDropletDirFlag:       "/tmp/droplet",
+	LinuxCircusTailorOutputMetadataDirFlag:      "/tmp/result",
 	LinuxCircusTailorBuildpacksDirFlag:          "/tmp/buildpacks",
 	LinuxCircusTailorBuildArtifactsCacheDirFlag: "/tmp/cache",
 }
@@ -49,15 +49,15 @@ func NewLinuxCircusTailorConfig(buildpacks []string) LinuxCircusTailorConfig {
 		"directory containing raw app bits",
 	)
 
-	outputDir := flagSet.String(
-		LinuxCircusTailorOutputDirFlag,
-		LinuxCircusTailorDefaults[LinuxCircusTailorOutputDirFlag],
+	outputDropletDir := flagSet.String(
+		LinuxCircusTailorOutputDropletDirFlag,
+		LinuxCircusTailorDefaults[LinuxCircusTailorOutputDropletDirFlag],
 		"directory in which to write the smelted app bits",
 	)
 
-	resultDir := flagSet.String(
-		LinuxCircusTailorResultDirFlag,
-		LinuxCircusTailorDefaults[LinuxCircusTailorResultDirFlag],
+	outputMetadataDir := flagSet.String(
+		LinuxCircusTailorOutputMetadataDirFlag,
+		LinuxCircusTailorDefaults[LinuxCircusTailorOutputMetadataDirFlag],
 		"directory in which to place smelting result metadata",
 	)
 
@@ -87,16 +87,16 @@ func NewLinuxCircusTailorConfig(buildpacks []string) LinuxCircusTailorConfig {
 		compilerPath: compilerPath,
 
 		appDir:                 appDir,
-		outputDir:              outputDir,
-		resultDir:              resultDir,
+		outputDropletDir:       outputDropletDir,
+		outputMetadataDir:      outputMetadataDir,
 		buildpacksDir:          buildpacksDir,
 		buildArtifactsCacheDir: buildArtifactsCacheDir,
 		buildpackOrder:         buildpackOrder,
 
 		values: map[string]*string{
 			LinuxCircusTailorAppDirFlag:                 appDir,
-			LinuxCircusTailorOutputDirFlag:              outputDir,
-			LinuxCircusTailorResultDirFlag:              resultDir,
+			LinuxCircusTailorOutputDropletDirFlag:       outputDropletDir,
+			LinuxCircusTailorOutputMetadataDirFlag:      outputMetadataDir,
 			LinuxCircusTailorBuildpacksDirFlag:          buildpacksDir,
 			LinuxCircusTailorBuildArtifactsCacheDirFlag: buildArtifactsCacheDir,
 			LinuxCircusTailorBuildpackOrderFlag:         buildpackOrder,
@@ -164,12 +164,12 @@ func (s LinuxCircusTailorConfig) compilerCommand() string {
 	return path.Join(s.CompilerPath(), "run")
 }
 
-func (s LinuxCircusTailorConfig) OutputDir() string {
-	return *s.outputDir
+func (s LinuxCircusTailorConfig) OutputDropletDir() string {
+	return *s.outputDropletDir
 }
 
 func (s LinuxCircusTailorConfig) ResultJsonDir() string {
-	return *s.resultDir
+	return *s.outputMetadataDir
 }
 
 func (s LinuxCircusTailorConfig) ResultJsonPath() string {
