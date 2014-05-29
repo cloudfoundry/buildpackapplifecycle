@@ -10,7 +10,7 @@ import (
 
 var tailorPath string
 
-func TestLinuxSmelter(t *testing.T) {
+func TestLinuxCircusTailor(t *testing.T) {
 	RegisterFailHandler(Fail)
 
 	BeforeSuite(func() {
@@ -24,5 +24,5 @@ func TestLinuxSmelter(t *testing.T) {
 		gexec.CleanupBuildArtifacts()
 	})
 
-	RunSpecs(t, "Linux-Smelter Suite")
+	RunSpecs(t, "Linux-Circus-Tailor Suite")
 }

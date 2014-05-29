@@ -105,7 +105,7 @@ func (runner *Runner) makeDirectories() error {
 		return err
 	}
 
-	if err := os.MkdirAll(runner.config.ResultJsonDir(), 0755); err != nil {
+	if err := os.MkdirAll(runner.config.OutputMetadataDir(), 0755); err != nil {
 		return err
 	}
 
@@ -196,7 +196,7 @@ func (runner *Runner) saveInfo(buildpack string, detectOutput string, releaseInf
 
 	defer infoFile.Close()
 
-	resultFile, err := os.Create(runner.config.ResultJsonPath())
+	resultFile, err := os.Create(runner.config.OutputMetadataPath())
 	if err != nil {
 		return err
 	}

@@ -11,15 +11,15 @@ import (
 type LinuxCircusTailorConfig struct {
 	*flag.FlagSet
 
-	compilerPath string
-
 	values map[string]*string
 
-	appDir                 *string
+	buildpacksDir  *string
+	appDir         *string
+	ExecutablePath string
+
+	buildArtifactsCacheDir *string
 	outputDropletDir       *string
 	outputMetadataDir      *string
-	buildpacksDir          *string
-	buildArtifactsCacheDir *string
 	buildpackOrder         *string
 }
 
@@ -41,7 +41,7 @@ var LinuxCircusTailorDefaults = map[string]string{
 }
 
 func NewLinuxCircusTailorConfig(buildpacks []string) LinuxCircusTailorConfig {
-	flagSet := flag.NewFlagSet("linux-smelter", flag.ExitOnError)
+	flagSet := flag.NewFlagSet("tailor", flag.ExitOnError)
 
 	appDir := flagSet.String(
 		LinuxCircusTailorAppDirFlag,
@@ -52,13 +52,13 @@ func NewLinuxCircusTailorConfig(buildpacks []string) LinuxCircusTailorConfig {
 	outputDropletDir := flagSet.String(
 		LinuxCircusTailorOutputDropletDirFlag,
 		LinuxCircusTailorDefaults[LinuxCircusTailorOutputDropletDirFlag],
-		"directory in which to write the smelted app bits",
+		"directory in which to write the droplet",
 	)
 
 	outputMetadataDir := flagSet.String(
 		LinuxCircusTailorOutputMetadataDirFlag,
 		LinuxCircusTailorDefaults[LinuxCircusTailorOutputMetadataDirFlag],
-		"directory in which to place smelting result metadata",
+		"directory in which to write the app metadata",
 	)
 
 	buildpacksDir := flagSet.String(
@@ -79,13 +79,10 @@ func NewLinuxCircusTailorConfig(buildpacks []string) LinuxCircusTailorConfig {
 		"comma-separated list of buildpacks, to be tried in order",
 	)
 
-	compilerPath := "/tmp/compiler"
-
 	return LinuxCircusTailorConfig{
 		FlagSet: flagSet,
 
-		compilerPath: compilerPath,
-
+		ExecutablePath:         "/tmp/circus/tailor",
 		appDir:                 appDir,
 		outputDropletDir:       outputDropletDir,
 		outputMetadataDir:      outputMetadataDir,
@@ -105,7 +102,7 @@ func NewLinuxCircusTailorConfig(buildpacks []string) LinuxCircusTailorConfig {
 }
 
 func (s LinuxCircusTailorConfig) Script() string {
-	argv := []string{s.compilerCommand()}
+	argv := []string{s.ExecutablePath}
 
 	s.FlagSet.VisitAll(func(flag *flag.Flag) {
 		argv = append(argv, fmt.Sprintf("-%s='%s'", flag.Name, *s.values[flag.Name]))
@@ -156,22 +153,14 @@ func (s LinuxCircusTailorConfig) BuildArtifactsCacheDir() string {
 	return *s.buildArtifactsCacheDir
 }
 
-func (s LinuxCircusTailorConfig) CompilerPath() string {
-	return s.compilerPath
-}
-
-func (s LinuxCircusTailorConfig) compilerCommand() string {
-	return path.Join(s.CompilerPath(), "run")
-}
-
 func (s LinuxCircusTailorConfig) OutputDropletDir() string {
 	return *s.outputDropletDir
 }
 
-func (s LinuxCircusTailorConfig) ResultJsonDir() string {
+func (s LinuxCircusTailorConfig) OutputMetadataDir() string {
 	return *s.outputMetadataDir
 }
 
-func (s LinuxCircusTailorConfig) ResultJsonPath() string {
-	return path.Join(s.ResultJsonDir(), "result.json")
+func (s LinuxCircusTailorConfig) OutputMetadataPath() string {
+	return path.Join(s.OutputMetadataDir(), "result.json")
 }

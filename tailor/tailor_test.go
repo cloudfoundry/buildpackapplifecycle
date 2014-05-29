@@ -3,17 +3,17 @@ package main_test
 import (
 	"crypto/md5"
 	"fmt"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gbytes"
-	"github.com/onsi/gomega/gexec"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gbytes"
+	"github.com/onsi/gomega/gexec"
 )
 
-var _ = Describe("Smelting", func() {
+var _ = Describe("Tailoring", func() {
 	buildpackFixtures := "fixtures/buildpacks"
 	appFixtures := "fixtures/apps"
 
