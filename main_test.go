@@ -13,23 +13,22 @@ import (
 	"github.com/onsi/gomega/gexec"
 )
 
-var _ = Describe("Tailoring", func() {
+var _ = Describe("Smelting", func() {
 	buildpackFixtures := "fixtures/buildpacks"
 	appFixtures := "fixtures/apps"
 
 	var (
-		tailorCmd              *exec.Cmd
+		smelterCmd             *exec.Cmd
 		appDir                 string
 		buildpacksDir          string
-		outputDropletDir       string
+		outputDir              string
 		buildArtifactsCacheDir string
-		outputMetadataDir      string
-		buildpacks             []string
+		resultDir              string
 	)
 
-	tailor := func() *gexec.Session {
+	smelt := func() *gexec.Session {
 		session, err := gexec.Start(
-			tailorCmd,
+			smelterCmd,
 			GinkgoWriter,
 			GinkgoWriter,
 		)
@@ -46,64 +45,49 @@ var _ = Describe("Tailoring", func() {
 	BeforeEach(func() {
 		var err error
 
-		appDir, err = ioutil.TempDir(os.TempDir(), "tailoring-app")
+		appDir, err = ioutil.TempDir(os.TempDir(), "smelting-app")
 		Ω(err).ShouldNot(HaveOccurred())
 
-		buildpacksDir, err = ioutil.TempDir(os.TempDir(), "tailoring-buildpacks")
+		buildpacksDir, err = ioutil.TempDir(os.TempDir(), "smelting-buildpacks")
 		Ω(err).ShouldNot(HaveOccurred())
 
-		outputDropletDir, err = ioutil.TempDir(os.TempDir(), "tailoring-droplet")
+		outputDir, err = ioutil.TempDir(os.TempDir(), "smelting-droplet")
 		Ω(err).ShouldNot(HaveOccurred())
 
-		buildArtifactsCacheDir, err = ioutil.TempDir(os.TempDir(), "tailoring-cache")
+		buildArtifactsCacheDir, err = ioutil.TempDir(os.TempDir(), "smelting-cache")
 		Ω(err).ShouldNot(HaveOccurred())
 
-		outputMetadataDir, err = ioutil.TempDir(os.TempDir(), "tailoring-metadata")
+		resultDir, err = ioutil.TempDir(os.TempDir(), "smelting-result")
 		Ω(err).ShouldNot(HaveOccurred())
-
-		buildpacks = nil
 	})
 
 	AfterEach(func() {
 		os.RemoveAll(appDir)
 		os.RemoveAll(buildpacksDir)
-		os.RemoveAll(outputDropletDir)
-	})
-
-	JustBeforeEach(func() {
-		flags := []string{
-			"-appDir", appDir,
-			"-buildpacksDir", buildpacksDir,
-			"-outputDropletDir", outputDropletDir,
-			"-buildArtifactsCacheDir", buildArtifactsCacheDir,
-			"-outputMetadataDir", outputMetadataDir,
-		}
-
-		for _, name := range buildpacks {
-			flags = append(flags, "-buildpack", name)
-		}
-
-		tailorCmd = exec.Command(tailorPath, flags...)
-
-		tailorCmd.Env = os.Environ()
+		os.RemoveAll(outputDir)
 	})
 
 	Context("with a normal buildpack", func() {
 		BeforeEach(func() {
-			buildpacks = []string{"always-detects", "also-always-detects"}
+			smelterCmd = exec.Command(smelterPath,
+				"-appDir", appDir,
+				"-buildpacksDir", buildpacksDir,
+				"-outputDir", outputDir,
+				"-buildArtifactsCacheDir", buildArtifactsCacheDir,
+				"-buildpackOrder", "always-detects,also-always-detects",
+				"-resultDir", resultDir)
+			smelterCmd.Env = os.Environ()
 
 			cpBuildpack("always-detects")
 			cpBuildpack("also-always-detects")
 			cp(path.Join(appFixtures, "bash-app", "app.sh"), appDir)
-		})
 
-		JustBeforeEach(func() {
-			Eventually(tailor()).Should(gexec.Exit(0))
+			Eventually(smelt()).Should(gexec.Exit(0))
 		})
 
 		Describe("the contents of the output dir", func() {
 			It("should contain an /app dir with the contents of the compilation", func() {
-				appDirLocation := path.Join(outputDropletDir, "app")
+				appDirLocation := path.Join(outputDir, "app")
 				contents, err := ioutil.ReadDir(appDirLocation)
 				Ω(contents, err).Should(HaveLen(2))
 
@@ -113,17 +97,17 @@ var _ = Describe("Tailoring", func() {
 			})
 
 			It("should contain a droplet containing an empty /tmp directory", func() {
-				tmpDirLocation := path.Join(outputDropletDir, "tmp")
+				tmpDirLocation := path.Join(outputDir, "tmp")
 				Ω(ioutil.ReadDir(tmpDirLocation)).Should(BeEmpty())
 			})
 
 			It("should contain a droplet containing an empty /logs directory", func() {
-				logsDirLocation := path.Join(outputDropletDir, "logs")
+				logsDirLocation := path.Join(outputDir, "logs")
 				Ω(ioutil.ReadDir(logsDirLocation)).Should(BeEmpty())
 			})
 
 			It("should stop after detecting, and contain a staging_info.yml with the detected buildpack", func() {
-				stagingInfoLocation := path.Join(outputDropletDir, "staging_info.yml")
+				stagingInfoLocation := path.Join(outputDir, "staging_info.yml")
 				stagingInfo, err := ioutil.ReadFile(stagingInfoLocation)
 				Ω(err).ShouldNot(HaveOccurred())
 
@@ -136,14 +120,14 @@ start_command: the start command
 
 		Describe("the result.json, which is used to communicate back to the stager", func() {
 			It("exists, and contains the detected buildpack", func() {
-				resultLocation := path.Join(outputMetadataDir, "result.json")
+				resultLocation := path.Join(resultDir, "result.json")
 				resultInfo, err := ioutil.ReadFile(resultLocation)
 				Ω(err).ShouldNot(HaveOccurred())
 				expectedJSON := `{
-          "detected_buildpack": "Always Matching",
-          "detected_start_command": "the start command",
-          "buildpack_key": "always-detects"
-        }`
+					"detected_buildpack": "Always Matching",
+					"detected_start_command": "the start command",
+					"buildpack_key": "always-detects"
+				}`
 
 				Ω(resultInfo).Should(MatchJSON(expectedJSON))
 			})
@@ -152,14 +136,21 @@ start_command: the start command
 
 	Context("when no buildpacks match", func() {
 		BeforeEach(func() {
-			buildpacks = []string{"always-fails"}
+			smelterCmd = exec.Command(smelterPath,
+				"-appDir", appDir,
+				"-buildpacksDir", buildpacksDir,
+				"-outputDir", outputDir,
+				"-buildArtifactsCacheDir", buildArtifactsCacheDir,
+				"-buildpackOrder", "always-fails",
+				"-resultDir", resultDir)
+			smelterCmd.Env = os.Environ()
 
 			cp(path.Join(appFixtures, "bash-app", "app.sh"), appDir)
 			cpBuildpack("always-fails")
 		})
 
 		It("should exit with an error", func() {
-			session := tailor()
+			session := smelt()
 			Eventually(session.Err).Should(gbytes.Say("no valid buildpacks detected"))
 			Eventually(session).Should(gexec.Exit(1))
 		})
@@ -167,14 +158,21 @@ start_command: the start command
 
 	Context("when the buildpack fails in compile", func() {
 		BeforeEach(func() {
-			buildpacks = []string{"fails-to-compile"}
+			smelterCmd = exec.Command(smelterPath,
+				"-appDir", appDir,
+				"-buildpacksDir", buildpacksDir,
+				"-outputDir", outputDir,
+				"-buildArtifactsCacheDir", buildArtifactsCacheDir,
+				"-buildpackOrder", "fails-to-compile",
+				"-resultDir", resultDir)
+			smelterCmd.Env = os.Environ()
 
 			cpBuildpack("fails-to-compile")
 			cp(path.Join(appFixtures, "bash-app", "app.sh"), appDir)
 		})
 
 		It("should exit with an error", func() {
-			session := tailor()
+			session := smelt()
 			Eventually(session.Err).Should(gbytes.Say("failed to compile droplet: exit status 1"))
 			Eventually(session).Should(gexec.Exit(1))
 		})
@@ -182,14 +180,21 @@ start_command: the start command
 
 	Context("when the buildpack release generates invalid yaml", func() {
 		BeforeEach(func() {
-			buildpacks = []string{"release-generates-bad-yaml"}
+			smelterCmd = exec.Command(smelterPath,
+				"-appDir", appDir,
+				"-buildpacksDir", buildpacksDir,
+				"-outputDir", outputDir,
+				"-buildArtifactsCacheDir", buildArtifactsCacheDir,
+				"-buildpackOrder", "release-generates-bad-yaml",
+				"-resultDir", resultDir)
+			smelterCmd.Env = os.Environ()
 
 			cpBuildpack("release-generates-bad-yaml")
 			cp(path.Join(appFixtures, "bash-app", "app.sh"), appDir)
 		})
 
 		It("should exit with an error", func() {
-			session := tailor()
+			session := smelt()
 			Eventually(session.Err).Should(gbytes.Say("buildpack's release output invalid"))
 			Eventually(session).Should(gexec.Exit(1))
 		})
@@ -197,14 +202,21 @@ start_command: the start command
 
 	Context("when the buildpack fails to release", func() {
 		BeforeEach(func() {
-			buildpacks = []string{"fails-to-release"}
+			smelterCmd = exec.Command(smelterPath,
+				"-appDir", appDir,
+				"-buildpacksDir", buildpacksDir,
+				"-outputDir", outputDir,
+				"-buildArtifactsCacheDir", buildArtifactsCacheDir,
+				"-buildpackOrder", "fails-to-release",
+				"-resultDir", resultDir)
+			smelterCmd.Env = os.Environ()
 
 			cpBuildpack("fails-to-release")
 			cp(path.Join(appFixtures, "bash-app", "app.sh"), appDir)
 		})
 
 		It("should exit with an error", func() {
-			session := tailor()
+			session := smelt()
 			Eventually(session.Err).Should(gbytes.Say("failed to build droplet release: exit status 1"))
 			Eventually(session).Should(gexec.Exit(1))
 		})
@@ -213,20 +225,27 @@ start_command: the start command
 	Context("with a nested buildpack", func() {
 		BeforeEach(func() {
 			nestedBuildpack := "nested-buildpack"
-			buildpacks = []string{nestedBuildpack}
-
 			nestedBuildpackHash := "70d137ae4ee01fbe39058ccdebf48460"
 
 			nestedBuildpackDir := path.Join(buildpacksDir, nestedBuildpackHash)
 			err := os.MkdirAll(nestedBuildpackDir, 0777)
 			Ω(err).ShouldNot(HaveOccurred())
 
+			smelterCmd = exec.Command(smelterPath,
+				"-appDir", appDir,
+				"-buildpacksDir", buildpacksDir,
+				"-outputDir", outputDir,
+				"-buildArtifactsCacheDir", buildArtifactsCacheDir,
+				"-buildpackOrder", nestedBuildpack,
+				"-resultDir", resultDir)
+			smelterCmd.Env = os.Environ()
+
 			cp(path.Join(buildpackFixtures, "always-detects"), nestedBuildpackDir)
 			cp(path.Join(appFixtures, "bash-app", "app.sh"), appDir)
 		})
 
 		It("should detect the nested buildpack", func() {
-			Eventually(tailor()).Should(gexec.Exit(0))
+			Eventually(smelt()).Should(gexec.Exit(0))
 		})
 	})
 })

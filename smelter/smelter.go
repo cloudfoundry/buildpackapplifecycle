@@ -1,4 +1,4 @@
-package buildpackrunner
+package smelter
 
 import (
 	"bytes"
@@ -17,8 +17,8 @@ import (
 	"github.com/cloudfoundry-incubator/candiedyaml"
 )
 
-type Runner struct {
-	config models.LinuxCircusTailorConfig
+type Smelter struct {
+	config *models.LinuxSmeltingConfig
 }
 
 type descriptiveError struct {
@@ -46,53 +46,53 @@ type Release struct {
 	} `yaml:"default_process_types"`
 }
 
-func New(config models.LinuxCircusTailorConfig) *Runner {
-	return &Runner{
+func New(config *models.LinuxSmeltingConfig) *Smelter {
+	return &Smelter{
 		config: config,
 	}
 }
 
-func (runner *Runner) Run() error {
+func (s *Smelter) Smelt() error {
 	//set up the world
-	err := runner.makeDirectories()
+	err := s.makeDirectories()
 	if err != nil {
 		return newDescriptiveError(err, "failed to set up filesystem when generating droplet")
 	}
 
 	//detect, compile, release
-	detectedBuildpack, detectedBuildpackDir, detectOutput, err := runner.detect()
+	detectedBuildpack, detectedBuildpackDir, detectOutput, err := s.detect()
 	if err != nil {
 		return err
 	}
 
-	err = runner.compile(detectedBuildpackDir)
+	err = s.compile(detectedBuildpackDir)
 	if err != nil {
 		return newDescriptiveError(err, "failed to compile droplet")
 	}
 
-	releaseInfo, err := runner.release(detectedBuildpackDir)
+	releaseInfo, err := s.release(detectedBuildpackDir)
 	if err != nil {
 		return newDescriptiveError(err, "failed to build droplet release")
 	}
 
 	//generate staging_info.yml and result json file
-	err = runner.saveInfo(detectedBuildpack, detectOutput, releaseInfo)
+	err = s.saveInfo(detectedBuildpack, detectOutput, releaseInfo)
 	if err != nil {
 		return newDescriptiveError(err, "failed to encode generated metadata")
 	}
 
 	//prepare the final droplet directory
-	err = runner.copyApp(runner.config.AppDir, path.Join(runner.config.OutputDropletDir, "app"))
+	err = s.copyApp(s.config.AppDir(), path.Join(s.config.OutputDir(), "app"))
 	if err != nil {
 		return newDescriptiveError(err, "failed to copy compiled droplet")
 	}
 
-	err = os.MkdirAll(path.Join(runner.config.OutputDropletDir, "tmp"), 0755)
+	err = os.MkdirAll(path.Join(s.config.OutputDir(), "tmp"), 0755)
 	if err != nil {
 		return newDescriptiveError(err, "failed to set up droplet filesystem")
 	}
 
-	err = os.MkdirAll(path.Join(runner.config.OutputDropletDir, "logs"), 0755)
+	err = os.MkdirAll(path.Join(s.config.OutputDir(), "logs"), 0755)
 	if err != nil {
 		return newDescriptiveError(err, "failed to set up droplet filesystem")
 	}
@@ -100,26 +100,26 @@ func (runner *Runner) Run() error {
 	return nil
 }
 
-func (runner *Runner) makeDirectories() error {
-	if err := os.MkdirAll(runner.config.OutputDropletDir, 0755); err != nil {
+func (s *Smelter) makeDirectories() error {
+	if err := os.MkdirAll(s.config.OutputDir(), 0755); err != nil {
 		return err
 	}
 
-	if err := os.MkdirAll(runner.config.OutputMetadataDir, 0755); err != nil {
+	if err := os.MkdirAll(s.config.ResultJsonDir(), 0755); err != nil {
 		return err
 	}
 
-	if err := os.MkdirAll(runner.config.BuildArtifactsCacheDir, 0755); err != nil {
+	if err := os.MkdirAll(s.config.BuildArtifactsCacheDir(), 0755); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (runner *Runner) buildpackPath(buildpack string) (string, error) {
-	buildpackPath := runner.config.BuildpackPath(buildpack)
+func (s *Smelter) buildpackPath(buildpack string) (string, error) {
+	buildpackPath := s.config.BuildpackPath(buildpack)
 
-	if runner.pathHasBinDirectory(buildpackPath) {
+	if s.pathHasBinDirectory(buildpackPath) {
 		return buildpackPath, nil
 	}
 
@@ -131,7 +131,7 @@ func (runner *Runner) buildpackPath(buildpack string) (string, error) {
 	if len(files) == 1 {
 		nestedPath := path.Join(buildpackPath, files[0].Name())
 
-		if runner.pathHasBinDirectory(nestedPath) {
+		if s.pathHasBinDirectory(nestedPath) {
 			return nestedPath, nil
 		}
 	}
@@ -139,22 +139,22 @@ func (runner *Runner) buildpackPath(buildpack string) (string, error) {
 	return "", newDescriptiveError(nil, "malformed buildpack does not contain a /bin dir: %s", buildpack)
 }
 
-func (runner *Runner) pathHasBinDirectory(pathToTest string) bool {
+func (s *Smelter) pathHasBinDirectory(pathToTest string) bool {
 	_, err := os.Stat(path.Join(pathToTest, "bin"))
 	return err == nil
 }
 
-func (runner *Runner) detect() (string, string, string, error) {
-	for _, buildpack := range runner.config.BuildpackOrder {
+func (s *Smelter) detect() (string, string, string, error) {
+	for _, buildpack := range s.config.BuildpackOrder() {
 		output := new(bytes.Buffer)
 
-		buildpackPath, err := runner.buildpackPath(buildpack)
+		buildpackPath, err := s.buildpackPath(buildpack)
 		if err != nil {
 			fmt.Println(err.Error())
 			continue
 		}
 
-		err = runner.run(exec.Command(path.Join(buildpackPath, "bin", "detect"), runner.config.AppDir), output)
+		err = s.run(exec.Command(path.Join(buildpackPath, "bin", "detect"), s.config.AppDir()), output)
 
 		if err == nil {
 			return buildpack, buildpackPath, strings.TrimRight(output.String(), "\n"), nil
@@ -164,14 +164,14 @@ func (runner *Runner) detect() (string, string, string, error) {
 	return "", "", "", newDescriptiveError(nil, "no valid buildpacks detected")
 }
 
-func (runner *Runner) compile(buildpackDir string) error {
-	return runner.run(exec.Command(path.Join(buildpackDir, "bin", "compile"), runner.config.AppDir, runner.config.BuildArtifactsCacheDir), os.Stdout)
+func (s *Smelter) compile(buildpackDir string) error {
+	return s.run(exec.Command(path.Join(buildpackDir, "bin", "compile"), s.config.AppDir(), s.config.BuildArtifactsCacheDir()), os.Stdout)
 }
 
-func (runner *Runner) release(buildpackDir string) (Release, error) {
+func (s *Smelter) release(buildpackDir string) (Release, error) {
 	output := new(bytes.Buffer)
 
-	err := runner.run(exec.Command(path.Join(buildpackDir, "bin", "release"), runner.config.AppDir), output)
+	err := s.run(exec.Command(path.Join(buildpackDir, "bin", "release"), s.config.AppDir()), output)
 	if err != nil {
 		return Release{}, err
 	}
@@ -188,15 +188,15 @@ func (runner *Runner) release(buildpackDir string) (Release, error) {
 	return parsedRelease, nil
 }
 
-func (runner *Runner) saveInfo(buildpack string, detectOutput string, releaseInfo Release) error {
-	infoFile, err := os.Create(filepath.Join(runner.config.OutputDropletDir, "staging_info.yml"))
+func (s *Smelter) saveInfo(buildpack string, detectOutput string, releaseInfo Release) error {
+	infoFile, err := os.Create(filepath.Join(s.config.OutputDir(), "staging_info.yml"))
 	if err != nil {
 		return err
 	}
 
 	defer infoFile.Close()
 
-	resultFile, err := os.Create(runner.config.ResultJsonPath())
+	resultFile, err := os.Create(s.config.ResultJsonPath())
 	if err != nil {
 		return err
 	}
@@ -222,11 +222,11 @@ func (runner *Runner) saveInfo(buildpack string, detectOutput string, releaseInf
 	return nil
 }
 
-func (runner *Runner) copyApp(appDir, stageDir string) error {
-	return runner.run(exec.Command("cp", "-a", appDir, stageDir), os.Stdout)
+func (s *Smelter) copyApp(appDir, stageDir string) error {
+	return s.run(exec.Command("cp", "-a", appDir, stageDir), os.Stdout)
 }
 
-func (runner *Runner) run(cmd *exec.Cmd, output io.Writer) error {
+func (s *Smelter) run(cmd *exec.Cmd, output io.Writer) error {
 	cmd.Stdout = output
 	cmd.Stderr = os.Stderr
 

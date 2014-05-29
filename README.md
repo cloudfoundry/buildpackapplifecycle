@@ -1,9 +1,5 @@
-# The Linux Circus
+# The Linux Smelter
 
-* [![Coverage Status](https://coveralls.io/repos/cloudfoundry-incubator/linux-circus/badge.png?branch=HEAD)](https://coveralls.io/r/cloudfoundry-incubator/linux-circus?branch=HEAD)
+* [![Coverage Status](https://coveralls.io/repos/cloudfoundry-incubator/linux-smelter/badge.png?branch=HEAD)](https://coveralls.io/r/cloudfoundry-incubator/linux-smelter?branch=HEAD)
 
-## Tailor
-
-## Soldier
-
-## Spy
+The Linux smelter is a function of app bits to compiled app bits.
