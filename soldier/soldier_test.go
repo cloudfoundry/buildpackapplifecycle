@@ -12,15 +12,35 @@ import (
 )
 
 var _ = Describe("Soldier", func() {
+	var soldier string
+
+	BeforeEach(func() {
+		var err error
+
+		soldier, err = gexec.Build("github.com/cloudfoundry-incubator/linux-circus/soldier")
+		Ω(err).ShouldNot(HaveOccurred())
+	})
+
 	It("executes it with $HOME as the given dir", func() {
 		session, err := gexec.Start(
-			exec.Command(soldierPath, "/some-app-dir", "bash", "-c", "echo $HOME"),
+			exec.Command(soldier, "/some-app-dir", "bash", "-c", "echo HOME set to $HOME"),
 			GinkgoWriter,
 			GinkgoWriter,
 		)
 		Ω(err).ShouldNot(HaveOccurred())
 
-		Eventually(session).Should(gbytes.Say("/some-app-dir"))
+		Eventually(session).Should(gbytes.Say("HOME set to /some-app-dir"))
+	})
+
+	It("executes it with $TMPDIR as the given dir + /tmp", func() {
+		session, err := gexec.Start(
+			exec.Command(soldier, "/some-app-dir", "bash", "-c", "echo TMPDIR set to $TMPDIR"),
+			GinkgoWriter,
+			GinkgoWriter,
+		)
+		Ω(err).ShouldNot(HaveOccurred())
+
+		Eventually(session).Should(gbytes.Say("TMPDIR set to /some-app-dir/tmp"))
 	})
 
 	Context("when the given dir has .profile.d with scripts in it", func() {
@@ -50,7 +70,7 @@ var _ = Describe("Soldier", func() {
 
 		It("sources them before executing", func() {
 			session, err := gexec.Start(
-				exec.Command(soldierPath, appDir, "bash", "-c", "env; echo running app"),
+				exec.Command(soldier, appDir, "bash", "-c", "env; echo running app"),
 				GinkgoWriter,
 				GinkgoWriter,
 			)
