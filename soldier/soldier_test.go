@@ -13,44 +13,71 @@ import (
 
 var _ = Describe("Soldier", func() {
 	var soldier string
+	var appDir string
 
 	BeforeEach(func() {
 		var err error
+
+		appDir, err = ioutil.TempDir("", "app-dir")
+		Ω(err).ShouldNot(HaveOccurred())
 
 		soldier, err = gexec.Build("github.com/cloudfoundry-incubator/linux-circus/soldier")
 		Ω(err).ShouldNot(HaveOccurred())
 	})
 
+	AfterEach(func() {
+		os.RemoveAll(appDir)
+	})
+
 	It("executes it with $HOME as the given dir", func() {
 		session, err := gexec.Start(
-			exec.Command(soldier, "/some-app-dir", "bash", "-c", "echo HOME set to $HOME"),
+			exec.Command(soldier, appDir, "bash", "-c", "echo HOME set to $HOME"),
 			GinkgoWriter,
 			GinkgoWriter,
 		)
 		Ω(err).ShouldNot(HaveOccurred())
 
-		Eventually(session).Should(gbytes.Say("HOME set to /some-app-dir"))
+		Eventually(session).Should(gbytes.Say("HOME set to " + appDir))
 	})
 
 	It("executes it with $TMPDIR as the given dir + /tmp", func() {
 		session, err := gexec.Start(
-			exec.Command(soldier, "/some-app-dir", "bash", "-c", "echo TMPDIR set to $TMPDIR"),
+			exec.Command(soldier, appDir, "bash", "-c", "echo TMPDIR set to $TMPDIR"),
 			GinkgoWriter,
 			GinkgoWriter,
 		)
 		Ω(err).ShouldNot(HaveOccurred())
 
-		Eventually(session).Should(gbytes.Say("TMPDIR set to /some-app-dir/tmp"))
+		Eventually(session).Should(gbytes.Say("TMPDIR set to " + appDir + "/tmp"))
+	})
+
+	It("executes with the environment of the caller", func() {
+		os.Setenv("CALLERENV", "some-value")
+
+		session, err := gexec.Start(
+			exec.Command(soldier, appDir, "bash", "-c", "echo CALLERENV set to $CALLERENV"),
+			GinkgoWriter,
+			GinkgoWriter,
+		)
+		Ω(err).ShouldNot(HaveOccurred())
+
+		Eventually(session).Should(gbytes.Say("CALLERENV set to some-value"))
+	})
+
+	It("changes to the app directory when running", func() {
+		session, err := gexec.Start(
+			exec.Command(soldier, appDir, "bash", "-c", "echo PWD is $(pwd)"),
+			GinkgoWriter,
+			GinkgoWriter,
+		)
+		Ω(err).ShouldNot(HaveOccurred())
+
+		Eventually(session).Should(gbytes.Say("PWD is " + appDir))
 	})
 
 	Context("when the given dir has .profile.d with scripts in it", func() {
-		var appDir string
-
 		BeforeEach(func() {
 			var err error
-
-			appDir, err = ioutil.TempDir("", "app-dir")
-			Ω(err).ShouldNot(HaveOccurred())
 
 			profileDir := path.Join(appDir, ".profile.d")
 
@@ -62,10 +89,6 @@ var _ = Describe("Soldier", func() {
 
 			err = ioutil.WriteFile(path.Join(profileDir, "b.sh"), []byte("echo sourcing b\nexport B=1\n"), 0644)
 			Ω(err).ShouldNot(HaveOccurred())
-		})
-
-		AfterEach(func() {
-			os.RemoveAll(appDir)
 		})
 
 		It("sources them before executing", func() {

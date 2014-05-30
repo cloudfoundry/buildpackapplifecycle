@@ -11,8 +11,10 @@ if [ -z "$1" ]; then
   exit 1
 fi
 
-if [ -d "$1/.profile.d" ]; then
-  for env_file in "$1"/.profile.d/*; do
+cd "$1"
+
+if [ -d .profile.d ]; then
+  for env_file in .profile.d/*; do
     source $env_file
   done
 fi
@@ -29,10 +31,8 @@ func main() {
 		soldier,
 	}
 
-	env := []string{
-		"HOME=" + os.Args[1],
-		"TMPDIR=" + os.Args[1] + "/tmp",
-	}
+	os.Setenv("HOME", os.Args[1])
+	os.Setenv("TMPDIR", os.Args[1]+"/tmp")
 
-	syscall.Exec("/bin/bash", append(argv, os.Args...), env)
+	syscall.Exec("/bin/bash", append(argv, os.Args...), os.Environ())
 }
