@@ -100,7 +100,7 @@ var _ = Describe("Task", func() {
 
 		Context("with an invalid payload", func() {
 			It("returns the error", func() {
-				decodedTask, err := NewTaskFromJSON([]byte("butts lol"))
+				decodedTask, err := NewTaskFromJSON([]byte("aliens lol"))
 				Ω(err).Should(HaveOccurred())
 
 				Ω(decodedTask).Should(BeZero())

@@ -11,12 +11,16 @@ var _ = Describe("StopLrpInstance", func() {
 	var stopInstance StopLRPInstance
 
 	stopInstancePayload := `{
-    "instance_guid":"some-instance-guid"
+		"process_guid":"some-process-guid",
+    "instance_guid":"some-instance-guid",
+    "index":1234
   }`
 
 	BeforeEach(func() {
 		stopInstance = StopLRPInstance{
+			ProcessGuid:  "some-process-guid",
 			InstanceGuid: "some-instance-guid",
+			Index:        1234,
 		}
 	})
 	Describe("ToJSON", func() {
@@ -36,7 +40,7 @@ var _ = Describe("StopLrpInstance", func() {
 
 		Context("with an invalid payload", func() {
 			It("returns the error", func() {
-				decodedStopInstance, err := NewStopLRPInstanceFromJSON([]byte("butts lol"))
+				decodedStopInstance, err := NewStopLRPInstanceFromJSON([]byte("aliens lol"))
 				Ω(err).Should(HaveOccurred())
 
 				Ω(decodedStopInstance).Should(BeZero())

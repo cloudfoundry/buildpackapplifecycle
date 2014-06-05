@@ -18,8 +18,8 @@ func NewRepPresenceFromJSON(payload []byte) (RepPresence, error) {
 	return task, nil
 }
 
-func (self RepPresence) ToJSON() []byte {
-	bytes, err := json.Marshal(self)
+func (presence RepPresence) ToJSON() []byte {
+	bytes, err := json.Marshal(presence)
 	if err != nil {
 		panic(err)
 	}

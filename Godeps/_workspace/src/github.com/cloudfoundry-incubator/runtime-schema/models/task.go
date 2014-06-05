@@ -59,8 +59,8 @@ func NewTaskFromJSON(payload []byte) (Task, error) {
 	return task, nil
 }
 
-func (self Task) ToJSON() []byte {
-	bytes, err := json.Marshal(self)
+func (task Task) ToJSON() []byte {
+	bytes, err := json.Marshal(task)
 	if err != nil {
 		panic(err)
 	}

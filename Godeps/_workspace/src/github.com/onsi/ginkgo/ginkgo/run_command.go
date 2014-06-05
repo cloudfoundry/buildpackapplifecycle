@@ -10,6 +10,7 @@ import (
 	"github.com/onsi/ginkgo/config"
 	"github.com/onsi/ginkgo/ginkgo/testrunner"
 	"github.com/onsi/ginkgo/ginkgo/testsuite"
+	"github.com/onsi/ginkgo/types"
 )
 
 func BuildRunCommand() *Command {
@@ -40,6 +41,7 @@ type SpecRunner struct {
 }
 
 func (r *SpecRunner) RunSpecs(args []string, additionalArgs []string) {
+	r.commandFlags.computeNodes()
 	r.notifier.VerifyNotificationsAreAvailable()
 
 	suites := findSuites(args, r.commandFlags.Recurse, r.commandFlags.SkipPackage)
@@ -81,8 +83,8 @@ func (r *SpecRunner) RunSpecs(args []string, additionalArgs []string) {
 	if runResult.Passed {
 		if runResult.HasProgrammaticFocus {
 			fmt.Printf("Test Suite Passed\n")
-			fmt.Printf("Detected Programmatic Focus - setting exit status to 2\n")
-			os.Exit(2)
+			fmt.Printf("Detected Programmatic Focus - setting exit status to %d\n", types.GINKGO_FOCUS_EXIT_CODE)
+			os.Exit(types.GINKGO_FOCUS_EXIT_CODE)
 		} else {
 			fmt.Printf("Test Suite Passed\n")
 			os.Exit(0)
@@ -136,7 +138,7 @@ func (r *SpecRunner) RunSuites(suites []*testsuite.TestSuite, additionalArgs []s
 
 	suiteCompilers := make([]*compiler, len(suites))
 	for i, suite := range suites {
-		runner := testrunner.New(suite, r.commandFlags.NumCPU, r.commandFlags.ParallelStream, r.commandFlags.Race, r.commandFlags.Cover, additionalArgs)
+		runner := testrunner.New(suite, r.commandFlags.NumCPU, r.commandFlags.ParallelStream, r.commandFlags.Race, r.commandFlags.Cover, r.commandFlags.Tags, additionalArgs)
 		suiteCompilers[i] = &compiler{
 			runner:           runner,
 			compilationError: make(chan error, 1),

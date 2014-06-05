@@ -24,7 +24,8 @@ type LRPStartAuction struct {
 
 	Index int `json:"index"`
 
-	State LRPStartAuctionState `json:"state"`
+	State     LRPStartAuctionState `json:"state"`
+	UpdatedAt int64                `json:"updated_at"`
 }
 
 func NewLRPStartAuctionFromJSON(payload []byte) (LRPStartAuction, error) {
@@ -38,8 +39,8 @@ func NewLRPStartAuctionFromJSON(payload []byte) (LRPStartAuction, error) {
 	return task, nil
 }
 
-func (self LRPStartAuction) ToJSON() []byte {
-	bytes, err := json.Marshal(self)
+func (auction LRPStartAuction) ToJSON() []byte {
+	bytes, err := json.Marshal(auction)
 	if err != nil {
 		panic(err)
 	}

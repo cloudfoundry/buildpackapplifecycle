@@ -3,7 +3,9 @@ package models
 import "encoding/json"
 
 type StopLRPInstance struct {
+	ProcessGuid  string `json:"process_guid"`
 	InstanceGuid string `json:"instance_guid"`
+	Index        int    `json:"index"`
 }
 
 func NewStopLRPInstanceFromJSON(payload []byte) (StopLRPInstance, error) {
@@ -17,8 +19,8 @@ func NewStopLRPInstanceFromJSON(payload []byte) (StopLRPInstance, error) {
 	return stopInstance, nil
 }
 
-func (self StopLRPInstance) ToJSON() []byte {
-	bytes, err := json.Marshal(self)
+func (stop StopLRPInstance) ToJSON() []byte {
+	bytes, err := json.Marshal(stop)
 	if err != nil {
 		panic(err)
 	}

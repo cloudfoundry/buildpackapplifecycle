@@ -37,6 +37,7 @@ var _ = Describe("LRPStartAuction", func() {
       "index": 42
     },
     "index": 2,
+    "updated_at": 1138,
     "state": 1
   }`
 
@@ -68,8 +69,9 @@ var _ = Describe("LRPStartAuction", func() {
 				SourceName: "APP",
 				Index:      &index,
 			},
-			Index: 2,
-			State: LRPStartAuctionStatePending,
+			Index:     2,
+			State:     LRPStartAuctionStatePending,
+			UpdatedAt: 1138,
 		}
 	})
 	Describe("ToJSON", func() {
@@ -89,7 +91,7 @@ var _ = Describe("LRPStartAuction", func() {
 
 		Context("with an invalid payload", func() {
 			It("returns the error", func() {
-				decodedStartAuction, err := NewLRPStartAuctionFromJSON([]byte("butts lol"))
+				decodedStartAuction, err := NewLRPStartAuctionFromJSON([]byte("aliens lol"))
 				Ω(err).Should(HaveOccurred())
 
 				Ω(decodedStartAuction).Should(BeZero())

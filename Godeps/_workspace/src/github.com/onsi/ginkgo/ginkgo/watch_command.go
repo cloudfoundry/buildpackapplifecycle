@@ -41,6 +41,7 @@ type SpecWatcher struct {
 }
 
 func (w *SpecWatcher) WatchSpecs(args []string, additionalArgs []string) {
+	w.commandFlags.computeNodes()
 	w.notifier.VerifyNotificationsAreAvailable()
 
 	suites := findSuites(args, w.commandFlags.Recurse, w.commandFlags.SkipPackage)
@@ -72,7 +73,7 @@ func (w *SpecWatcher) WatchSuites(suites []*testsuite.TestSuite, additionalArgs 
 
 func (w *SpecWatcher) RunSuite(suite *testsuite.TestSuite, additionalArgs []string) {
 	w.UpdateSeed()
-	runner := testrunner.New(suite, w.commandFlags.NumCPU, w.commandFlags.ParallelStream, w.commandFlags.Race, w.commandFlags.Cover, additionalArgs)
+	runner := testrunner.New(suite, w.commandFlags.NumCPU, w.commandFlags.ParallelStream, w.commandFlags.Race, w.commandFlags.Cover, w.commandFlags.Tags, additionalArgs)
 	err := runner.Compile()
 	if err != nil {
 		fmt.Print(err.Error())

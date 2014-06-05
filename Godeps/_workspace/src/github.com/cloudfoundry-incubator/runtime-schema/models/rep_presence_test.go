@@ -39,7 +39,7 @@ var _ = Describe("RepPresence", func() {
 
 		Context("with an invalid payload", func() {
 			It("returns the error", func() {
-				decodedRepPresence, err := NewRepPresenceFromJSON([]byte("butts lol"))
+				decodedRepPresence, err := NewRepPresenceFromJSON([]byte("aliens lol"))
 				Ω(err).Should(HaveOccurred())
 
 				Ω(decodedRepPresence).Should(BeZero())
