@@ -10,17 +10,19 @@ FIRST_GOPATH=`echo $GOPATH | cut -d':' -f1`
 mkdir -p $FIRST_GOPATH/bin
 export PATH=$FIRST_GOPATH/bin:$PATH
 
-go install github.com/onsi/ginkgo/ginkgo
+go get -u github.com/coreos/etcd
 go get github.com/dustin/goveralls
+go get code.google.com/p/go.tools/cmd/cover
+go get github.com/apcera/gnatsd
+go install github.com/onsi/ginkgo/ginkgo
 
-
-ginkgo -r -cover -failOnPending -randomizeAllSpecs -race "$@"
+ginkgo -cover -v -r -failOnPending -randomizeAllSpecs -race
 
 # don't leak coveralls token
 set +x
 
 if [ -n "$COVERALLS_TOKEN" ]; then
-  profiles=$(find . -name '*.coverprofile' | grep -v fake | grep -v Godeps | grep -v linux-smelter.coverprofile)
+  profiles=$(find . -name '*.coverprofile' | grep -v fake | grep -v Godeps | grep -v integration.coverprofile)
 
   echo mode: set > all.coverprofile
   cat $profiles | grep -v mode: >> all.coverprofile
