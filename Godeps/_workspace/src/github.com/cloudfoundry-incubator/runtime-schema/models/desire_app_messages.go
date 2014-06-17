@@ -3,8 +3,7 @@ package models
 import "encoding/json"
 
 type DesireAppRequestFromCC struct {
-	AppId           string                `json:"app_id"`
-	AppVersion      string                `json:"app_version"`
+	ProcessGuid     string                `json:"process_guid"`
 	DropletUri      string                `json:"droplet_uri"`
 	Stack           string                `json:"stack"`
 	StartCommand    string                `json:"start_command"`
@@ -14,6 +13,7 @@ type DesireAppRequestFromCC struct {
 	FileDescriptors uint64                `json:"file_descriptors"`
 	NumInstances    int                   `json:"num_instances"`
 	Routes          []string              `json:"routes"`
+	LogGuid         string                `json:"log_guid"`
 }
 
 func (d DesireAppRequestFromCC) ToJSON() []byte {
