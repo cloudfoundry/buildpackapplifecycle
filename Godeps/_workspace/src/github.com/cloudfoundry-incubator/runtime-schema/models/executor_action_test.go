@@ -98,8 +98,8 @@ var _ = Describe("ExecutorAction", func() {
 					"script": "rm -rf /",
 					"timeout": 10000000,
 					"env": [
-						{"key":"FOO", "value":"1"},
-						{"key":"BAR", "value":"2"}
+						{"name":"FOO", "value":"1"},
+						{"name":"BAR", "value":"2"}
 					],
 					"resource_limits":{}
 				}

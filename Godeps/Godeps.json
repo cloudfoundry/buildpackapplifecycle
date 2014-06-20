@@ -11,7 +11,7 @@
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry-incubator/runtime-schema/models",
-			"Rev": "79964ba1ca6a508d7593e545581f186faaa65da4"
+			"Rev": "cce188b6c789ac208f23f851014654a4b63b8ecc"
 		},
 		{
 			"ImportPath": "github.com/onsi/ginkgo",

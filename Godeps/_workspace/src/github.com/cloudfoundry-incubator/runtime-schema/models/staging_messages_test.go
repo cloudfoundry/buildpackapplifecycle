@@ -17,7 +17,7 @@ var _ = Describe("StagingMessages", func() {
            "memory_mb" : 1024,
            "disk_mb" : 10000,
            "file_descriptors" : 3,
-           "environment" : [{"key": "FOO", "value":"BAR"}],
+           "environment" : [{"name": "FOO", "value":"BAR"}],
            "stack" : "fake-stack",
            "app_bits_download_uri" : "http://fake-download_uri",
            "build_artifacts_cache_download_uri" : "http://a-nice-place-to-get-valuable-artifacts.com",
@@ -46,7 +46,7 @@ var _ = Describe("StagingMessages", func() {
 					},
 				},
 				Environment: []EnvironmentVariable{
-					{Key: "FOO", Value: "BAR"},
+					{Name: "FOO", Value: "BAR"},
 				},
 			}))
 		})

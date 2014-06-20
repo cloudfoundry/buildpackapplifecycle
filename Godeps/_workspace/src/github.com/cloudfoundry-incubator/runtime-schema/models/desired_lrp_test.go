@@ -19,7 +19,7 @@ var _ = Describe("DesiredLRP", func() {
     "file_descriptors":17,
     "source":"http://example.com/source",
     "start_command":"echo",
-    "environment": [{"key": "FOO", "value": "BAR"}],
+    "environment": [{"name": "FOO", "value": "BAR"}],
     "routes":["route-1","route-2"],
     "log_guid":"some-log-guid"
   }`
@@ -34,7 +34,7 @@ var _ = Describe("DesiredLRP", func() {
 			FileDescriptors: 17,
 			Source:          "http://example.com/source",
 			StartCommand:    "echo",
-			Environment:     []EnvironmentVariable{{Key: "FOO", Value: "BAR"}},
+			Environment:     []EnvironmentVariable{{Name: "FOO", Value: "BAR"}},
 			Routes:          []string{"route-1", "route-2"},
 			LogGuid:         "some-log-guid",
 		}

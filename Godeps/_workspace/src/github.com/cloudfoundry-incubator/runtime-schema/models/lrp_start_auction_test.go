@@ -74,6 +74,7 @@ var _ = Describe("LRPStartAuction", func() {
 			UpdatedAt: 1138,
 		}
 	})
+
 	Describe("ToJSON", func() {
 		It("should JSONify", func() {
 			json := startAuction.ToJSON()
@@ -96,6 +97,16 @@ var _ = Describe("LRPStartAuction", func() {
 
 				Ω(decodedStartAuction).Should(BeZero())
 			})
+		})
+	})
+
+	Describe("LRPIdentifier", func() {
+		It("should return a valid LRPIdentifier", func() {
+			Ω(startAuction.LRPIdentifier()).Should(Equal(LRPIdentifier{
+				ProcessGuid:  "some-guid",
+				InstanceGuid: "some-instance-guid",
+				Index:        2,
+			}))
 		})
 	})
 })

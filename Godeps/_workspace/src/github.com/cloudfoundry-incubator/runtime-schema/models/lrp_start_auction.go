@@ -47,3 +47,11 @@ func (auction LRPStartAuction) ToJSON() []byte {
 
 	return bytes
 }
+
+func (auction LRPStartAuction) LRPIdentifier() LRPIdentifier {
+	return LRPIdentifier{
+		ProcessGuid:  auction.ProcessGuid,
+		Index:        auction.Index,
+		InstanceGuid: auction.InstanceGuid,
+	}
+}

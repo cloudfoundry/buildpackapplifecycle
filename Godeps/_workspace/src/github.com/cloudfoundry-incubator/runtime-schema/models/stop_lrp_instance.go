@@ -27,3 +27,11 @@ func (stop StopLRPInstance) ToJSON() []byte {
 
 	return bytes
 }
+
+func (stop StopLRPInstance) LRPIdentifier() LRPIdentifier {
+	return LRPIdentifier{
+		ProcessGuid:  stop.ProcessGuid,
+		Index:        stop.Index,
+		InstanceGuid: stop.InstanceGuid,
+	}
+}
