@@ -18,7 +18,7 @@ import (
 )
 
 type Runner struct {
-	config *models.LinuxCircusTailorConfig
+	config *models.CircusTailorConfig
 }
 
 type descriptiveError struct {
@@ -46,7 +46,7 @@ type Release struct {
 	} `yaml:"default_process_types"`
 }
 
-func New(config *models.LinuxCircusTailorConfig) *Runner {
+func New(config *models.CircusTailorConfig) *Runner {
 	return &Runner{
 		config: config,
 	}

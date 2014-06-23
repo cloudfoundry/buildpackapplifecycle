@@ -1,6 +1,6 @@
 {
 	"ImportPath": "github.com/cloudfoundry-incubator/linux-circus",
-	"GoVersion": "go1.2.1",
+	"GoVersion": "go1.3",
 	"Packages": [
 		"./..."
 	],
@@ -11,7 +11,7 @@
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry-incubator/runtime-schema/models",
-			"Rev": "cce188b6c789ac208f23f851014654a4b63b8ecc"
+			"Rev": "8f252f2e0f8b0a4e9e0aea3f871bebbe3cf19846"
 		},
 		{
 			"ImportPath": "github.com/onsi/ginkgo",

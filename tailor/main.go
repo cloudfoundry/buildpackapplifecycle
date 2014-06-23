@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	config := models.NewLinuxCircusTailorConfig([]string{})
+	config := models.NewCircusTailorConfig([]string{})
 
 	if err := config.Parse(os.Args[1:len(os.Args)]); err != nil {
 		println(err.Error())

@@ -6,11 +6,11 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("LinuxCircusTailorConfig", func() {
-	var tailorConfig LinuxCircusTailorConfig
+var _ = Describe("CircusTailorConfig", func() {
+	var tailorConfig CircusTailorConfig
 
 	BeforeEach(func() {
-		tailorConfig = NewLinuxCircusTailorConfig([]string{"ocaml-buildpack", "haskell-buildpack", "bash-buildpack"})
+		tailorConfig = NewCircusTailorConfig([]string{"ocaml-buildpack", "haskell-buildpack", "bash-buildpack"})
 	})
 
 	Context("with defaults", func() {
