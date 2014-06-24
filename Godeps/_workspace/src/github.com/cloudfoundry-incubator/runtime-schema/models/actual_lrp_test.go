@@ -62,6 +62,24 @@ var _ = Describe("ActualLRP", func() {
 				Ω(decodedStartAuction).Should(BeZero())
 			})
 		})
-	})
 
+		for field, payload := range map[string]string{
+			"process_guid":  `{"instance_guid": "instance_guid", "executor_id": "executor_id"}`,
+			"instance_guid": `{"process_guid": "process-guid", "executor_id": "executor_id"}`,
+			"executor_id":   `{"process_guid": "process-guid", "instance_guid": "instance_guid"}`,
+		} {
+			missingField := field
+			json := payload
+
+			Context("when the json is missing a "+missingField, func() {
+				It("returns an error indicating so", func() {
+					decodedStartAuction, err := NewActualLRPFromJSON([]byte(json))
+					Ω(err).Should(HaveOccurred())
+					Ω(err.Error()).Should(Equal("JSON has missing/invalid field: " + missingField))
+
+					Ω(decodedStartAuction).Should(BeZero())
+				})
+			})
+		}
+	})
 })

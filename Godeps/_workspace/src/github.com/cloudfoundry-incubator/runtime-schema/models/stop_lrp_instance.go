@@ -16,6 +16,14 @@ func NewStopLRPInstanceFromJSON(payload []byte) (StopLRPInstance, error) {
 		return StopLRPInstance{}, err
 	}
 
+	if stopInstance.ProcessGuid == "" {
+		return StopLRPInstance{}, ErrInvalidJSONMessage{"process_guid"}
+	}
+
+	if stopInstance.InstanceGuid == "" {
+		return StopLRPInstance{}, ErrInvalidJSONMessage{"instance_guid"}
+	}
+
 	return stopInstance, nil
 }
 

@@ -26,6 +26,10 @@ func NewLRPStopAuctionFromJSON(payload []byte) (LRPStopAuction, error) {
 		return LRPStopAuction{}, err
 	}
 
+	if task.ProcessGuid == "" {
+		return LRPStopAuction{}, ErrInvalidJSONMessage{"process_guid"}
+	}
+
 	return task, nil
 }
 

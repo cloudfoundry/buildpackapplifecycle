@@ -106,5 +106,25 @@ var _ = Describe("Task", func() {
 				Ω(decodedTask).Should(BeZero())
 			})
 		})
+
+		for field, payload := range map[string]string{
+			"guid":    `{"stack": "some-stack", "actions": [{"action": "fetch_result", "args": {"file": "file"}}]}`,
+			"actions": `{"guid": "process-guid", "stack": "some-stack"}`,
+			"stack":   `{"guid": "process-guid", "actions": [{"action": "fetch_result", "args": {"file": "file"}}]}`,
+		} {
+			json := payload
+			missingField := field
+
+			Context("when the json is missing a "+missingField, func() {
+				It("returns an error indicating so", func() {
+					decodedStartAuction, err := NewTaskFromJSON([]byte(json))
+					Ω(err).Should(HaveOccurred())
+					Ω(err.Error()).Should(Equal("JSON has missing/invalid field: " + missingField))
+
+					Ω(decodedStartAuction).Should(BeZero())
+				})
+			})
+		}
+
 	})
 })

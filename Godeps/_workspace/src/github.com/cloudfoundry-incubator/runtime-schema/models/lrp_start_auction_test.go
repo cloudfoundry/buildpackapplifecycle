@@ -98,6 +98,26 @@ var _ = Describe("LRPStartAuction", func() {
 				Ω(decodedStartAuction).Should(BeZero())
 			})
 		})
+
+		for field, payload := range map[string]string{
+			"process_guid":  `{"instance_guid": "instance_guid", "stack": "some-stack", "actions": [{"action": "fetch_result", "args": {"file": "file"}}]}`,
+			"instance_guid": `{"process_guid": "process-guid", "stack": "some-stack", "actions": [{"action": "fetch_result", "args": {"file": "file"}}]}`,
+			"stack":         `{"process_guid": "process-guid", "instance_guid": "instance_guid", "actions": [{"action": "fetch_result", "args": {"file": "file"}}]}`,
+			"actions":       `{"process_guid": "process-guid", "instance_guid": "instance_guid", "stack": "some-stack"}`,
+		} {
+			json := payload
+			missingField := field
+
+			Context("when the json is missing a "+missingField, func() {
+				It("returns an error indicating so", func() {
+					decodedStartAuction, err := NewLRPStartAuctionFromJSON([]byte(json))
+					Ω(err).Should(HaveOccurred())
+					Ω(err.Error()).Should(Equal("JSON has missing/invalid field: " + missingField))
+
+					Ω(decodedStartAuction).Should(BeZero())
+				})
+			})
+		}
 	})
 
 	Describe("LRPIdentifier", func() {

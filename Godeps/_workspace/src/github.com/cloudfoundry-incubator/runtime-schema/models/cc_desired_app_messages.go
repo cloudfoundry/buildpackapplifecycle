@@ -22,22 +22,8 @@ func (d DesireAppRequestFromCC) ToJSON() []byte {
 }
 
 type CCDesiredStateServerResponse struct {
-	Apps        []CCBulkDesiredApp `json:"apps"`
-	CCBulkToken *json.RawMessage   `json:"token"`
-}
-
-type CCBulkDesiredApp struct {
-	DiskMB          uint64                `json:"disk_mb"`
-	Environment     []EnvironmentVariable `json:"environment"`
-	FileDescriptors uint64                `json:"file_descriptors"`
-	Instances       uint                  `json:"instances"`
-	LogGuid         string                `json:"log_guid"`
-	MemoryMB        uint64                `json:"memory_mb"`
-	ProcessGuid     string                `json:"process_guid"`
-	Routes          []string              `json:"routes"`
-	SourceURL       string                `json:"source_url"`
-	Stack           string                `json:"stack"`
-	StartCommand    string                `json:"start_command"`
+	Apps        []DesireAppRequestFromCC `json:"apps"`
+	CCBulkToken *json.RawMessage         `json:"token"`
 }
 
 type CCBulkToken struct {

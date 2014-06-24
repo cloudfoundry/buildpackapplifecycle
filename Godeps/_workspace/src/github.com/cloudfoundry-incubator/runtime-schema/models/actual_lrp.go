@@ -37,6 +37,18 @@ func NewActualLRPFromJSON(payload []byte) (ActualLRP, error) {
 		return ActualLRP{}, err
 	}
 
+	if task.ProcessGuid == "" {
+		return ActualLRP{}, ErrInvalidJSONMessage{"process_guid"}
+	}
+
+	if task.InstanceGuid == "" {
+		return ActualLRP{}, ErrInvalidJSONMessage{"instance_guid"}
+	}
+
+	if task.ExecutorID == "" {
+		return ActualLRP{}, ErrInvalidJSONMessage{"executor_id"}
+	}
+
 	return task, nil
 }
 

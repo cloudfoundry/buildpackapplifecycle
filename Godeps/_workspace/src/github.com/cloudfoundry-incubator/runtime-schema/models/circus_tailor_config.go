@@ -24,57 +24,57 @@ type CircusTailorConfig struct {
 }
 
 const (
-	LinuxCircusTailorAppDirFlag                 = "appDir"
-	LinuxCircusTailorOutputDropletDirFlag       = "outputDropletDir"
-	LinuxCircusTailorOutputMetadataDirFlag      = "outputMetadataDir"
-	LinuxCircusTailorBuildpacksDirFlag          = "buildpacksDir"
-	LinuxCircusTailorBuildArtifactsCacheDirFlag = "buildArtifactsCacheDir"
-	LinuxCircusTailorBuildpackOrderFlag         = "buildpackOrder"
+	circusTailorAppDirFlag                 = "appDir"
+	circusTailorOutputDropletDirFlag       = "outputDropletDir"
+	circusTailorOutputMetadataDirFlag      = "outputMetadataDir"
+	circusTailorBuildpacksDirFlag          = "buildpacksDir"
+	circusTailorBuildArtifactsCacheDirFlag = "buildArtifactsCacheDir"
+	circusTailorBuildpackOrderFlag         = "buildpackOrder"
 )
 
-var LinuxCircusTailorDefaults = map[string]string{
-	LinuxCircusTailorAppDirFlag:                 "/app",
-	LinuxCircusTailorOutputDropletDirFlag:       "/tmp/droplet",
-	LinuxCircusTailorOutputMetadataDirFlag:      "/tmp/result",
-	LinuxCircusTailorBuildpacksDirFlag:          "/tmp/buildpacks",
-	LinuxCircusTailorBuildArtifactsCacheDirFlag: "/tmp/cache",
+var circusTailorDefaults = map[string]string{
+	circusTailorAppDirFlag:                 "/app",
+	circusTailorOutputDropletDirFlag:       "/tmp/droplet",
+	circusTailorOutputMetadataDirFlag:      "/tmp/result",
+	circusTailorBuildpacksDirFlag:          "/tmp/buildpacks",
+	circusTailorBuildArtifactsCacheDirFlag: "/tmp/cache",
 }
 
 func NewCircusTailorConfig(buildpacks []string) CircusTailorConfig {
 	flagSet := flag.NewFlagSet("tailor", flag.ExitOnError)
 
 	appDir := flagSet.String(
-		LinuxCircusTailorAppDirFlag,
-		LinuxCircusTailorDefaults[LinuxCircusTailorAppDirFlag],
+		circusTailorAppDirFlag,
+		circusTailorDefaults[circusTailorAppDirFlag],
 		"directory containing raw app bits",
 	)
 
 	outputDropletDir := flagSet.String(
-		LinuxCircusTailorOutputDropletDirFlag,
-		LinuxCircusTailorDefaults[LinuxCircusTailorOutputDropletDirFlag],
+		circusTailorOutputDropletDirFlag,
+		circusTailorDefaults[circusTailorOutputDropletDirFlag],
 		"directory in which to write the droplet",
 	)
 
 	outputMetadataDir := flagSet.String(
-		LinuxCircusTailorOutputMetadataDirFlag,
-		LinuxCircusTailorDefaults[LinuxCircusTailorOutputMetadataDirFlag],
+		circusTailorOutputMetadataDirFlag,
+		circusTailorDefaults[circusTailorOutputMetadataDirFlag],
 		"directory in which to write the app metadata",
 	)
 
 	buildpacksDir := flagSet.String(
-		LinuxCircusTailorBuildpacksDirFlag,
-		LinuxCircusTailorDefaults[LinuxCircusTailorBuildpacksDirFlag],
+		circusTailorBuildpacksDirFlag,
+		circusTailorDefaults[circusTailorBuildpacksDirFlag],
 		"directory containing the buildpacks to try",
 	)
 
 	buildArtifactsCacheDir := flagSet.String(
-		LinuxCircusTailorBuildArtifactsCacheDirFlag,
-		LinuxCircusTailorDefaults[LinuxCircusTailorBuildArtifactsCacheDirFlag],
+		circusTailorBuildArtifactsCacheDirFlag,
+		circusTailorDefaults[circusTailorBuildArtifactsCacheDirFlag],
 		"directory to store cached artifacts to buildpacks",
 	)
 
 	buildpackOrder := flagSet.String(
-		LinuxCircusTailorBuildpackOrderFlag,
+		circusTailorBuildpackOrderFlag,
 		strings.Join(buildpacks, ","),
 		"comma-separated list of buildpacks, to be tried in order",
 	)
@@ -91,12 +91,12 @@ func NewCircusTailorConfig(buildpacks []string) CircusTailorConfig {
 		buildpackOrder:         buildpackOrder,
 
 		values: map[string]*string{
-			LinuxCircusTailorAppDirFlag:                 appDir,
-			LinuxCircusTailorOutputDropletDirFlag:       outputDropletDir,
-			LinuxCircusTailorOutputMetadataDirFlag:      outputMetadataDir,
-			LinuxCircusTailorBuildpacksDirFlag:          buildpacksDir,
-			LinuxCircusTailorBuildArtifactsCacheDirFlag: buildArtifactsCacheDir,
-			LinuxCircusTailorBuildpackOrderFlag:         buildpackOrder,
+			circusTailorAppDirFlag:                 appDir,
+			circusTailorOutputDropletDirFlag:       outputDropletDir,
+			circusTailorOutputMetadataDirFlag:      outputMetadataDir,
+			circusTailorBuildpacksDirFlag:          buildpacksDir,
+			circusTailorBuildArtifactsCacheDirFlag: buildArtifactsCacheDir,
+			circusTailorBuildpackOrderFlag:         buildpackOrder,
 		},
 	}
 }

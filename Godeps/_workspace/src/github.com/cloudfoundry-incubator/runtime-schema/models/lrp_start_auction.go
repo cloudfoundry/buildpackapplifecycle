@@ -11,16 +11,16 @@ const (
 )
 
 type LRPStartAuction struct {
-	ProcessGuid  string `json:"process_guid"`
-	InstanceGuid string `json:"instance_guid"`
+	ProcessGuid  string           `json:"process_guid"`
+	InstanceGuid string           `json:"instance_guid"`
+	Stack        string           `json:"stack"`
+	Actions      []ExecutorAction `json:"actions"`
 
 	DiskMB   int `json:"disk_mb"`
 	MemoryMB int `json:"memory_mb"`
 
-	Stack   string           `json:"stack"`
-	Actions []ExecutorAction `json:"actions"`
-	Log     LogConfig        `json:"log"`
-	Ports   []PortMapping    `json:"ports"`
+	Log   LogConfig     `json:"log"`
+	Ports []PortMapping `json:"ports"`
 
 	Index int `json:"index"`
 
@@ -34,6 +34,22 @@ func NewLRPStartAuctionFromJSON(payload []byte) (LRPStartAuction, error) {
 	err := json.Unmarshal(payload, &task)
 	if err != nil {
 		return LRPStartAuction{}, err
+	}
+
+	if task.ProcessGuid == "" {
+		return LRPStartAuction{}, ErrInvalidJSONMessage{"process_guid"}
+	}
+
+	if task.InstanceGuid == "" {
+		return LRPStartAuction{}, ErrInvalidJSONMessage{"instance_guid"}
+	}
+
+	if task.Stack == "" {
+		return LRPStartAuction{}, ErrInvalidJSONMessage{"stack"}
+	}
+
+	if len(task.Actions) == 0 {
+		return LRPStartAuction{}, ErrInvalidJSONMessage{"actions"}
 	}
 
 	return task, nil

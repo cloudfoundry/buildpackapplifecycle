@@ -45,5 +45,23 @@ var _ = Describe("RepPresence", func() {
 				Ω(decodedRepPresence).Should(BeZero())
 			})
 		})
+
+		for field, payload := range map[string]string{
+			"rep_id": `{"stack": "some stack"}`,
+		} {
+			json := payload
+			missingField := field
+
+			Context("when the json is missing a "+missingField, func() {
+				It("returns an error indicating so", func() {
+					decodedStartAuction, err := NewRepPresenceFromJSON([]byte(json))
+					Ω(err).Should(HaveOccurred())
+					Ω(err.Error()).Should(Equal("JSON has missing/invalid field: " + missingField))
+
+					Ω(decodedStartAuction).Should(BeZero())
+				})
+			})
+		}
+
 	})
 })

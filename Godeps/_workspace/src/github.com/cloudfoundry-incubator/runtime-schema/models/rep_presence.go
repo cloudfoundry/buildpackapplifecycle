@@ -15,6 +15,10 @@ func NewRepPresenceFromJSON(payload []byte) (RepPresence, error) {
 		return RepPresence{}, err
 	}
 
+	if task.RepID == "" {
+		return RepPresence{}, ErrInvalidJSONMessage{"rep_id"}
+	}
+
 	return task, nil
 }
 

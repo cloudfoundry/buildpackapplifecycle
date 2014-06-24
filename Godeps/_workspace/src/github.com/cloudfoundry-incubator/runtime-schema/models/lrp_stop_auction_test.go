@@ -48,5 +48,22 @@ var _ = Describe("LRPStopAuction", func() {
 				Ω(decodedStopAuction).Should(BeZero())
 			})
 		})
+
+		for field, payload := range map[string]string{
+			"process_guid": `{"index": 0}`,
+		} {
+			json := payload
+			missingField := field
+
+			Context("when the json is missing a "+missingField, func() {
+				It("returns an error indicating so", func() {
+					decodedStartAuction, err := NewLRPStopAuctionFromJSON([]byte(json))
+					Ω(err).Should(HaveOccurred())
+					Ω(err.Error()).Should(Equal("JSON has missing/invalid field: " + missingField))
+
+					Ω(decodedStartAuction).Should(BeZero())
+				})
+			})
+		}
 	})
 })

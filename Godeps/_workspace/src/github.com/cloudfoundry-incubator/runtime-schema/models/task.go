@@ -56,6 +56,18 @@ func NewTaskFromJSON(payload []byte) (Task, error) {
 		return Task{}, err
 	}
 
+	if task.Guid == "" {
+		return Task{}, ErrInvalidJSONMessage{"guid"}
+	}
+
+	if len(task.Actions) == 0 {
+		return Task{}, ErrInvalidJSONMessage{"actions"}
+	}
+
+	if task.Stack == "" {
+		return Task{}, ErrInvalidJSONMessage{"stack"}
+	}
+
 	return task, nil
 }
 
