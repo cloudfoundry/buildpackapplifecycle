@@ -6,9 +6,8 @@ const (
 )
 
 type ServiceRegistration struct {
-	Name     string `json:"name"`
-	Id       string `json:"id"`
-	Location string `json:"location"`
+	Name string `json:"name"`
+	Id   string `json:"id"`
 }
 
 type ServiceRegistrations []ServiceRegistration
