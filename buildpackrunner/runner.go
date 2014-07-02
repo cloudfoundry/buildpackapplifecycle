@@ -125,7 +125,7 @@ func (runner *Runner) buildpackPath(buildpack string) (string, error) {
 
 	files, err := ioutil.ReadDir(buildpackPath)
 	if err != nil {
-		return "", newDescriptiveError(nil, "failed to read buildpack directory for buildpack: %s", buildpack)
+		return "", newDescriptiveError(nil, "failed to read buildpack directory '%s' for buildpack '%s'", buildpackPath, buildpack)
 	}
 
 	if len(files) == 1 {
