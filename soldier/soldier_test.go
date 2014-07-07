@@ -31,7 +31,7 @@ var _ = Describe("Soldier", func() {
 
 	It("executes it with $HOME as the given dir", func() {
 		session, err := gexec.Start(
-			exec.Command(soldier, appDir, "bash", "-c", "echo HOME set to $HOME"),
+			exec.Command(soldier, appDir, "echo HOME set to $HOME"),
 			GinkgoWriter,
 			GinkgoWriter,
 		)
@@ -42,7 +42,7 @@ var _ = Describe("Soldier", func() {
 
 	It("executes it with $TMPDIR as the given dir + /tmp", func() {
 		session, err := gexec.Start(
-			exec.Command(soldier, appDir, "bash", "-c", "echo TMPDIR set to $TMPDIR"),
+			exec.Command(soldier, appDir, "echo TMPDIR set to $TMPDIR"),
 			GinkgoWriter,
 			GinkgoWriter,
 		)
@@ -55,7 +55,7 @@ var _ = Describe("Soldier", func() {
 		os.Setenv("CALLERENV", "some-value")
 
 		session, err := gexec.Start(
-			exec.Command(soldier, appDir, "bash", "-c", "echo CALLERENV set to $CALLERENV"),
+			exec.Command(soldier, appDir, "echo CALLERENV set to $CALLERENV"),
 			GinkgoWriter,
 			GinkgoWriter,
 		)
@@ -66,7 +66,7 @@ var _ = Describe("Soldier", func() {
 
 	It("changes to the app directory when running", func() {
 		session, err := gexec.Start(
-			exec.Command(soldier, appDir, "bash", "-c", "echo PWD is $(pwd)"),
+			exec.Command(soldier, appDir, "echo PWD is $(pwd)"),
 			GinkgoWriter,
 			GinkgoWriter,
 		)
@@ -93,7 +93,7 @@ var _ = Describe("Soldier", func() {
 
 		It("sources them before executing", func() {
 			session, err := gexec.Start(
-				exec.Command(soldier, appDir, "bash", "-c", "env; echo running app"),
+				exec.Command(soldier, appDir, "env; echo running app"),
 				GinkgoWriter,
 				GinkgoWriter,
 			)

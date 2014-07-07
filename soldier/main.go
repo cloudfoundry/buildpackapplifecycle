@@ -21,7 +21,7 @@ fi
 
 shift
 
-"$@"
+eval "$@"
 `
 
 func main() {
