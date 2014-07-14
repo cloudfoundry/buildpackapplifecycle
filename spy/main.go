@@ -5,6 +5,7 @@ import (
 	"net"
 	"os"
 	"time"
+    "fmt"
 )
 
 var network = flag.String(
@@ -30,12 +31,12 @@ func main() {
 
 	conn, err := net.DialTimeout(*network, *addr, *timeout)
 	if err != nil {
-		println(err.Error())
+		os.Stderr.Write([]byte(fmt.Sprintf("healthcheck failed: %s\n", err.Error())))
 		os.Exit(1)
 	}
 
 	conn.Close()
 
-	println("ok")
+	os.Stdout.Write([]byte("healtcheck passed"))
 	os.Exit(0)
 }
