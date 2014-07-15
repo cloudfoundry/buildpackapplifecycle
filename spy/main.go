@@ -2,10 +2,10 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"net"
 	"os"
 	"time"
-    "fmt"
 )
 
 var network = flag.String(
@@ -31,12 +31,12 @@ func main() {
 
 	conn, err := net.DialTimeout(*network, *addr, *timeout)
 	if err != nil {
-		os.Stderr.Write([]byte(fmt.Sprintf("healthcheck failed: %s\n", err.Error())))
+		fmt.Println("healthcheck failed")
 		os.Exit(1)
 	}
 
 	conn.Close()
 
-	os.Stdout.Write([]byte("healtcheck passed"))
+	fmt.Println("healthcheck passed")
 	os.Exit(0)
 }
