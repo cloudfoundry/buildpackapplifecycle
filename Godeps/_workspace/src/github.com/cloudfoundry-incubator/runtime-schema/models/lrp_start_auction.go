@@ -11,18 +11,10 @@ const (
 )
 
 type LRPStartAuction struct {
-	ProcessGuid  string           `json:"process_guid"`
-	InstanceGuid string           `json:"instance_guid"`
-	Stack        string           `json:"stack"`
-	Actions      []ExecutorAction `json:"actions"`
+	DesiredLRP DesiredLRP `json:"desired_lrp"`
 
-	DiskMB   int `json:"disk_mb"`
-	MemoryMB int `json:"memory_mb"`
-
-	Log   LogConfig     `json:"log"`
-	Ports []PortMapping `json:"ports"`
-
-	Index int `json:"index"`
+	InstanceGuid string `json:"instance_guid"`
+	Index        int    `json:"index"`
 
 	State     LRPStartAuctionState `json:"state"`
 	UpdatedAt int64                `json:"updated_at"`
@@ -36,20 +28,8 @@ func NewLRPStartAuctionFromJSON(payload []byte) (LRPStartAuction, error) {
 		return LRPStartAuction{}, err
 	}
 
-	if task.ProcessGuid == "" {
-		return LRPStartAuction{}, ErrInvalidJSONMessage{"process_guid"}
-	}
-
 	if task.InstanceGuid == "" {
 		return LRPStartAuction{}, ErrInvalidJSONMessage{"instance_guid"}
-	}
-
-	if task.Stack == "" {
-		return LRPStartAuction{}, ErrInvalidJSONMessage{"stack"}
-	}
-
-	if len(task.Actions) == 0 {
-		return LRPStartAuction{}, ErrInvalidJSONMessage{"actions"}
 	}
 
 	return task, nil
@@ -66,7 +46,7 @@ func (auction LRPStartAuction) ToJSON() []byte {
 
 func (auction LRPStartAuction) LRPIdentifier() LRPIdentifier {
 	return LRPIdentifier{
-		ProcessGuid:  auction.ProcessGuid,
+		ProcessGuid:  auction.DesiredLRP.ProcessGuid,
 		Index:        auction.Index,
 		InstanceGuid: auction.InstanceGuid,
 	}

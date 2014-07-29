@@ -95,7 +95,8 @@ var _ = Describe("ExecutorAction", func() {
 			`{
 				"action": "run",
 				"args": {
-					"script": "rm -rf /",
+					"path": "rm",
+					"args": ["-rf", "/"],
 					"timeout": 10000000,
 					"env": [
 						{"name":"FOO", "value":"1"},
@@ -106,7 +107,8 @@ var _ = Describe("ExecutorAction", func() {
 			}`,
 			ExecutorAction{
 				Action: RunAction{
-					Script:  "rm -rf /",
+					Path:    "rm",
+					Args:    []string{"-rf", "/"},
 					Timeout: 10 * time.Millisecond,
 					Env: []EnvironmentVariable{
 						{"FOO", "1"},
@@ -144,7 +146,8 @@ var _ = Describe("ExecutorAction", func() {
 					"action": {
 						"action": "run",
 						"args": {
-							"script": "echo",
+							"path": "echo",
+							"args": null,
 							"timeout": 0,
 							"env": null,
 							"resource_limits":{}
@@ -155,7 +158,7 @@ var _ = Describe("ExecutorAction", func() {
 			EmitProgressFor(
 				ExecutorAction{
 					RunAction{
-						Script: "echo",
+						Path: "echo",
 					},
 				}, "reticulating splines", "reticulated splines", "reticulation failed"),
 		)
@@ -169,7 +172,8 @@ var _ = Describe("ExecutorAction", func() {
 					"action": {
 						"action": "run",
 						"args": {
-							"script": "echo",
+							"path": "echo",
+							"args": null,
 							"timeout": 0,
 							"env": null,
 							"resource_limits":{}
@@ -178,7 +182,7 @@ var _ = Describe("ExecutorAction", func() {
 				}
 			}`,
 			Try(ExecutorAction{
-				RunAction{Script: "echo"},
+				RunAction{Path: "echo"},
 			}),
 		)
 	})
@@ -194,7 +198,8 @@ var _ = Describe("ExecutorAction", func() {
 							"resource_limits": {},
 							"env": null,
 							"timeout": 0,
-							"script": "echo"
+							"path": "echo",
+							"args": null
 						}
 					},
 					"healthy_hook": {
@@ -211,7 +216,7 @@ var _ = Describe("ExecutorAction", func() {
 			}`,
 			ExecutorAction{
 				MonitorAction{
-					Action: ExecutorAction{RunAction{Script: "echo"}},
+					Action: ExecutorAction{RunAction{Path: "echo"}},
 					HealthyHook: HealthRequest{
 						Method: "POST",
 						URL:    "bogus_healthy_hook",
@@ -248,7 +253,8 @@ var _ = Describe("ExecutorAction", func() {
                 "resource_limits": {},
                 "env": null,
                 "timeout": 0,
-                "script": "echo"
+                "path": "echo",
+                "args": null
               }
             }
           ]
@@ -264,7 +270,7 @@ var _ = Describe("ExecutorAction", func() {
 					},
 				},
 				ExecutorAction{
-					RunAction{Script: "echo"},
+					RunAction{Path: "echo"},
 				},
 			),
 		)

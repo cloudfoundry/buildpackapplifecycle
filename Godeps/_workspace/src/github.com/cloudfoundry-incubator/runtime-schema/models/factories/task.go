@@ -14,14 +14,15 @@ func GenerateGuid() string {
 	return guid.String()
 }
 
-func BuildTaskWithRunAction(stack string, memoryMB int, diskMB int, script string) models.Task {
+func BuildTaskWithRunAction(stack string, memoryMB int, diskMB int, path string, args []string) models.Task {
 	return models.Task{
 		Guid:     GenerateGuid(),
 		MemoryMB: memoryMB,
 		DiskMB:   diskMB,
 		Actions: []models.ExecutorAction{
 			{Action: models.RunAction{
-				Script: script,
+				Path: path,
+				Args: args,
 			}},
 		},
 		Stack: stack,

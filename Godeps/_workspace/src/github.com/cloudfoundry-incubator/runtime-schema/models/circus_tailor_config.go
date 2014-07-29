@@ -101,14 +101,18 @@ func NewCircusTailorConfig(buildpacks []string) CircusTailorConfig {
 	}
 }
 
-func (s CircusTailorConfig) Script() string {
-	argv := []string{s.ExecutablePath}
+func (s CircusTailorConfig) Path() string {
+	return s.ExecutablePath
+}
+
+func (s CircusTailorConfig) Args() []string {
+	argv := []string{}
 
 	s.FlagSet.VisitAll(func(flag *flag.Flag) {
-		argv = append(argv, fmt.Sprintf("-%s='%s'", flag.Name, *s.values[flag.Name]))
+		argv = append(argv, fmt.Sprintf("-%s=%s", flag.Name, *s.values[flag.Name]))
 	})
 
-	return strings.Join(argv, " ")
+	return argv
 }
 
 func (s CircusTailorConfig) Validate() error {

@@ -11,65 +11,74 @@ var _ = Describe("LRPStartAuction", func() {
 	var startAuction LRPStartAuction
 
 	startAuctionPayload := `{
-    "process_guid":"some-guid",
-    "instance_guid":"some-instance-guid",
-    "stack":"some-stack",
-    "memory_mb" : 128,
-    "disk_mb" : 512,
-    "ports": [
-      { "container_port": 8080 },
-      { "container_port": 8081, "host_port": 1234 }
-    ],
-    "actions":[
-      {
-        "action":"download",
-        "args":{
-          "from":"old_location",
-          "to":"new_location",
-          "cache_key":"the-cache-key",
-          "extract":true
+    "desired_lrp": {
+      "process_guid": "some-guid",
+      "instances": 1,
+      "stack": "some-stack",
+      "actions": [
+        {
+          "action": "download",
+          "args": {
+            "from": "http://example.com",
+            "to": "/tmp/internet",
+            "extract": false,
+            "cache_key": ""
+          }
         }
+      ],
+      "disk_mb": 512,
+      "memory_mb": 1024,
+      "ports": [
+        {
+          "container_port": 5678,
+          "host_port": 1234
+        }
+      ],
+      "routes": [
+        "route-1",
+        "route-2"
+      ],
+      "log": {
+        "guid": "log-guid",
+        "source_name": "the cloud"
       }
-    ],
-    "log": {
-      "guid": "123",
-      "source_name": "APP",
-      "index": 42
     },
+    "instance_guid": "some-instance-guid",
     "index": 2,
-    "updated_at": 1138,
-    "state": 1
+    "state": 1,
+    "updated_at": 1138
   }`
 
 	BeforeEach(func() {
-		index := 42
-
 		startAuction = LRPStartAuction{
-			ProcessGuid:  "some-guid",
+			Index:        2,
 			InstanceGuid: "some-instance-guid",
-			Stack:        "some-stack",
-			MemoryMB:     128,
-			DiskMB:       512,
-			Ports: []PortMapping{
-				{ContainerPort: 8080},
-				{ContainerPort: 8081, HostPort: 1234},
-			},
-			Actions: []ExecutorAction{
-				{
-					Action: DownloadAction{
-						From:     "old_location",
-						To:       "new_location",
-						CacheKey: "the-cache-key",
-						Extract:  true,
+
+			DesiredLRP: DesiredLRP{
+				ProcessGuid: "some-guid",
+
+				Instances: 1,
+				Stack:     "some-stack",
+				MemoryMB:  1024,
+				DiskMB:    512,
+				Routes:    []string{"route-1", "route-2"},
+				Ports: []PortMapping{
+					{HostPort: 1234, ContainerPort: 5678},
+				},
+				Log: LogConfig{
+					Guid:       "log-guid",
+					SourceName: "the cloud",
+				},
+				Actions: []ExecutorAction{
+					{
+						Action: DownloadAction{
+							From: "http://example.com",
+							To:   "/tmp/internet",
+						},
 					},
 				},
 			},
-			Log: LogConfig{
-				Guid:       "123",
-				SourceName: "APP",
-				Index:      &index,
-			},
-			Index:     2,
+
 			State:     LRPStartAuctionStatePending,
 			UpdatedAt: 1138,
 		}
@@ -100,10 +109,7 @@ var _ = Describe("LRPStartAuction", func() {
 		})
 
 		for field, payload := range map[string]string{
-			"process_guid":  `{"instance_guid": "instance_guid", "stack": "some-stack", "actions": [{"action": "fetch_result", "args": {"file": "file"}}]}`,
-			"instance_guid": `{"process_guid": "process-guid", "stack": "some-stack", "actions": [{"action": "fetch_result", "args": {"file": "file"}}]}`,
-			"stack":         `{"process_guid": "process-guid", "instance_guid": "instance_guid", "actions": [{"action": "fetch_result", "args": {"file": "file"}}]}`,
-			"actions":       `{"process_guid": "process-guid", "instance_guid": "instance_guid", "stack": "some-stack"}`,
+			"instance_guid": `{"process_guid": "process-guid", "index": 0}`,
 		} {
 			json := payload
 			missingField := field

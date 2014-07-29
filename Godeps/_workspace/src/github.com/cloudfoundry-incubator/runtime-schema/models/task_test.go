@@ -3,6 +3,7 @@ package models_test
 import (
 	"time"
 
+	"github.com/fraenkel/candiedyaml"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -36,8 +37,7 @@ var _ = Describe("Task", func() {
 		"cpu_percent": 42.25,
 		"log": {
 			"guid": "123",
-			"source_name": "APP",
-			"index": 42
+			"source_name": "APP"
 		},
 		"created_at": 1393371971000000000,
 		"updated_at": 1393371971000000010,
@@ -47,8 +47,6 @@ var _ = Describe("Task", func() {
 	}`
 
 	BeforeEach(func() {
-		index := 42
-
 		task = Task{
 			Guid:  "some-guid",
 			Stack: "some-stack",
@@ -65,7 +63,6 @@ var _ = Describe("Task", func() {
 			Log: LogConfig{
 				Guid:       "123",
 				SourceName: "APP",
-				Index:      &index,
 			},
 			ExecutorID:      "executor",
 			ContainerHandle: "17fgsafdfcvc",
@@ -126,5 +123,25 @@ var _ = Describe("Task", func() {
 			})
 		}
 
+	})
+
+	Describe("StagingInfo", func() {
+		Context("when yaml", func() {
+			stagingYAML := `---
+detected_buildpack: yaml-buildpack
+start_command: yaml-ize -d`
+
+			It("exposes an extracted `detected_buildpack` property", func() {
+				var stagingInfo StagingInfo
+
+				err := candiedyaml.Unmarshal([]byte(stagingYAML), &stagingInfo)
+				Ω(err).ShouldNot(HaveOccurred())
+
+				Ω(stagingInfo).Should(Equal(StagingInfo{
+					DetectedBuildpack:    "yaml-buildpack",
+					DetectedStartCommand: "yaml-ize -d",
+				}))
+			})
+		})
 	})
 })

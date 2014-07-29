@@ -3,20 +3,16 @@ package models
 import "encoding/json"
 
 type DesiredLRP struct {
-	// required
 	ProcessGuid string `json:"process_guid"`
-	Source      string `json:"source"`
-	Stack       string `json:"stack"`
 
-	// optional
-	Instances       int                   `json:"instances"`
-	MemoryMB        int                   `json:"memory_mb"`
-	DiskMB          int                   `json:"disk_mb"`
-	FileDescriptors uint64                `json:"file_descriptors"`
-	StartCommand    string                `json:"start_command"`
-	Environment     []EnvironmentVariable `json:"environment"`
-	Routes          []string              `json:"routes"`
-	LogGuid         string                `json:"log_guid"`
+	Instances int              `json:"instances"`
+	Stack     string           `json:"stack"`
+	Actions   []ExecutorAction `json:"actions"`
+	DiskMB    int              `json:"disk_mb"`
+	MemoryMB  int              `json:"memory_mb"`
+	Ports     []PortMapping    `json:"ports"`
+	Routes    []string         `json:"routes"`
+	Log       LogConfig        `json:"log"`
 }
 
 type DesiredLRPChange struct {
@@ -36,12 +32,12 @@ func NewDesiredLRPFromJSON(payload []byte) (DesiredLRP, error) {
 		return DesiredLRP{}, ErrInvalidJSONMessage{"process_guid"}
 	}
 
-	if task.Source == "" {
-		return DesiredLRP{}, ErrInvalidJSONMessage{"source"}
-	}
-
 	if task.Stack == "" {
 		return DesiredLRP{}, ErrInvalidJSONMessage{"stack"}
+	}
+
+	if len(task.Actions) == 0 {
+		return DesiredLRP{}, ErrInvalidJSONMessage{"actions"}
 	}
 
 	return task, nil

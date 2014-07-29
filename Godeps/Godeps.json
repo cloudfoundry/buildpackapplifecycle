@@ -7,20 +7,20 @@
 	"Deps": [
 		{
 			"ImportPath": "github.com/cloudfoundry-incubator/candiedyaml",
-			"Rev": "746fed644c930c0635f84866d433fd7de5f444cf"
+			"Rev": "9d6da703654a1d6897de218799c1ff4eccf49b85"
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry-incubator/runtime-schema/models",
-			"Rev": "0905c77385bfd000abd0ab681c6286448c441fb4"
+			"Rev": "87f475ec1fded85151513b07f4c72798efe1ade4"
 		},
 		{
 			"ImportPath": "github.com/onsi/ginkgo",
-			"Comment": "v1.0.0-16-g12446bb",
-			"Rev": "12446bbcc74950944c897e32ea99cc8d058f9c92"
+			"Comment": "v1.0.0-28-g6481765",
+			"Rev": "6481765dda39cbaae281109e6945449642329197"
 		},
 		{
 			"ImportPath": "github.com/onsi/gomega",
-			"Rev": "7ec350c6bff61a8e3f999e1164f11e5c133605d0"
+			"Rev": "4699d5a664396173c7d9fcef9e88be297c7bae13"
 		}
 	]
 }

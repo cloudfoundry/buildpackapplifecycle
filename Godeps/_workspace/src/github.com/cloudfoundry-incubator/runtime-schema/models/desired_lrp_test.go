@@ -11,32 +11,62 @@ var _ = Describe("DesiredLRP", func() {
 	var lrp DesiredLRP
 
 	lrpPayload := `{
-    "process_guid":"some-guid",
-    "instances":5,
-    "stack":"some-stack",
-    "memory_mb":1024,
-    "disk_mb":512,
-    "file_descriptors":17,
-    "source":"http://example.com/source",
-    "start_command":"echo",
-    "environment": [{"name": "FOO", "value": "BAR"}],
-    "routes":["route-1","route-2"],
-    "log_guid":"some-log-guid"
-  }`
+	  "process_guid": "some-guid",
+	  "instances": 1,
+	  "stack": "some-stack",
+	  "actions": [
+	    {
+	      "action": "download",
+	      "args": {
+	        "from": "http://example.com",
+	        "to": "/tmp/internet",
+	        "extract": false,
+	        "cache_key": ""
+	      }
+	    }
+	  ],
+	  "disk_mb": 512,
+	  "memory_mb": 1024,
+	  "ports": [
+	    {
+	      "container_port": 5678,
+	      "host_port": 1234
+	    }
+	  ],
+	  "routes": [
+	    "route-1",
+	    "route-2"
+	  ],
+	  "log": {
+	    "guid": "log-guid",
+	    "source_name": "the cloud"
+	  }
+	}`
 
 	BeforeEach(func() {
 		lrp = DesiredLRP{
-			ProcessGuid:     "some-guid",
-			Instances:       5,
-			Stack:           "some-stack",
-			MemoryMB:        1024,
-			DiskMB:          512,
-			FileDescriptors: 17,
-			Source:          "http://example.com/source",
-			StartCommand:    "echo",
-			Environment:     []EnvironmentVariable{{Name: "FOO", Value: "BAR"}},
-			Routes:          []string{"route-1", "route-2"},
-			LogGuid:         "some-log-guid",
+			ProcessGuid: "some-guid",
+
+			Instances: 1,
+			Stack:     "some-stack",
+			MemoryMB:  1024,
+			DiskMB:    512,
+			Routes:    []string{"route-1", "route-2"},
+			Ports: []PortMapping{
+				{HostPort: 1234, ContainerPort: 5678},
+			},
+			Log: LogConfig{
+				Guid:       "log-guid",
+				SourceName: "the cloud",
+			},
+			Actions: []ExecutorAction{
+				{
+					Action: DownloadAction{
+						From: "http://example.com",
+						To:   "/tmp/internet",
+					},
+				},
+			},
 		}
 	})
 
@@ -65,9 +95,11 @@ var _ = Describe("DesiredLRP", func() {
 		})
 
 		for field, payload := range map[string]string{
-			"process_guid": `{"source": "http://example.com", "stack": "some-stack"}`,
-			"source":       `{"process_guid": "process_guid", "stack": "some-stack"}`,
-			"stack":        `{"process_guid": "process_guid", "source": "http://example.com"}`,
+			"process_guid": `{"actions": [{"action":"download","args":{"from":"http://example.com","to":"/tmp/internet","extract":false,"cache_key":""}}
+], "stack": "some-stack"}`,
+			"actions": `{"process_guid": "process_guid", "stack": "some-stack"}`,
+			"stack": `{"process_guid": "process_guid", "actions": [{"action":"download","args":{"from":"http://example.com","to":"/tmp/internet","extract":false,"cache_key":""}}
+]}`,
 		} {
 			json := payload
 			missingField := field
