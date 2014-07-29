@@ -1,10 +1,14 @@
 package main_test
 
 import (
+	"bytes"
+	"encoding/json"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
@@ -73,6 +77,38 @@ var _ = Describe("Soldier", func() {
 		Ω(err).ShouldNot(HaveOccurred())
 
 		Eventually(session).Should(gbytes.Say("PWD is " + appDir))
+	})
+
+	It("munges VCAP_APPLICATION appropriately", func() {
+		outBuf := new(bytes.Buffer)
+
+		cmd := exec.Command(soldier, appDir, "echo $VCAP_APPLICATION")
+		cmd.Env = append(
+			os.Environ(),
+			"PORT=8080",
+			"CF_INSTANCE_GUID=some-instance-guid",
+			"CF_INSTANCE_INDEX=123",
+			`VCAP_APPLICATION={"foo":1}`,
+		)
+
+		session, err := gexec.Start(
+			cmd,
+			io.MultiWriter(GinkgoWriter, outBuf),
+			GinkgoWriter,
+		)
+		Ω(err).ShouldNot(HaveOccurred())
+
+		Eventually(session).Should(gexec.Exit(0))
+
+		vcapApplication := map[string]interface{}{}
+		err = json.Unmarshal(outBuf.Bytes(), &vcapApplication)
+		Ω(err).ShouldNot(HaveOccurred())
+
+		Ω(vcapApplication["host"]).Should(Equal("0.0.0.0"))
+		Ω(vcapApplication["port"]).Should(Equal(float64(8080)))
+		Ω(vcapApplication["instance_index"]).Should(Equal(float64(123)))
+		Ω(vcapApplication["instance_id"]).Should(Equal("some-instance-guid"))
+		Ω(vcapApplication["foo"]).Should(Equal(float64(1)))
 	})
 
 	Context("when the given dir has .profile.d with scripts in it", func() {
