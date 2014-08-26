@@ -3,6 +3,7 @@ package buildpackrunner
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -70,9 +71,18 @@ func (runner *Runner) Run() error {
 		return newDescriptiveError(err, "failed to compile droplet")
 	}
 
-	releaseInfo, err := runner.release(detectedBuildpackDir)
+	startCommand, err := runner.detectStartCommandFromProcfile()
+	if err != nil {
+		return newDescriptiveError(err, "failed to read command from Procfile")
+	}
+
+	releaseInfo, err := runner.release(detectedBuildpackDir, startCommand)
 	if err != nil {
 		return newDescriptiveError(err, "failed to build droplet release")
+	}
+
+	if len(releaseInfo.DefaultProcessTypes.Web) == 0 {
+		printError("no start command detected; command must be provided at runtime")
 	}
 
 	//generate staging_info.yml and result json file
@@ -150,7 +160,7 @@ func (runner *Runner) detect() (string, string, string, error) {
 
 		buildpackPath, err := runner.buildpackPath(buildpack)
 		if err != nil {
-			fmt.Println(err.Error())
+			printError(err.Error())
 			continue
 		}
 
@@ -164,11 +174,33 @@ func (runner *Runner) detect() (string, string, string, error) {
 	return "", "", "", newDescriptiveError(nil, "no valid buildpacks detected")
 }
 
+func (runner *Runner) detectStartCommandFromProcfile() (string, error) {
+	procFile, err := os.Open(filepath.Join(runner.config.AppDir(), "Procfile"))
+	if err != nil {
+		if os.IsNotExist(err) {
+			// Procfiles are optional
+			return "", nil
+		}
+
+		return "", err
+	}
+
+	processes := map[string]string{}
+
+	err = candiedyaml.NewDecoder(procFile).Decode(&processes)
+	if err != nil {
+		// clobber candiedyaml's super low-level error
+		return "", errors.New("invalid YAML")
+	}
+
+	return processes["web"], nil
+}
+
 func (runner *Runner) compile(buildpackDir string) error {
 	return runner.run(exec.Command(path.Join(buildpackDir, "bin", "compile"), runner.config.AppDir(), runner.config.BuildArtifactsCacheDir()), os.Stdout)
 }
 
-func (runner *Runner) release(buildpackDir string) (Release, error) {
+func (runner *Runner) release(buildpackDir string, webStartCommand string) (Release, error) {
 	output := new(bytes.Buffer)
 
 	err := runner.run(exec.Command(path.Join(buildpackDir, "bin", "release"), runner.config.AppDir()), output)
@@ -178,7 +210,8 @@ func (runner *Runner) release(buildpackDir string) (Release, error) {
 
 	decoder := candiedyaml.NewDecoder(output)
 
-	var parsedRelease Release
+	parsedRelease := Release{}
+	parsedRelease.DefaultProcessTypes.Web = webStartCommand
 
 	err = decoder.Decode(&parsedRelease)
 	if err != nil {
@@ -231,4 +264,8 @@ func (runner *Runner) run(cmd *exec.Cmd, output io.Writer) error {
 	cmd.Stderr = os.Stderr
 
 	return cmd.Run()
+}
+
+func printError(message string) {
+	println(message)
 }

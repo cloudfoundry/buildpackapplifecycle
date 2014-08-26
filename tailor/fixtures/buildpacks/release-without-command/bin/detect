@@ -1,5 +1,5 @@
 #!/bin/bash
 # vim: set ft=sh
 
-echo Bad Release YAML
+echo Release Without Command
 exit 0

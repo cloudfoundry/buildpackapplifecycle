@@ -1,5 +1,5 @@
 #!/bin/bash
 # vim: set ft=sh
 
-echo Always Matching
+echo Always Fails
 exit 1

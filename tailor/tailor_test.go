@@ -83,6 +83,14 @@ var _ = Describe("Tailoring", func() {
 		tailorCmd.Env = os.Environ()
 	})
 
+	resultJSON := func() []byte {
+		resultLocation := path.Join(outputMetadataDir, "result.json")
+		resultInfo, err := ioutil.ReadFile(resultLocation)
+		Ω(err).ShouldNot(HaveOccurred())
+
+		return resultInfo
+	}
+
 	Context("with a normal buildpack", func() {
 		BeforeEach(func() {
 			buildpackOrder = "always-detects,also-always-detects"
@@ -131,17 +139,110 @@ start_command: the start command
 
 		Describe("the result.json, which is used to communicate back to the stager", func() {
 			It("exists, and contains the detected buildpack", func() {
-				resultLocation := path.Join(outputMetadataDir, "result.json")
-				resultInfo, err := ioutil.ReadFile(resultLocation)
-				Ω(err).ShouldNot(HaveOccurred())
-				expectedJSON := `{
+				Ω(resultJSON()).Should(MatchJSON(`{
 					"detected_buildpack": "Always Matching",
 					"detected_start_command": "the start command",
 					"buildpack_key": "always-detects"
-				}`
-
-				Ω(resultInfo).Should(MatchJSON(expectedJSON))
+				}`))
 			})
+		})
+
+		Context("when the app has a Procfile", func() {
+			Context("with web defined", func() {
+				BeforeEach(func() {
+					cp(path.Join(appFixtures, "with-procfile-with-web", "Procfile"), appDir)
+				})
+
+				It("chooses the buildpack-provided command", func() {
+					Ω(resultJSON()).Should(MatchJSON(`{
+					"detected_buildpack": "Always Matching",
+					"detected_start_command": "the start command",
+					"buildpack_key": "always-detects"
+				}`))
+				})
+			})
+
+			Context("without web", func() {
+				BeforeEach(func() {
+					cp(path.Join(appFixtures, "with-procfile", "Procfile"), appDir)
+				})
+
+				It("chooses the buildpack-provided command", func() {
+					Ω(resultJSON()).Should(MatchJSON(`{
+					"detected_buildpack": "Always Matching",
+					"detected_start_command": "the start command",
+					"buildpack_key": "always-detects"
+				}`))
+				})
+			})
+		})
+	})
+
+	Context("with a buildpack that does not determine a start command", func() {
+		BeforeEach(func() {
+			buildpackOrder = "release-without-command"
+			cpBuildpack("release-without-command")
+		})
+
+		Context("when the app has a Procfile", func() {
+			Context("with web defined", func() {
+				JustBeforeEach(func() {
+					Eventually(tailor()).Should(gexec.Exit(0))
+				})
+
+				BeforeEach(func() {
+					cp(path.Join(appFixtures, "with-procfile-with-web", "Procfile"), appDir)
+				})
+
+				It("uses the command defined by web in the Procfile", func() {
+					Ω(resultJSON()).Should(MatchJSON(`{
+						"detected_buildpack": "Release Without Command",
+						"detected_start_command": "procfile-provided start-command",
+						"buildpack_key": "release-without-command"
+					}`))
+				})
+			})
+
+			Context("without web", func() {
+				BeforeEach(func() {
+					cp(path.Join(appFixtures, "with-procfile", "Procfile"), appDir)
+				})
+
+				It("fails", func() {
+					session := tailor()
+					Eventually(session.Err).Should(gbytes.Say("no start command detected"))
+					Eventually(session).Should(gexec.Exit(0))
+				})
+			})
+		})
+
+		Context("and the app has no Procfile", func() {
+			BeforeEach(func() {
+				cp(path.Join(appFixtures, "bash-app", "app.sh"), appDir)
+			})
+
+			It("fails", func() {
+				session := tailor()
+				Eventually(session.Err).Should(gbytes.Say("no start command detected"))
+				Eventually(session).Should(gexec.Exit(0))
+			})
+		})
+	})
+
+	Context("with an app with an invalid Procfile", func() {
+		BeforeEach(func() {
+			buildpackOrder = "always-detects,also-always-detects"
+
+			cpBuildpack("always-detects")
+			cpBuildpack("also-always-detects")
+
+			cp(path.Join(appFixtures, "bogus-procfile", "Procfile"), appDir)
+		})
+
+		It("fails", func() {
+			session := tailor()
+			Eventually(session.Err).Should(gbytes.Say("failed to read command from Procfile: invalid YAML"))
+			Eventually(session).Should(gexec.Exit(1))
 		})
 	})
 
