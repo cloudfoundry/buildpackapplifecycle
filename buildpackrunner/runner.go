@@ -185,6 +185,8 @@ func (runner *Runner) detectStartCommandFromProcfile() (string, error) {
 		return "", err
 	}
 
+	defer procFile.Close()
+
 	processes := map[string]string{}
 
 	err = candiedyaml.NewDecoder(procFile).Decode(&processes)
