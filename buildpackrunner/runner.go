@@ -57,7 +57,7 @@ func (runner *Runner) Run() error {
 	//set up the world
 	err := runner.makeDirectories()
 	if err != nil {
-		return newDescriptiveError(err, "failed to set up filesystem when generating droplet")
+		return newDescriptiveError(err, "Failed to set up filesystem when generating droplet")
 	}
 
 	//detect, compile, release
@@ -68,43 +68,43 @@ func (runner *Runner) Run() error {
 
 	err = runner.compile(detectedBuildpackDir)
 	if err != nil {
-		return newDescriptiveError(err, "failed to compile droplet")
+		return newDescriptiveError(err, "Failed to compile droplet")
 	}
 
 	startCommand, err := runner.detectStartCommandFromProcfile()
 	if err != nil {
-		return newDescriptiveError(err, "failed to read command from Procfile")
+		return newDescriptiveError(err, "Failed to read command from Procfile")
 	}
 
 	releaseInfo, err := runner.release(detectedBuildpackDir, startCommand)
 	if err != nil {
-		return newDescriptiveError(err, "failed to build droplet release")
+		return newDescriptiveError(err, "Failed to build droplet release")
 	}
 
 	if len(releaseInfo.DefaultProcessTypes.Web) == 0 {
-		printError("no start command detected; command must be provided at runtime")
+		printError("No start command detected; command must be provided at runtime")
 	}
 
 	//generate staging_info.yml and result json file
 	err = runner.saveInfo(detectedBuildpack, detectOutput, releaseInfo)
 	if err != nil {
-		return newDescriptiveError(err, "failed to encode generated metadata")
+		return newDescriptiveError(err, "Failed to encode generated metadata")
 	}
 
 	//prepare the final droplet directory
 	err = runner.copyApp(runner.config.AppDir(), path.Join(runner.config.OutputDropletDir(), "app"))
 	if err != nil {
-		return newDescriptiveError(err, "failed to copy compiled droplet")
+		return newDescriptiveError(err, "Failed to copy compiled droplet")
 	}
 
 	err = os.MkdirAll(path.Join(runner.config.OutputDropletDir(), "tmp"), 0755)
 	if err != nil {
-		return newDescriptiveError(err, "failed to set up droplet filesystem")
+		return newDescriptiveError(err, "Failed to set up droplet filesystem")
 	}
 
 	err = os.MkdirAll(path.Join(runner.config.OutputDropletDir(), "logs"), 0755)
 	if err != nil {
-		return newDescriptiveError(err, "failed to set up droplet filesystem")
+		return newDescriptiveError(err, "Failed to set up droplet filesystem")
 	}
 
 	return nil
@@ -135,7 +135,7 @@ func (runner *Runner) buildpackPath(buildpack string) (string, error) {
 
 	files, err := ioutil.ReadDir(buildpackPath)
 	if err != nil {
-		return "", newDescriptiveError(nil, "failed to read buildpack directory '%s' for buildpack '%s'", buildpackPath, buildpack)
+		return "", newDescriptiveError(nil, "Failed to read buildpack directory '%s' for buildpack '%s'", buildpackPath, buildpack)
 	}
 
 	if len(files) == 1 {

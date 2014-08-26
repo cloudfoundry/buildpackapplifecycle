@@ -210,7 +210,7 @@ start_command: the start command
 
 				It("fails", func() {
 					session := tailor()
-					Eventually(session.Err).Should(gbytes.Say("no start command detected"))
+					Eventually(session.Err).Should(gbytes.Say("No start command detected"))
 					Eventually(session).Should(gexec.Exit(0))
 				})
 			})
@@ -223,7 +223,7 @@ start_command: the start command
 
 			It("fails", func() {
 				session := tailor()
-				Eventually(session.Err).Should(gbytes.Say("no start command detected"))
+				Eventually(session.Err).Should(gbytes.Say("No start command detected"))
 				Eventually(session).Should(gexec.Exit(0))
 			})
 		})
@@ -241,7 +241,7 @@ start_command: the start command
 
 		It("fails", func() {
 			session := tailor()
-			Eventually(session.Err).Should(gbytes.Say("failed to read command from Procfile: invalid YAML"))
+			Eventually(session.Err).Should(gbytes.Say("Failed to read command from Procfile: invalid YAML"))
 			Eventually(session).Should(gexec.Exit(1))
 		})
 	})
@@ -271,7 +271,7 @@ start_command: the start command
 
 		It("should exit with an error", func() {
 			session := tailor()
-			Eventually(session.Err).Should(gbytes.Say("failed to compile droplet: exit status 1"))
+			Eventually(session.Err).Should(gbytes.Say("Failed to compile droplet: exit status 1"))
 			Eventually(session).Should(gexec.Exit(1))
 		})
 	})
@@ -301,7 +301,7 @@ start_command: the start command
 
 		It("should exit with an error", func() {
 			session := tailor()
-			Eventually(session.Err).Should(gbytes.Say("failed to build droplet release: exit status 1"))
+			Eventually(session.Err).Should(gbytes.Say("Failed to build droplet release: exit status 1"))
 			Eventually(session).Should(gexec.Exit(1))
 		})
 	})
