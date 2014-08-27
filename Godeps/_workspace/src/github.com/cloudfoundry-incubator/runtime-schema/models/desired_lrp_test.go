@@ -47,9 +47,8 @@ var _ = Describe("DesiredLRP", func() {
 
 	BeforeEach(func() {
 		lrp = DesiredLRP{
+			Domain:      "some-domain",
 			ProcessGuid: "some-guid",
-
-			Domain: "some-domain",
 
 			Instances:  1,
 			Stack:      "some-stack",
@@ -100,11 +99,32 @@ var _ = Describe("DesiredLRP", func() {
 		})
 
 		for field, payload := range map[string]string{
-			"process_guid": `{"actions": [{"action":"download","args":{"from":"http://example.com","to":"/tmp/internet","extract":false,"cache_key":""}}
-], "stack": "some-stack"}`,
-			"actions": `{"process_guid": "process_guid", "stack": "some-stack"}`,
-			"stack": `{"process_guid": "process_guid", "actions": [{"action":"download","args":{"from":"http://example.com","to":"/tmp/internet","extract":false,"cache_key":""}}
-]}`,
+			"process_guid": `{
+				"domain": "some-domain",
+				"actions": [
+					{"action":"download","args":{"from":"http://example.com","to":"/tmp/internet","extract":false,"cache_key":""}}
+				],
+				"stack": "some-stack"
+			}`,
+			"actions": `{
+				"domain": "some-domain",
+				"process_guid": "process_guid",
+				"stack": "some-stack"
+			}`,
+			"stack": `{
+				"domain": "some-domain",
+				"process_guid": "process_guid",
+				"actions": [
+					{"action":"download","args":{"from":"http://example.com","to":"/tmp/internet","extract":false,"cache_key":""}}
+				]
+			}`,
+			"domain": `{
+				"stack": "some-stack",
+				"process_guid": "process_guid",
+				"actions": [
+					{"action":"download","args":{"from":"http://example.com","to":"/tmp/internet","extract":false,"cache_key":""}}
+				]
+			}`,
 		} {
 			json := payload
 			missingField := field

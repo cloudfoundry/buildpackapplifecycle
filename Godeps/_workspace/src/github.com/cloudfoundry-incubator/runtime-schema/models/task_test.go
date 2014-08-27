@@ -14,6 +14,7 @@ var _ = Describe("Task", func() {
 	var task Task
 
 	taskPayload := `{
+		"domain":"some-domain",
 		"guid":"some-guid",
 		"stack":"some-stack",
 		"executor_id":"executor",
@@ -42,14 +43,14 @@ var _ = Describe("Task", func() {
 		"created_at": 1393371971000000000,
 		"updated_at": 1393371971000000010,
 		"state": 1,
-		"domain": "some-domain",
 		"annotation": "[{\"anything\": \"you want!\"}]... dude"
 	}`
 
 	BeforeEach(func() {
 		task = Task{
-			Guid:  "some-guid",
-			Stack: "some-stack",
+			Domain: "some-domain",
+			Guid:   "some-guid",
+			Stack:  "some-stack",
 			Actions: []ExecutorAction{
 				{
 					Action: DownloadAction{
@@ -75,7 +76,6 @@ var _ = Describe("Task", func() {
 			CreatedAt:       time.Date(2014, time.February, 25, 23, 46, 11, 00, time.UTC).UnixNano(),
 			UpdatedAt:       time.Date(2014, time.February, 25, 23, 46, 11, 10, time.UTC).UnixNano(),
 			State:           TaskStatePending,
-			Domain:          "some-domain",
 			Annotation:      `[{"anything": "you want!"}]... dude`,
 		}
 	})
@@ -105,9 +105,10 @@ var _ = Describe("Task", func() {
 		})
 
 		for field, payload := range map[string]string{
-			"guid":    `{"stack": "some-stack", "actions": [{"action": "fetch_result", "args": {"file": "file"}}]}`,
-			"actions": `{"guid": "process-guid", "stack": "some-stack"}`,
-			"stack":   `{"guid": "process-guid", "actions": [{"action": "fetch_result", "args": {"file": "file"}}]}`,
+			"guid":    `{"domain": "some-domain", "stack": "some-stack", "actions": [{"action": "fetch_result", "args": {"file": "file"}}]}`,
+			"actions": `{"domain": "some-domain", "guid": "process-guid", "stack": "some-stack"}`,
+			"stack":   `{"domain": "some-domain", "guid": "process-guid", "actions": [{"action": "fetch_result", "args": {"file": "file"}}]}`,
+			"domain":  `{"stack": "some-stack", "guid": "process-guid", "actions": [{"action": "fetch_result", "args": {"file": "file"}}]}`,
 		} {
 			json := payload
 			missingField := field

@@ -22,26 +22,30 @@ type DesiredLRPChange struct {
 }
 
 func NewDesiredLRPFromJSON(payload []byte) (DesiredLRP, error) {
-	var task DesiredLRP
+	var lrp DesiredLRP
 
-	err := json.Unmarshal(payload, &task)
+	err := json.Unmarshal(payload, &lrp)
 	if err != nil {
 		return DesiredLRP{}, err
 	}
 
-	if task.ProcessGuid == "" {
+	if lrp.Domain == "" {
+		return DesiredLRP{}, ErrInvalidJSONMessage{"domain"}
+	}
+
+	if lrp.ProcessGuid == "" {
 		return DesiredLRP{}, ErrInvalidJSONMessage{"process_guid"}
 	}
 
-	if task.Stack == "" {
+	if lrp.Stack == "" {
 		return DesiredLRP{}, ErrInvalidJSONMessage{"stack"}
 	}
 
-	if len(task.Actions) == 0 {
+	if len(lrp.Actions) == 0 {
 		return DesiredLRP{}, ErrInvalidJSONMessage{"actions"}
 	}
 
-	return task, nil
+	return lrp, nil
 }
 
 func (desired DesiredLRP) ToJSON() []byte {

@@ -62,6 +62,10 @@ func NewTaskFromJSON(payload []byte) (Task, error) {
 		return Task{}, err
 	}
 
+	if task.Domain == "" {
+		return Task{}, ErrInvalidJSONMessage{"domain"}
+	}
+
 	if task.Guid == "" {
 		return Task{}, ErrInvalidJSONMessage{"guid"}
 	}
