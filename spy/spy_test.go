@@ -12,22 +12,17 @@ import (
 
 var _ = Describe("Spy", func() {
 	var (
-		check      string
 		server     *ghttp.Server
 		serverAddr string
 	)
 
 	BeforeEach(func() {
-		var err error
-		check, err = gexec.Build("github.com/cloudfoundry-incubator/linux-circus/spy")
-		Ω(err).ShouldNot(HaveOccurred())
-
 		server = ghttp.NewServer()
 		serverAddr = server.HTTPTestServer.Listener.Addr().String()
 	})
 
 	runSpy := func() *gexec.Session {
-		session, err := gexec.Start(exec.Command(check, "-addr", serverAddr), GinkgoWriter, GinkgoWriter)
+		session, err := gexec.Start(exec.Command(spy, "-addr", serverAddr), GinkgoWriter, GinkgoWriter)
 		Ω(err).ShouldNot(HaveOccurred())
 		return session
 	}

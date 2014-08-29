@@ -12,17 +12,19 @@ var tailorPath string
 
 func TestLinuxCircusTailor(t *testing.T) {
 	RegisterFailHandler(Fail)
-
-	BeforeSuite(func() {
-		var err error
-
-		tailorPath, err = gexec.Build("github.com/cloudfoundry-incubator/linux-circus/tailor")
-		Ω(err).ShouldNot(HaveOccurred())
-	})
-
-	AfterSuite(func() {
-		gexec.CleanupBuildArtifacts()
-	})
-
 	RunSpecs(t, "Linux-Circus-Tailor Suite")
 }
+
+var _ = SynchronizedBeforeSuite(func() []byte {
+	tailor, err := gexec.Build("github.com/cloudfoundry-incubator/linux-circus/tailor")
+	Ω(err).ShouldNot(HaveOccurred())
+	return []byte(tailor)
+}, func(tailor []byte) {
+	tailorPath = string(tailor)
+})
+
+var _ = SynchronizedAfterSuite(func() {
+	//noop
+}, func() {
+	gexec.CleanupBuildArtifacts()
+})

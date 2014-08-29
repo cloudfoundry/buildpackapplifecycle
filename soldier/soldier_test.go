@@ -16,16 +16,12 @@ import (
 )
 
 var _ = Describe("Soldier", func() {
-	var soldier string
 	var appDir string
 
 	BeforeEach(func() {
 		var err error
 
 		appDir, err = ioutil.TempDir("", "app-dir")
-		Ω(err).ShouldNot(HaveOccurred())
-
-		soldier, err = gexec.Build("github.com/cloudfoundry-incubator/linux-circus/soldier")
 		Ω(err).ShouldNot(HaveOccurred())
 	})
 
