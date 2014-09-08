@@ -224,32 +224,31 @@ func (runner *Runner) release(buildpackDir string, webStartCommand string) (Rele
 }
 
 func (runner *Runner) saveInfo(buildpack string, detectOutput string, releaseInfo Release) error {
-	infoFile, err := os.Create(filepath.Join(runner.config.OutputDropletDir(), "staging_info.yml"))
+	deaInfoFile, err := os.Create(filepath.Join(runner.config.OutputDropletDir(), "staging_info.yml"))
 	if err != nil {
 		return err
 	}
+	defer deaInfoFile.Close()
 
-	defer infoFile.Close()
+	err = candiedyaml.NewEncoder(deaInfoFile).Encode(DeaStagingInfo{
+		DetectedBuildpack: detectOutput,
+		StartCommand:      releaseInfo.DefaultProcessTypes.Web,
+	})
+	if err != nil {
+		return err
+	}
 
 	resultFile, err := os.Create(runner.config.OutputMetadataPath())
 	if err != nil {
 		return err
 	}
-
 	defer resultFile.Close()
 
-	info := models.StagingInfo{
+	err = json.NewEncoder(resultFile).Encode(models.StagingInfo{
 		BuildpackKey:         buildpack,
 		DetectedBuildpack:    detectOutput,
 		DetectedStartCommand: releaseInfo.DefaultProcessTypes.Web,
-	}
-
-	err = candiedyaml.NewEncoder(infoFile).Encode(info)
-	if err != nil {
-		return err
-	}
-
-	err = json.NewEncoder(resultFile).Encode(info)
+	})
 	if err != nil {
 		return err
 	}
