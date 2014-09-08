@@ -27,12 +27,6 @@ eval "$@"
 `
 
 func main() {
-	argv := []string{
-		"bash",
-		"-c",
-		soldier,
-	}
-
 	os.Setenv("HOME", os.Args[1])
 	os.Setenv("TMPDIR", os.Args[1]+"/tmp")
 
@@ -58,6 +52,12 @@ func main() {
 		if err == nil {
 			os.Setenv("VCAP_APPLICATION", string(mungedAppEnv))
 		}
+	}
+
+	argv := []string{
+		"bash",
+		"-c",
+		soldier,
 	}
 
 	syscall.Exec("/bin/bash", append(argv, os.Args...), os.Environ())
