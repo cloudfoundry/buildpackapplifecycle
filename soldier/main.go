@@ -2,17 +2,16 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"syscall"
+
+	"github.com/cloudfoundry-incubator/linux-circus/protocol"
 )
 
 const soldier = `
-if [ -z "$1" ]; then
-  echo "usage: $0 <app dir> <command to run>" >&2
-  exit 1
-fi
-
 cd "$1"
 
 if [ -d .profile.d ]; then
@@ -27,11 +26,19 @@ eval "$@"
 `
 
 func main() {
-	os.Setenv("HOME", os.Args[1])
-	os.Setenv("TMPDIR", os.Args[1]+"/tmp")
+	if len(os.Args) < 4 {
+		fmt.Fprintf(os.Stderr, "Usage: %s <app directory> <start command> <metadata>", os.Args[0])
+		os.Exit(1)
+	}
+
+	dir := os.Args[1]
+	startCommand := os.Args[2]
+	metadata := os.Args[3]
+
+	os.Setenv("HOME", dir)
+	os.Setenv("TMPDIR", filepath.Join(dir, "tmp"))
 
 	vcapAppEnv := map[string]interface{}{}
-
 	err := json.Unmarshal([]byte(os.Getenv("VCAP_APPLICATION")), &vcapAppEnv)
 	if err == nil {
 		vcapAppEnv["host"] = "0.0.0.0"
@@ -54,11 +61,26 @@ func main() {
 		}
 	}
 
-	argv := []string{
+	var command string
+	if startCommand != "" {
+		command = startCommand
+	} else {
+		var executionMetadata protocol.ExecutionMetadata
+		err := json.Unmarshal([]byte(metadata), &executionMetadata)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Invalid metadata - %s", err)
+			os.Exit(1)
+		} else {
+			command = executionMetadata.StartCommand
+		}
+	}
+
+	syscall.Exec("/bin/bash", []string{
 		"bash",
 		"-c",
 		soldier,
-	}
-
-	syscall.Exec("/bin/bash", append(argv, os.Args...), os.Environ())
+		os.Args[0],
+		dir,
+		command,
+	}, os.Environ())
 }
