@@ -2,8 +2,6 @@ package models_test
 
 import (
 	"time"
-
-	"github.com/fraenkel/candiedyaml"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -123,26 +121,5 @@ var _ = Describe("Task", func() {
 				})
 			})
 		}
-
-	})
-
-	Describe("StagingInfo", func() {
-		Context("when yaml", func() {
-			stagingYAML := `---
-detected_buildpack: yaml-buildpack
-start_command: yaml-ize -d`
-
-			It("exposes an extracted `detected_buildpack` property", func() {
-				var stagingInfo StagingInfo
-
-				err := candiedyaml.Unmarshal([]byte(stagingYAML), &stagingInfo)
-				Ω(err).ShouldNot(HaveOccurred())
-
-				Ω(stagingInfo).Should(Equal(StagingInfo{
-					DetectedBuildpack:    "yaml-buildpack",
-					DetectedStartCommand: "yaml-ize -d",
-				}))
-			})
-		})
 	})
 })

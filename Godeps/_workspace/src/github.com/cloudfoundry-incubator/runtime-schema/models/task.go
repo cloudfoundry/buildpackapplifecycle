@@ -40,13 +40,10 @@ type Task struct {
 	Annotation string `json:"annotation,omitempty"`
 }
 
-type StagingInfo struct {
-	// yaml keys matter here! they are used by the old DEA for staging_info.yml
-	BuildpackKey      string `yaml:"-" json:"buildpack_key,omitempty"`
-	DetectedBuildpack string `yaml:"detected_buildpack" json:"detected_buildpack"`
-
-	// do not change to be consistent keys; look up 4 lines
-	DetectedStartCommand string `yaml:"start_command" json:"detected_start_command"`
+type StagingResult struct {
+	BuildpackKey      string `json:"buildpack_key,omitempty"`
+	DetectedBuildpack string `json:"detected_buildpack"`
+	ExecutionMetadata string `json:"execution_metadata"`
 }
 
 type StagingTaskAnnotation struct {
