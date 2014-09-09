@@ -142,7 +142,7 @@ start_command: the start command
 			It("exists, and contains the detected buildpack", func() {
 				Ω(resultJSON()).Should(MatchJSON(`{
 					"detected_buildpack": "Always Matching",
-					"detected_start_command": "the start command",
+					"execution_metadata": "{\"start_command\":\"the start command\"}",
 					"buildpack_key": "always-detects"
 				}`))
 			})
@@ -157,7 +157,7 @@ start_command: the start command
 				It("chooses the buildpack-provided command", func() {
 					Ω(resultJSON()).Should(MatchJSON(`{
 					"detected_buildpack": "Always Matching",
-					"detected_start_command": "the start command",
+					"execution_metadata": "{\"start_command\":\"the start command\"}",
 					"buildpack_key": "always-detects"
 				}`))
 				})
@@ -171,7 +171,7 @@ start_command: the start command
 				It("chooses the buildpack-provided command", func() {
 					Ω(resultJSON()).Should(MatchJSON(`{
 					"detected_buildpack": "Always Matching",
-					"detected_start_command": "the start command",
+					"execution_metadata": "{\"start_command\":\"the start command\"}",
 					"buildpack_key": "always-detects"
 				}`))
 				})
@@ -198,7 +198,7 @@ start_command: the start command
 				It("uses the command defined by web in the Procfile", func() {
 					Ω(resultJSON()).Should(MatchJSON(`{
 						"detected_buildpack": "Release Without Command",
-						"detected_start_command": "procfile-provided start-command",
+						"execution_metadata": "{\"start_command\":\"procfile-provided start-command\"}",
 						"buildpack_key": "release-without-command"
 					}`))
 				})

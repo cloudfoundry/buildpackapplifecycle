@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/cloudfoundry-incubator/linux-circus/protocol"
 	"github.com/cloudfoundry-incubator/runtime-schema/models"
 
 	"github.com/cloudfoundry-incubator/candiedyaml"
@@ -244,10 +245,17 @@ func (runner *Runner) saveInfo(buildpack string, detectOutput string, releaseInf
 	}
 	defer resultFile.Close()
 
-	err = json.NewEncoder(resultFile).Encode(models.StagingInfo{
-		BuildpackKey:         buildpack,
-		DetectedBuildpack:    detectOutput,
-		DetectedStartCommand: releaseInfo.DefaultProcessTypes.Web,
+	executionMetadata, err := json.Marshal(protocol.ExecutionMetadata{
+		StartCommand: releaseInfo.DefaultProcessTypes.Web,
+	})
+	if err != nil {
+		return err
+	}
+
+	err = json.NewEncoder(resultFile).Encode(models.StagingResult{
+		BuildpackKey:      buildpack,
+		DetectedBuildpack: detectOutput,
+		ExecutionMetadata: string(executionMetadata),
 	})
 	if err != nil {
 		return err
