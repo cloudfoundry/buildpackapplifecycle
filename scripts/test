@@ -3,16 +3,25 @@
 
 set -e -x
 
-export GOPATH=$PWD/Godeps/_workspace:$GOPATH
+go get -t -v ./...
 
-FIRST_GOPATH=`echo $GOPATH | cut -d':' -f1`
-
-mkdir -p $FIRST_GOPATH/bin
-export PATH=$FIRST_GOPATH/bin:$PATH
+## Lock down etcd since latest code is very broken
+## See: https://github.com/coreos/etcd/issues/986
+export first_gospace=$(echo $GOPATH | cut -d ':' -f 1)
+mkdir -p $first_gospace/src/github.com/coreos/etcd
+pushd $first_gospace/src/github.com/coreos/etcd
+  git clone https://github.com/coreos/etcd.git . || true
+  git checkout 0a2384bf4daec35a814244dc4d885e14f18b5ef1
+  go install .
+popd
 
 go get github.com/dustin/goveralls
 go get code.google.com/p/go.tools/cmd/cover
 go install github.com/onsi/ginkgo/ginkgo
+
+for gospace in $(echo $GOPATH | tr ':' ' '); do
+  export PATH=$gospace/bin:$PATH
+done
 
 ginkgo -cover -v -r -failOnPending -randomizeAllSpecs -race
 
