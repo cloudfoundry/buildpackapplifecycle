@@ -253,9 +253,10 @@ func (runner *Runner) saveInfo(buildpack string, detectOutput string, releaseInf
 	}
 
 	err = json.NewEncoder(resultFile).Encode(models.StagingResult{
-		BuildpackKey:      buildpack,
-		DetectedBuildpack: detectOutput,
-		ExecutionMetadata: string(executionMetadata),
+		BuildpackKey:         buildpack,
+		DetectedBuildpack:    detectOutput,
+		ExecutionMetadata:    string(executionMetadata),
+		DetectedStartCommand: map[string]string{"web": releaseInfo.DefaultProcessTypes.Web},
 	})
 	if err != nil {
 		return err

@@ -143,7 +143,8 @@ start_command: the start command
 				Ω(resultJSON()).Should(MatchJSON(`{
 					"detected_buildpack": "Always Matching",
 					"execution_metadata": "{\"start_command\":\"the start command\"}",
-					"buildpack_key": "always-detects"
+					"buildpack_key": "always-detects",
+					"detected_start_command":{"web":"the start command"}
 				}`))
 			})
 		})
@@ -158,7 +159,8 @@ start_command: the start command
 					Ω(resultJSON()).Should(MatchJSON(`{
 					"detected_buildpack": "Always Matching",
 					"execution_metadata": "{\"start_command\":\"the start command\"}",
-					"buildpack_key": "always-detects"
+					"buildpack_key": "always-detects",
+					"detected_start_command":{"web":"the start command"}
 				}`))
 				})
 			})
@@ -172,7 +174,8 @@ start_command: the start command
 					Ω(resultJSON()).Should(MatchJSON(`{
 					"detected_buildpack": "Always Matching",
 					"execution_metadata": "{\"start_command\":\"the start command\"}",
-					"buildpack_key": "always-detects"
+					"buildpack_key": "always-detects",
+					"detected_start_command":{"web":"the start command"}
 				}`))
 				})
 			})
@@ -199,7 +202,8 @@ start_command: the start command
 					Ω(resultJSON()).Should(MatchJSON(`{
 						"detected_buildpack": "Release Without Command",
 						"execution_metadata": "{\"start_command\":\"procfile-provided start-command\"}",
-						"buildpack_key": "release-without-command"
+						"buildpack_key": "release-without-command",
+						"detected_start_command":{"web":"procfile-provided start-command"}
 					}`))
 				})
 			})
