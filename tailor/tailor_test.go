@@ -155,12 +155,12 @@ start_command: the start command
 					cp(path.Join(appFixtures, "with-procfile-with-web", "Procfile"), appDir)
 				})
 
-				It("chooses the buildpack-provided command", func() {
+				It("chooses the Procfile-provided command", func() {
 					Ω(resultJSON()).Should(MatchJSON(`{
 					"detected_buildpack": "Always Matching",
-					"execution_metadata": "{\"start_command\":\"the start command\"}",
+					"execution_metadata": "{\"start_command\":\"procfile-provided start-command\"}",
 					"buildpack_key": "always-detects",
-					"detected_start_command":{"web":"the start command"}
+					"detected_start_command":{"web":"procfile-provided start-command"}
 				}`))
 				})
 			})

@@ -214,11 +214,14 @@ func (runner *Runner) release(buildpackDir string, webStartCommand string) (Rele
 	decoder := candiedyaml.NewDecoder(output)
 
 	parsedRelease := Release{}
-	parsedRelease.DefaultProcessTypes.Web = webStartCommand
 
 	err = decoder.Decode(&parsedRelease)
 	if err != nil {
 		return Release{}, newDescriptiveError(err, "buildpack's release output invalid")
+	}
+
+	if webStartCommand != "" { // if Procfile has provided a web: line, it overrides the output of /bin/release.
+		parsedRelease.DefaultProcessTypes.Web = webStartCommand
 	}
 
 	return parsedRelease, nil
