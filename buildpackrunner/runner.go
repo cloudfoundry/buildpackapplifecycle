@@ -220,7 +220,8 @@ func (runner *Runner) release(buildpackDir string, webStartCommand string) (Rele
 		return Release{}, newDescriptiveError(err, "buildpack's release output invalid")
 	}
 
-	if webStartCommand != "" { // if Procfile has provided a web: line, it overrides the output of /bin/release.
+	procfileContainsWebStartCommand := webStartCommand != ""
+	if procfileContainsWebStartCommand {
 		parsedRelease.DefaultProcessTypes.Web = webStartCommand
 	}
 
