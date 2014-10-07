@@ -86,7 +86,6 @@ func (runner *Runner) Run() error {
 		printError("No start command detected; command must be provided at runtime")
 	}
 
-	// TODO fallback to something else if tar not available
 	tarPath, err := exec.LookPath("tar")
 	if err != nil {
 		return err
