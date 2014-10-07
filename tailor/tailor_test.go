@@ -23,7 +23,7 @@ var _ = Describe("Tailoring", func() {
 		tailorCmd              *exec.Cmd
 		appDir                 string
 		buildpacksDir          string
-		outputDropletDir       string
+		outputDroplet          string
 		buildpackOrder         string
 		buildArtifactsCacheDir string
 		outputMetadataDir      string
@@ -54,8 +54,9 @@ var _ = Describe("Tailoring", func() {
 		buildpacksDir, err = ioutil.TempDir(os.TempDir(), "tailoring-buildpacks")
 		Ω(err).ShouldNot(HaveOccurred())
 
-		outputDropletDir, err = ioutil.TempDir(os.TempDir(), "tailoring-droplet")
+		outputDropletFile, err := ioutil.TempFile(os.TempDir(), "tailoring-droplet")
 		Ω(err).ShouldNot(HaveOccurred())
+		outputDroplet = outputDropletFile.Name()
 
 		buildArtifactsCacheDir, err = ioutil.TempDir(os.TempDir(), "tailoring-cache")
 		Ω(err).ShouldNot(HaveOccurred())
@@ -69,14 +70,14 @@ var _ = Describe("Tailoring", func() {
 	AfterEach(func() {
 		os.RemoveAll(appDir)
 		os.RemoveAll(buildpacksDir)
-		os.RemoveAll(outputDropletDir)
+		os.Remove(outputDroplet)
 	})
 
 	JustBeforeEach(func() {
 		tailorCmd = exec.Command(tailorPath,
 			"-appDir", appDir,
 			"-buildpacksDir", buildpacksDir,
-			"-outputDropletDir", outputDropletDir,
+			"-outputDroplet", outputDroplet,
 			"-buildArtifactsCacheDir", buildArtifactsCacheDir,
 			"-buildpackOrder", buildpackOrder,
 			"-outputMetadataDir", outputMetadataDir,
@@ -110,7 +111,7 @@ var _ = Describe("Tailoring", func() {
 			var files []string
 
 			JustBeforeEach(func() {
-				result, err := exec.Command("tar", "-tzf", path.Join(outputDropletDir, "droplet.tgz")).Output()
+				result, err := exec.Command("tar", "-tzf", outputDroplet).Output()
 				Ω(err).ShouldNot(HaveOccurred())
 
 				files = strings.Split(string(result), "\n")
@@ -133,7 +134,7 @@ var _ = Describe("Tailoring", func() {
 			})
 
 			It("should contain a staging_info.yml with the detected buildpack", func() {
-				stagingInfo, err := exec.Command("tar", "-xzf", path.Join(outputDropletDir, "droplet.tgz"), "-O", "staging_info.yml").Output()
+				stagingInfo, err := exec.Command("tar", "-xzf", outputDroplet, "-O", "./staging_info.yml").Output()
 				Ω(err).ShouldNot(HaveOccurred())
 
 				expectedYAML := `detected_buildpack: Always Matching

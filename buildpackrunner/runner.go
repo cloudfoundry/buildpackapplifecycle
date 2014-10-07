@@ -93,8 +93,7 @@ func (runner *Runner) Run() error {
 	}
 
 	//prepare the final droplet directory
-	contentsDir := path.Join(runner.config.OutputDropletDir(), "contents")
-	err = os.MkdirAll(contentsDir, 0755)
+	contentsDir, err := ioutil.TempDir("", "contents")
 	if err != nil {
 		return newDescriptiveError(err, "Failed to create droplet contents dir")
 	}
@@ -122,7 +121,7 @@ func (runner *Runner) Run() error {
 		return newDescriptiveError(err, "Failed to set up droplet filesystem")
 	}
 
-	err = exec.Command(tarPath, "-czf", path.Join(runner.config.OutputDropletDir(), "droplet.tgz"), "-C", contentsDir, ".").Run()
+	err = exec.Command(tarPath, "-czf", runner.config.OutputDroplet(), "-C", contentsDir, ".").Run()
 	if err != nil {
 		return newDescriptiveError(err, "Failed to compress droplet")
 	}
@@ -142,7 +141,7 @@ func (runner *Runner) Run() error {
 }
 
 func (runner *Runner) makeDirectories() error {
-	if err := os.MkdirAll(runner.config.OutputDropletDir(), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(runner.config.OutputDroplet()), 0755); err != nil {
 		return err
 	}
 
