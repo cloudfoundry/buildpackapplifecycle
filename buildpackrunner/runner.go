@@ -86,26 +86,56 @@ func (runner *Runner) Run() error {
 		printError("No start command detected; command must be provided at runtime")
 	}
 
+	// TODO fallback to something else if tar not available
+	tarPath, err := exec.LookPath("tar")
+	if err != nil {
+		return err
+	}
+
+	//prepare the final droplet directory
+	contentsDir := path.Join(runner.config.OutputDropletDir(), "contents")
+	err = os.MkdirAll(contentsDir, 0755)
+	if err != nil {
+		return newDescriptiveError(err, "Failed to create droplet contents dir")
+	}
+
 	//generate staging_info.yml and result json file
-	err = runner.saveInfo(detectedBuildpack, detectOutput, releaseInfo)
+	infoFilePath := path.Join(contentsDir, "staging_info.yml")
+	err = runner.saveInfo(infoFilePath, detectedBuildpack, detectOutput, releaseInfo)
 	if err != nil {
 		return newDescriptiveError(err, "Failed to encode generated metadata")
 	}
 
-	//prepare the final droplet directory
-	err = runner.copyApp(runner.config.AppDir(), path.Join(runner.config.OutputDropletDir(), "app"))
+	appDir := path.Join(contentsDir, "app")
+	err = runner.copyApp(runner.config.AppDir(), appDir)
 	if err != nil {
 		return newDescriptiveError(err, "Failed to copy compiled droplet")
 	}
 
-	err = os.MkdirAll(path.Join(runner.config.OutputDropletDir(), "tmp"), 0755)
+	err = os.MkdirAll(path.Join(contentsDir, "tmp"), 0755)
 	if err != nil {
 		return newDescriptiveError(err, "Failed to set up droplet filesystem")
 	}
 
-	err = os.MkdirAll(path.Join(runner.config.OutputDropletDir(), "logs"), 0755)
+	err = os.MkdirAll(path.Join(contentsDir, "logs"), 0755)
 	if err != nil {
 		return newDescriptiveError(err, "Failed to set up droplet filesystem")
+	}
+
+	err = exec.Command(tarPath, "-czf", path.Join(runner.config.OutputDropletDir(), "droplet.tgz"), "-C", contentsDir, ".").Run()
+	if err != nil {
+		return newDescriptiveError(err, "Failed to compress droplet")
+	}
+
+	//prepare the build artifacts cache output directory
+	err = os.MkdirAll(filepath.Dir(runner.config.OutputBuildArtifactsCache()), 0755)
+	if err != nil {
+		return newDescriptiveError(err, "Failed to create output build artifacts cache dir")
+	}
+
+	err = exec.Command(tarPath, "-czf", runner.config.OutputBuildArtifactsCache(), "-C", runner.config.BuildArtifactsCacheDir(), ".").Run()
+	if err != nil {
+		return newDescriptiveError(err, "Failed to compress build artifacts")
 	}
 
 	return nil
@@ -228,8 +258,8 @@ func (runner *Runner) release(buildpackDir string, webStartCommand string) (Rele
 	return parsedRelease, nil
 }
 
-func (runner *Runner) saveInfo(buildpack string, detectOutput string, releaseInfo Release) error {
-	deaInfoFile, err := os.Create(filepath.Join(runner.config.OutputDropletDir(), "staging_info.yml"))
+func (runner *Runner) saveInfo(infoFilePath, buildpack, detectOutput string, releaseInfo Release) error {
+	deaInfoFile, err := os.Create(infoFilePath)
 	if err != nil {
 		return err
 	}

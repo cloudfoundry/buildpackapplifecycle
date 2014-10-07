@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -105,30 +106,34 @@ var _ = Describe("Tailoring", func() {
 			Eventually(tailor()).Should(gexec.Exit(0))
 		})
 
-		Describe("the contents of the output dir", func() {
+		Describe("the contents of the output tgz", func() {
+			var files []string
+
+			JustBeforeEach(func() {
+				result, err := exec.Command("tar", "-tzf", path.Join(outputDropletDir, "droplet.tgz")).Output()
+				Ω(err).ShouldNot(HaveOccurred())
+
+				files = strings.Split(string(result), "\n")
+			})
+
 			It("should contain an /app dir with the contents of the compilation", func() {
-				appDirLocation := path.Join(outputDropletDir, "app")
-				contents, err := ioutil.ReadDir(appDirLocation)
-				Ω(contents, err).Should(HaveLen(2))
-
-				names := []string{contents[0].Name(), contents[1].Name()}
-				Ω(names).Should(ContainElement("app.sh"))
-				Ω(names).Should(ContainElement("compiled"))
+				Ω(files).Should(ContainElement("./app/"))
+				Ω(files).Should(ContainElement("./app/app.sh"))
+				Ω(files).Should(ContainElement("./app/compiled"))
 			})
 
-			It("should contain a droplet containing an empty /tmp directory", func() {
-				tmpDirLocation := path.Join(outputDropletDir, "tmp")
-				Ω(ioutil.ReadDir(tmpDirLocation)).Should(BeEmpty())
+			It("should contain an empty /tmp directory", func() {
+				Ω(files).Should(ContainElement("./tmp/"))
+				Ω(files).ShouldNot(ContainElement(MatchRegexp("\\./tmp/.+")))
 			})
 
-			It("should contain a droplet containing an empty /logs directory", func() {
-				logsDirLocation := path.Join(outputDropletDir, "logs")
-				Ω(ioutil.ReadDir(logsDirLocation)).Should(BeEmpty())
+			It("should contain an empty /logs directory", func() {
+				Ω(files).Should(ContainElement("./logs/"))
+				Ω(files).ShouldNot(ContainElement(MatchRegexp("\\./logs/.+")))
 			})
 
-			It("should stop after detecting, and contain a staging_info.yml with the detected buildpack", func() {
-				stagingInfoLocation := path.Join(outputDropletDir, "staging_info.yml")
-				stagingInfo, err := ioutil.ReadFile(stagingInfoLocation)
+			It("should contain a staging_info.yml with the detected buildpack", func() {
+				stagingInfo, err := exec.Command("tar", "-xzf", path.Join(outputDropletDir, "droplet.tgz"), "-O", "staging_info.yml").Output()
 				Ω(err).ShouldNot(HaveOccurred())
 
 				expectedYAML := `detected_buildpack: Always Matching
