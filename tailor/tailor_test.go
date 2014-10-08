@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"strings"
 
 	. "github.com/onsi/ginkgo"
@@ -20,13 +21,14 @@ var _ = Describe("Tailoring", func() {
 	appFixtures := "fixtures/apps"
 
 	var (
-		tailorCmd              *exec.Cmd
-		appDir                 string
-		buildpacksDir          string
-		outputDroplet          string
-		buildpackOrder         string
-		buildArtifactsCacheDir string
-		outputMetadataDir      string
+		tailorCmd                 *exec.Cmd
+		appDir                    string
+		buildpacksDir             string
+		outputDroplet             string
+		buildpackOrder            string
+		buildArtifactsCacheDir    string
+		outputMetadataDir         string
+		outputBuildArtifactsCache string
 	)
 
 	tailor := func() *gexec.Session {
@@ -58,6 +60,10 @@ var _ = Describe("Tailoring", func() {
 		Ω(err).ShouldNot(HaveOccurred())
 		outputDroplet = outputDropletFile.Name()
 
+		outputBuildArtifactsCacheDir, err := ioutil.TempDir(os.TempDir(), "tailoring-cache-output")
+		Ω(err).ShouldNot(HaveOccurred())
+		outputBuildArtifactsCache = filepath.Join(outputBuildArtifactsCacheDir, "cache.tgz")
+
 		buildArtifactsCacheDir, err = ioutil.TempDir(os.TempDir(), "tailoring-cache")
 		Ω(err).ShouldNot(HaveOccurred())
 
@@ -78,6 +84,7 @@ var _ = Describe("Tailoring", func() {
 			"-appDir", appDir,
 			"-buildpacksDir", buildpacksDir,
 			"-outputDroplet", outputDroplet,
+			"-outputBuildArtifactsCache", outputBuildArtifactsCache,
 			"-buildArtifactsCacheDir", buildArtifactsCacheDir,
 			"-buildpackOrder", buildpackOrder,
 			"-outputMetadataDir", outputMetadataDir,
@@ -144,6 +151,21 @@ start_command: the start command
 			})
 		})
 
+		Describe("the build artifacts cache output tgz", func() {
+			BeforeEach(func() {
+				buildpackOrder = "always-detects-creates-build-artifacts"
+
+				cpBuildpack("always-detects-creates-build-artifacts")
+			})
+
+			It("gets created", func() {
+				result, err := exec.Command("tar", "-tzf", outputBuildArtifactsCache).Output()
+				Ω(err).ShouldNot(HaveOccurred())
+
+				Ω(strings.Split(string(result), "\n")).Should(ContainElement("./build-artifact"))
+			})
+		})
+
 		Describe("the result.json, which is used to communicate back to the stager", func() {
 			It("exists, and contains the detected buildpack", func() {
 				Ω(resultJSON()).Should(MatchJSON(`{
@@ -153,36 +175,36 @@ start_command: the start command
 					"detected_start_command":{"web":"the start command"}
 				}`))
 			})
-		})
 
-		Context("when the app has a Procfile", func() {
-			Context("with web defined", func() {
-				BeforeEach(func() {
-					cp(path.Join(appFixtures, "with-procfile-with-web", "Procfile"), appDir)
-				})
+			Context("when the app has a Procfile", func() {
+				Context("with web defined", func() {
+					BeforeEach(func() {
+						cp(path.Join(appFixtures, "with-procfile-with-web", "Procfile"), appDir)
+					})
 
-				It("chooses the Procfile-provided command", func() {
-					Ω(resultJSON()).Should(MatchJSON(`{
+					It("chooses the Procfile-provided command", func() {
+						Ω(resultJSON()).Should(MatchJSON(`{
 					"detected_buildpack": "Always Matching",
 					"execution_metadata": "{\"start_command\":\"procfile-provided start-command\"}",
 					"buildpack_key": "always-detects",
 					"detected_start_command":{"web":"procfile-provided start-command"}
 				}`))
-				})
-			})
-
-			Context("without web", func() {
-				BeforeEach(func() {
-					cp(path.Join(appFixtures, "with-procfile", "Procfile"), appDir)
+					})
 				})
 
-				It("chooses the buildpack-provided command", func() {
-					Ω(resultJSON()).Should(MatchJSON(`{
+				Context("without web", func() {
+					BeforeEach(func() {
+						cp(path.Join(appFixtures, "with-procfile", "Procfile"), appDir)
+					})
+
+					It("chooses the buildpack-provided command", func() {
+						Ω(resultJSON()).Should(MatchJSON(`{
 					"detected_buildpack": "Always Matching",
 					"execution_metadata": "{\"start_command\":\"the start command\"}",
 					"buildpack_key": "always-detects",
 					"detected_start_command":{"web":"the start command"}
 				}`))
+					})
 				})
 			})
 		})
