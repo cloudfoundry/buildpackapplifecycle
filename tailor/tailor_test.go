@@ -27,7 +27,7 @@ var _ = Describe("Tailoring", func() {
 		outputDroplet             string
 		buildpackOrder            string
 		buildArtifactsCacheDir    string
-		outputMetadataDir         string
+		outputMetadata            string
 		outputBuildArtifactsCache string
 	)
 
@@ -67,8 +67,9 @@ var _ = Describe("Tailoring", func() {
 		buildArtifactsCacheDir, err = ioutil.TempDir(os.TempDir(), "tailoring-cache")
 		Ω(err).ShouldNot(HaveOccurred())
 
-		outputMetadataDir, err = ioutil.TempDir(os.TempDir(), "tailoring-result")
+		outputMetadataFile, err := ioutil.TempFile(os.TempDir(), "tailoring-result")
 		Ω(err).ShouldNot(HaveOccurred())
+		outputMetadata = outputMetadataFile.Name()
 
 		buildpackOrder = ""
 	})
@@ -87,15 +88,14 @@ var _ = Describe("Tailoring", func() {
 			"-outputBuildArtifactsCache", outputBuildArtifactsCache,
 			"-buildArtifactsCacheDir", buildArtifactsCacheDir,
 			"-buildpackOrder", buildpackOrder,
-			"-outputMetadataDir", outputMetadataDir,
+			"-outputMetadata", outputMetadata,
 		)
 
 		tailorCmd.Env = os.Environ()
 	})
 
 	resultJSON := func() []byte {
-		resultLocation := path.Join(outputMetadataDir, "result.json")
-		resultInfo, err := ioutil.ReadFile(resultLocation)
+		resultInfo, err := ioutil.ReadFile(outputMetadata)
 		Ω(err).ShouldNot(HaveOccurred())
 
 		return resultInfo

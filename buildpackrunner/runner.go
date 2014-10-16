@@ -144,7 +144,7 @@ func (runner *Runner) makeDirectories() error {
 		return err
 	}
 
-	if err := os.MkdirAll(runner.config.OutputMetadataDir(), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(runner.config.OutputMetadata()), 0755); err != nil {
 		return err
 	}
 
@@ -271,7 +271,7 @@ func (runner *Runner) saveInfo(infoFilePath, buildpack, detectOutput string, rel
 		return err
 	}
 
-	resultFile, err := os.Create(runner.config.OutputMetadataPath())
+	resultFile, err := os.Create(runner.config.OutputMetadata())
 	if err != nil {
 		return err
 	}
