@@ -15,6 +15,7 @@ import (
 )
 
 var _ = Describe("Soldier", func() {
+	var extractDir string
 	var appDir string
 	var soldierCmd *exec.Cmd
 	var session *gexec.Session
@@ -23,11 +24,16 @@ var _ = Describe("Soldier", func() {
 		os.Setenv("CALLERENV", "some-value")
 
 		var err error
-		appDir, err = ioutil.TempDir("", "app-dir")
+		extractDir, err = ioutil.TempDir("", "vcap")
+		Ω(err).ShouldNot(HaveOccurred())
+
+		appDir = path.Join(extractDir, "app")
+		err = os.MkdirAll(appDir, 0755)
 		Ω(err).ShouldNot(HaveOccurred())
 
 		soldierCmd = &exec.Cmd{
 			Path: soldier,
+			Dir:  extractDir,
 			Env: append(
 				os.Environ(),
 				"PORT=8080",
@@ -39,7 +45,7 @@ var _ = Describe("Soldier", func() {
 	})
 
 	AfterEach(func() {
-		os.RemoveAll(appDir)
+		os.RemoveAll(extractDir)
 	})
 
 	JustBeforeEach(func() {
@@ -134,35 +140,54 @@ var _ = Describe("Soldier", func() {
 		ItExecutesTheCommandWithTheRightEnvironment()
 	})
 
-	ItPrintsUsageInformation := func() {
+	var ItPrintsUsageInformation = func() {
 		It("prints usage information", func() {
 			Eventually(session.Err).Should(gbytes.Say("Usage: soldier <app directory> <start command> <metadata>"))
 			Eventually(session).Should(gexec.Exit(1))
 		})
 	}
 
-	Context("when no arguments are given", func() {
-		BeforeEach(func() {
-			soldierCmd.Args = []string{
-				"soldier",
-			}
-		})
-
-		ItPrintsUsageInformation()
-	})
-
-	Context("when the start command and metadata are missing", func() {
+	Context("when the start command and start_command metadata are empty", func() {
 		BeforeEach(func() {
 			soldierCmd.Args = []string{
 				"soldier",
 				appDir,
+				"",
+				"",
 			}
 		})
 
-		ItPrintsUsageInformation()
+		Context("when the app package does not contain staging_info.yml", func() {
+			ItPrintsUsageInformation()
+		})
+
+		Context("when the app package has a staging_info.yml", func() {
+			var stagingInfo string
+
+			JustBeforeEach(func() {
+				err := ioutil.WriteFile(path.Join(extractDir, "staging_info.yml"), []byte(stagingInfo), 0644)
+				Ω(err).ShouldNot(HaveOccurred())
+			})
+
+			Context("when the staging_info.yml is missing a start command", func() {
+				BeforeEach(func() {
+					stagingInfo = "detected_buildpack: Ruby"
+				})
+
+				ItPrintsUsageInformation()
+			})
+
+			Context("when the staging_info.yml contains a start command", func() {
+				BeforeEach(func() {
+					stagingInfo = "detected_buildpack: Ruby\nstart_command: env; echo running app"
+				})
+
+				ItExecutesTheCommandWithTheRightEnvironment()
+			})
+		})
 	})
 
-	Context("when the metadata is missing", func() {
+	Context("when arguments are missing", func() {
 		BeforeEach(func() {
 			soldierCmd.Args = []string{
 				"soldier",

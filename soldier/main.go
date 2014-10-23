@@ -2,12 +2,14 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
 	"syscall"
 
+	"github.com/cloudfoundry-incubator/candiedyaml"
 	"github.com/cloudfoundry-incubator/linux-circus/protocol"
 )
 
@@ -27,8 +29,7 @@ eval "$@"
 
 func main() {
 	if len(os.Args) < 4 {
-		fmt.Fprintf(os.Stderr, "Usage: %s <app directory> <start command> <metadata>", os.Args[0])
-		os.Exit(1)
+		exitWithUsage()
 	}
 
 	dir := os.Args[1]
@@ -64,7 +65,7 @@ func main() {
 	var command string
 	if startCommand != "" {
 		command = startCommand
-	} else {
+	} else if metadata != "" {
 		var executionMetadata protocol.ExecutionMetadata
 		err := json.Unmarshal([]byte(metadata), &executionMetadata)
 		if err != nil {
@@ -73,6 +74,13 @@ func main() {
 		} else {
 			command = executionMetadata.StartCommand
 		}
+	} else {
+		stagingInfoPath := filepath.Join("staging_info.yml")
+		command, _ = startCommandFromStagingInfo(stagingInfoPath)
+	}
+
+	if command == "" {
+		exitWithUsage()
 	}
 
 	syscall.Exec("/bin/bash", []string{
@@ -83,4 +91,26 @@ func main() {
 		dir,
 		command,
 	}, os.Environ())
+}
+
+func exitWithUsage() {
+	fmt.Fprintf(os.Stderr, "Usage: %s <app directory> <start command> <metadata>", os.Args[0])
+	os.Exit(1)
+}
+
+func startCommandFromStagingInfo(stagingInfoPath string) (string, error) {
+	stagingInfoFile, err := os.Open(stagingInfoPath)
+	if err != nil {
+		return "", err
+	}
+	defer stagingInfoFile.Close()
+
+	stagingInfo := map[string]string{}
+
+	err = candiedyaml.NewDecoder(stagingInfoFile).Decode(&stagingInfo)
+	if err != nil {
+		return "", errors.New("invalid YAML")
+	}
+
+	return stagingInfo["start_command"], nil
 }
