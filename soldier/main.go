@@ -75,8 +75,11 @@ func main() {
 			command = executionMetadata.StartCommand
 		}
 	} else {
-		stagingInfoPath := filepath.Join("staging_info.yml")
-		command, _ = startCommandFromStagingInfo(stagingInfoPath)
+		command, err = startCommandFromStagingInfo("staging_info.yml")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Invalid staging info - %s", err)
+			os.Exit(1)
+		}
 	}
 
 	if command == "" {
@@ -98,19 +101,26 @@ func exitWithUsage() {
 	os.Exit(1)
 }
 
+type stagingInfo struct {
+	StartCommand string `yaml:"start_command"`
+}
+
 func startCommandFromStagingInfo(stagingInfoPath string) (string, error) {
 	stagingInfoFile, err := os.Open(stagingInfoPath)
 	if err != nil {
+		if os.IsNotExist(err) {
+			return "", nil
+		}
 		return "", err
 	}
 	defer stagingInfoFile.Close()
 
-	stagingInfo := map[string]string{}
+	info := stagingInfo{}
 
-	err = candiedyaml.NewDecoder(stagingInfoFile).Decode(&stagingInfo)
+	err = candiedyaml.NewDecoder(stagingInfoFile).Decode(&info)
 	if err != nil {
 		return "", errors.New("invalid YAML")
 	}
 
-	return stagingInfo["start_command"], nil
+	return info.StartCommand, nil
 }

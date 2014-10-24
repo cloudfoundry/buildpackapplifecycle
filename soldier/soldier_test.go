@@ -169,7 +169,7 @@ var _ = Describe("Soldier", func() {
 				Ω(err).ShouldNot(HaveOccurred())
 			})
 
-			Context("when the staging_info.yml is missing a start command", func() {
+			Context("when it is missing a start command", func() {
 				BeforeEach(func() {
 					stagingInfo = "detected_buildpack: Ruby"
 				})
@@ -177,14 +177,35 @@ var _ = Describe("Soldier", func() {
 				ItPrintsUsageInformation()
 			})
 
-			Context("when the staging_info.yml contains a start command", func() {
+			Context("when it contains a start command", func() {
 				BeforeEach(func() {
 					stagingInfo = "detected_buildpack: Ruby\nstart_command: env; echo running app"
 				})
 
 				ItExecutesTheCommandWithTheRightEnvironment()
 			})
+
+			Context("when it references unresolvable types in non-essential fields", func() {
+				BeforeEach(func() {
+					stagingInfo = "---\nbuildpack_path: !ruby/object:Pathname\n  path: /tmp/buildpacks/null-buildpack\ndetected_buildpack: \nstart_command: env; echo running app\n"
+				})
+
+				ItExecutesTheCommandWithTheRightEnvironment()
+			})
+
+			Context("when it is not valid YAML", func() {
+				BeforeEach(func() {
+					stagingInfo = "start_command: &ruby/object:Pathname"
+				})
+
+				It("prints an error message", func() {
+					Eventually(session.Err).Should(gbytes.Say("Invalid staging info"))
+					Eventually(session).Should(gexec.Exit(1))
+				})
+			})
+
 		})
+
 	})
 
 	Context("when arguments are missing", func() {
