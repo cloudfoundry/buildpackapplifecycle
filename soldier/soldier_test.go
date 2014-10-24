@@ -45,7 +45,8 @@ var _ = Describe("Soldier", func() {
 	})
 
 	AfterEach(func() {
-		os.RemoveAll(extractDir)
+		err := os.RemoveAll(extractDir)
+		Ω(err).ShouldNot(HaveOccurred())
 	})
 
 	JustBeforeEach(func() {
@@ -55,20 +56,24 @@ var _ = Describe("Soldier", func() {
 	})
 
 	var ItExecutesTheCommandWithTheRightEnvironment = func() {
-		It("executes the start command with $HOME as the given dir", func() {
-			Eventually(session).Should(gbytes.Say("HOME=" + appDir))
-		})
-
-		It("executes the start command with $TMPDIR as the given dir + /tmp", func() {
-			Eventually(session).Should(gbytes.Say("TMPDIR=" + appDir + "/tmp"))
-		})
-
 		It("executes with the environment of the caller", func() {
+			Eventually(session).Should(gexec.Exit(0))
 			Eventually(session).Should(gbytes.Say("CALLERENV=some-value"))
 		})
 
+		It("executes the start command with $HOME as the given dir", func() {
+			Eventually(session).Should(gexec.Exit(0))
+			Eventually(session).Should(gbytes.Say("HOME=" + appDir))
+		})
+
 		It("changes to the app directory when running", func() {
+			Eventually(session).Should(gexec.Exit(0))
 			Eventually(session).Should(gbytes.Say("PWD=" + appDir))
+		})
+
+		It("executes the start command with $TMPDIR as the given dir + /tmp", func() {
+			Eventually(session).Should(gexec.Exit(0))
+			Eventually(session).Should(gbytes.Say("TMPDIR=" + appDir + "/tmp"))
 		})
 
 		It("munges VCAP_APPLICATION appropriately", func() {
@@ -105,6 +110,7 @@ var _ = Describe("Soldier", func() {
 			})
 
 			It("sources them before executing", func() {
+				Eventually(session).Should(gexec.Exit(0))
 				Eventually(session).Should(gbytes.Say("sourcing a"))
 				Eventually(session).Should(gbytes.Say("sourcing b"))
 				Eventually(session).Should(gbytes.Say("A=1"))
@@ -142,8 +148,8 @@ var _ = Describe("Soldier", func() {
 
 	var ItPrintsUsageInformation = func() {
 		It("prints usage information", func() {
-			Eventually(session.Err).Should(gbytes.Say("Usage: soldier <app directory> <start command> <metadata>"))
 			Eventually(session).Should(gexec.Exit(1))
+			Eventually(session.Err).Should(gbytes.Say("Usage: soldier <app directory> <start command> <metadata>"))
 		})
 	}
 
@@ -199,8 +205,8 @@ var _ = Describe("Soldier", func() {
 				})
 
 				It("prints an error message", func() {
-					Eventually(session.Err).Should(gbytes.Say("Invalid staging info"))
 					Eventually(session).Should(gexec.Exit(1))
+					Eventually(session.Err).Should(gbytes.Say("Invalid staging info"))
 				})
 			})
 
@@ -231,8 +237,8 @@ var _ = Describe("Soldier", func() {
 		})
 
 		It("prints an error message", func() {
-			Eventually(session.Err).Should(gbytes.Say("Invalid metadata"))
 			Eventually(session).Should(gexec.Exit(1))
+			Eventually(session.Err).Should(gbytes.Say("Invalid metadata"))
 		})
 	})
 })
