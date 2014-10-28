@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"regexp"
 
 	. "github.com/onsi/ginkgo"
@@ -168,16 +169,10 @@ var _ = Describe("Soldier", func() {
 		})
 
 		Context("when the app package has a staging_info.yml", func() {
-			var stagingInfo string
-
-			JustBeforeEach(func() {
-				err := ioutil.WriteFile(path.Join(extractDir, "staging_info.yml"), []byte(stagingInfo), 0644)
-				Ω(err).ShouldNot(HaveOccurred())
-			})
 
 			Context("when it is missing a start command", func() {
 				BeforeEach(func() {
-					stagingInfo = "detected_buildpack: Ruby"
+					writeStagingInfo(extractDir, "detected_buildpack: Ruby")
 				})
 
 				ItPrintsUsageInformation()
@@ -185,7 +180,7 @@ var _ = Describe("Soldier", func() {
 
 			Context("when it contains a start command", func() {
 				BeforeEach(func() {
-					stagingInfo = "detected_buildpack: Ruby\nstart_command: env; echo running app"
+					writeStagingInfo(extractDir, "detected_buildpack: Ruby\nstart_command: env; echo running app")
 				})
 
 				ItExecutesTheCommandWithTheRightEnvironment()
@@ -193,7 +188,10 @@ var _ = Describe("Soldier", func() {
 
 			Context("when it references unresolvable types in non-essential fields", func() {
 				BeforeEach(func() {
-					stagingInfo = "---\nbuildpack_path: !ruby/object:Pathname\n  path: /tmp/buildpacks/null-buildpack\ndetected_buildpack: \nstart_command: env; echo running app\n"
+					writeStagingInfo(
+						extractDir,
+						"---\nbuildpack_path: !ruby/object:Pathname\n  path: /tmp/buildpacks/null-buildpack\ndetected_buildpack: \nstart_command: env; echo running app\n",
+					)
 				})
 
 				ItExecutesTheCommandWithTheRightEnvironment()
@@ -201,7 +199,7 @@ var _ = Describe("Soldier", func() {
 
 			Context("when it is not valid YAML", func() {
 				BeforeEach(func() {
-					stagingInfo = "start_command: &ruby/object:Pathname"
+					writeStagingInfo(extractDir, "start_command: &ruby/object:Pathname")
 				})
 
 				It("prints an error message", func() {
@@ -242,3 +240,8 @@ var _ = Describe("Soldier", func() {
 		})
 	})
 })
+
+func writeStagingInfo(extractDir, stagingInfo string) {
+	err := ioutil.WriteFile(filepath.Join(extractDir, "staging_info.yml"), []byte(stagingInfo), 0644)
+	Ω(err).ShouldNot(HaveOccurred())
+}
