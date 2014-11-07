@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"os/exec"
 	"path"
@@ -59,6 +60,22 @@ func (runner *Runner) Run() error {
 	err := runner.makeDirectories()
 	if err != nil {
 		return newDescriptiveError(err, "Failed to set up filesystem when generating droplet")
+	}
+
+	// Do we have a git buildpack?
+	if len(runner.config.BuildpackOrder()) == 1 {
+		buildpackName := runner.config.BuildpackOrder()[0]
+		buildpackUrl, err := url.Parse(buildpackName)
+		if err != nil {
+			return err
+		}
+
+		if strings.HasSuffix(buildpackUrl.Path, ".git") {
+			err = Clone(*buildpackUrl, runner.config.BuildpackPath(buildpackName))
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	//detect, compile, release
