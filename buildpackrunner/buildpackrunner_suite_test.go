@@ -25,7 +25,11 @@ var httpServer *httptest.Server
 var gitUrl url.URL
 
 var _ = SynchronizedBeforeSuite(func() []byte {
-	var err error
+	gitPath, err := exec.LookPath("git")
+	Ω(err).ShouldNot(HaveOccurred())
+
+	tmpDir, err = ioutil.TempDir("", "tmpDir")
+	Ω(err).ShouldNot(HaveOccurred())
 	tmpDir, err = ioutil.TempDir("", "tmpDir")
 	Ω(err).ShouldNot(HaveOccurred())
 	buildpackDir := filepath.Join(tmpDir, "fake-buildpack")
@@ -33,19 +37,19 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	Ω(err).ShouldNot(HaveOccurred())
 
 	execute(buildpackDir, "rm", "-rf", ".git")
-	execute(buildpackDir, "git", "init")
+	execute(buildpackDir, gitPath, "init")
 
 	err = ioutil.WriteFile(filepath.Join(buildpackDir, "content"),
 		[]byte("some content"), os.ModePerm)
 	Ω(err).ShouldNot(HaveOccurred())
 
-	execute(buildpackDir, "git", "add", ".")
-	execute(buildpackDir, "git", "add", "-A")
-	execute(buildpackDir, "git", "commit", "-am", "fake commit")
-	execute(buildpackDir, "git", "branch", "a_branch")
-	execute(buildpackDir, "git", "tag", "-m", "annotated tag", "a_tag")
-	execute(buildpackDir, "git", "tag", "a_lightweight_tag")
-	execute(buildpackDir, "git", "update-server-info")
+	execute(buildpackDir, gitPath, "add", ".")
+	execute(buildpackDir, gitPath, "add", "-A")
+	execute(buildpackDir, gitPath, "commit", "-am", "fake commit")
+	execute(buildpackDir, gitPath, "branch", "a_branch")
+	execute(buildpackDir, gitPath, "tag", "-m", "annotated tag", "a_tag")
+	execute(buildpackDir, gitPath, "tag", "a_lightweight_tag")
+	execute(buildpackDir, gitPath, "update-server-info")
 
 	httpServer = httptest.NewServer(http.FileServer(http.Dir(tmpDir)))
 
