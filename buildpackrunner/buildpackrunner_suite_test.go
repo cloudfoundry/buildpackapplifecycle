@@ -54,17 +54,17 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 		Host:   httpServer.Listener.Addr().String(),
 		Path:   "/fake-buildpack/.git",
 	}
-	return nil
+	return []byte(gitUrl.String())
 }, func(data []byte) {
-
+	u, err := url.Parse(string(data))
+	Ω(err).ShouldNot(HaveOccurred())
+	gitUrl = *u
 })
 
 var _ = SynchronizedAfterSuite(func() {
-	httpServer.CloseClientConnections()
+}, func() {
 	httpServer.Close()
 	os.RemoveAll(tmpDir)
-}, func() {
-
 })
 
 func execute(dir string, execCmd string, args ...string) {
