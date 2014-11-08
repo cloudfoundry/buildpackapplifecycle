@@ -38,6 +38,8 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 
 	execute(buildpackDir, "rm", "-rf", ".git")
 	execute(buildpackDir, gitPath, "init")
+	execute(buildpackDir, gitPath, "config", "user.email", "you@example.com")
+	execute(buildpackDir, gitPath, "config", "user.name", "your name")
 
 	err = ioutil.WriteFile(filepath.Join(buildpackDir, "content"),
 		[]byte("some content"), os.ModePerm)
