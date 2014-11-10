@@ -13,12 +13,15 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/cloudfoundry-incubator/linux-circus/protocol"
 	"github.com/cloudfoundry-incubator/runtime-schema/models"
 
 	"github.com/cloudfoundry-incubator/candiedyaml"
 )
+
+const DOWNLOAD_TIMEOUT = 10 * time.Minute
 
 type Runner struct {
 	config *models.CircusTailorConfig
@@ -62,20 +65,9 @@ func (runner *Runner) Run() error {
 		return newDescriptiveError(err, "Failed to set up filesystem when generating droplet")
 	}
 
-	// Do we have a git buildpack?
-	if len(runner.config.BuildpackOrder()) == 1 {
-		buildpackName := runner.config.BuildpackOrder()[0]
-		buildpackUrl, err := url.Parse(buildpackName)
-		if err != nil {
-			return err
-		}
-
-		if strings.HasSuffix(buildpackUrl.Path, ".git") {
-			err = Clone(*buildpackUrl, runner.config.BuildpackPath(buildpackName))
-			if err != nil {
-				return err
-			}
-		}
+	err = runner.downloadBuildpacks()
+	if err != nil {
+		return err
 	}
 
 	//detect, compile, release
@@ -167,6 +159,32 @@ func (runner *Runner) makeDirectories() error {
 
 	if err := os.MkdirAll(runner.config.BuildArtifactsCacheDir(), 0755); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (runner *Runner) downloadBuildpacks() error {
+	// Do we have a custom buildpack?
+	for _, buildpackName := range runner.config.BuildpackOrder() {
+		buildpackUrl, err := url.Parse(buildpackName)
+		if err != nil {
+			return fmt.Errorf("Invalid buildpack url (%s): %s", buildpackName, err.Error())
+		}
+		if !buildpackUrl.IsAbs() {
+			continue
+		}
+
+		destination := runner.config.BuildpackPath(buildpackName)
+
+		if IsZipFile(buildpackUrl.Path) {
+			err = DownloadZipAndExtract(buildpackUrl, destination)
+		} else {
+			err = Clone(*buildpackUrl, destination)
+		}
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

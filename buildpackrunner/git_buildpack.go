@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/url"
 	"os/exec"
-	"path/filepath"
 	"strings"
 )
 
@@ -18,13 +17,6 @@ func Clone(repo url.URL, destination string) error {
 	repo.Fragment = ""
 	gitUrl := repo.String()
 
-	baseName := filepath.Base(repo.Path)
-	extIndex := strings.LastIndex(baseName, ".")
-	if extIndex != -1 {
-		baseName = baseName[:extIndex]
-	}
-	targetDir := filepath.Join(destination, baseName)
-
 	args := []string{
 		"clone",
 		"-depth",
@@ -35,13 +27,13 @@ func Clone(repo url.URL, destination string) error {
 		args = append(args, "-b", branch)
 	}
 
-	args = append(args, "--recursive", gitUrl, targetDir)
+	args = append(args, "--recursive", gitUrl, destination)
 	cmd := exec.Command(gitPath, args...)
 
 	err = cmd.Run()
 
 	if err != nil {
-		cmd = exec.Command(gitPath, "clone", "--recursive", gitUrl, targetDir)
+		cmd = exec.Command(gitPath, "clone", "--recursive", gitUrl, destination)
 		err = cmd.Run()
 		if err != nil {
 			gitArgs := strings.Join(cmd.Args, " ")
@@ -49,7 +41,7 @@ func Clone(repo url.URL, destination string) error {
 		}
 
 		if branch != "" {
-			cmd = exec.Command(gitPath, "--git-dir="+targetDir+"/.git", "--work-tree="+targetDir, "checkout", branch)
+			cmd = exec.Command(gitPath, "--git-dir="+destination+"/.git", "--work-tree="+destination, "checkout", branch)
 			err = cmd.Run()
 			if err != nil {
 				gitArgs := strings.Join(cmd.Args, " ")
