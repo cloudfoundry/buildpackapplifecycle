@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/url"
 	"os/exec"
-	"strings"
 )
 
 func Clone(repo url.URL, destination string) error {
@@ -36,16 +35,14 @@ func Clone(repo url.URL, destination string) error {
 		cmd = exec.Command(gitPath, "clone", "--recursive", gitUrl, destination)
 		err = cmd.Run()
 		if err != nil {
-			gitArgs := strings.Join(cmd.Args, " ")
-			return fmt.Errorf("git clone failed: cmd: '%s' err: %s", gitArgs, err.Error())
+			return fmt.Errorf("Failed to clone git repository at %s", gitUrl)
 		}
 
 		if branch != "" {
 			cmd = exec.Command(gitPath, "--git-dir="+destination+"/.git", "--work-tree="+destination, "checkout", branch)
 			err = cmd.Run()
 			if err != nil {
-				gitArgs := strings.Join(cmd.Args, " ")
-				return fmt.Errorf("git checkout failed: cmd: '%s' err: %s", gitArgs, err.Error())
+				return fmt.Errorf("Failed to checkout branch '%s' for git repository at %s", branch, gitUrl)
 			}
 		}
 	}
