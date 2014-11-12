@@ -40,8 +40,10 @@ var _ = Describe("ZipBuildpack", func() {
 
 	Describe("DownloadZipAndExtract", func() {
 		var fileserver *httptest.Server
+		var zipDownloader *ZipDownloader
 
 		BeforeEach(func() {
+			zipDownloader = NewZipDownloader(false)
 			fileserver = httptest.NewServer(http.FileServer(http.Dir(os.TempDir())))
 		})
 
@@ -73,7 +75,7 @@ var _ = Describe("ZipBuildpack", func() {
 			It("downloads and extracts", func() {
 				u, _ := url.Parse(fileserver.URL)
 				u.Path = filepath.Base(zipfile)
-				err := DownloadZipAndExtract(u, destination)
+				err := zipDownloader.DownloadAndExtract(u, destination)
 				Ω(err).ShouldNot(HaveOccurred())
 				file, err := os.Open(filepath.Join(destination, "contents"))
 				Ω(err).ShouldNot(HaveOccurred())
@@ -87,14 +89,14 @@ var _ = Describe("ZipBuildpack", func() {
 
 		It("fails when the zip file does not exist", func() {
 			u, _ := url.Parse("file:///foobar_not_there")
-			err := DownloadZipAndExtract(u, destination)
+			err := zipDownloader.DownloadAndExtract(u, destination)
 			Ω(err).Should(HaveOccurred())
 		})
 
 		It("fails when the file is not a zip file", func() {
 			u, _ := url.Parse(fileserver.URL)
 			u.Path = filepath.Base(destination)
-			err := DownloadZipAndExtract(u, destination)
+			err := zipDownloader.DownloadAndExtract(u, destination)
 			Ω(err).Should(HaveOccurred())
 		})
 	})

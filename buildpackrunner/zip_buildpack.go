@@ -12,19 +12,28 @@ import (
 	"github.com/pivotal-golang/cacheddownloader"
 )
 
+type ZipDownloader struct {
+	downloader *cacheddownloader.Downloader
+}
+
 func IsZipFile(filename string) bool {
 	return strings.HasSuffix(filename, ".zip")
 }
 
-func DownloadZipAndExtract(u *url.URL, destination string) error {
+func NewZipDownloader(skipSSLVerification bool) *ZipDownloader {
+	return &ZipDownloader{
+		downloader: cacheddownloader.NewDownloader(DOWNLOAD_TIMEOUT, 1, skipSSLVerification),
+	}
+}
+
+func (z *ZipDownloader) DownloadAndExtract(u *url.URL, destination string) error {
 	zipFile, err := ioutil.TempFile("", filepath.Base(u.Path))
 	if err != nil {
 		return fmt.Errorf("Could not create zip file: %s", err.Error())
 	}
 	defer os.Remove(zipFile.Name())
 
-	downloader := cacheddownloader.NewDownloader(DOWNLOAD_TIMEOUT, 1)
-	_, _, err = downloader.Download(u,
+	_, _, err = z.downloader.Download(u,
 		func() (*os.File, error) {
 			return os.OpenFile(zipFile.Name(), os.O_WRONLY, 0666)
 		},

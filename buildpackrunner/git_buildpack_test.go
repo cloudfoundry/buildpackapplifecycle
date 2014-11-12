@@ -2,6 +2,7 @@ package buildpackrunner_test
 
 import (
 	"io/ioutil"
+	"os"
 	"os/exec"
 	"strings"
 
@@ -19,6 +20,10 @@ var _ = Describe("GitBuildpack", func() {
 			var err error
 			cloneTarget, err = ioutil.TempDir(tmpDir, "clone")
 			Ω(err).ShouldNot(HaveOccurred())
+		})
+
+		AfterEach(func() {
+			os.RemoveAll(cloneTarget)
 		})
 
 		It("clones a URL", func() {

@@ -166,6 +166,8 @@ func (runner *Runner) makeDirectories() error {
 
 func (runner *Runner) downloadBuildpacks() error {
 	// Do we have a custom buildpack?
+	zipDownloader := NewZipDownloader(runner.config.SkipCertVerify())
+
 	for _, buildpackName := range runner.config.BuildpackOrder() {
 		buildpackUrl, err := url.Parse(buildpackName)
 		if err != nil {
@@ -178,7 +180,7 @@ func (runner *Runner) downloadBuildpacks() error {
 		destination := runner.config.BuildpackPath(buildpackName)
 
 		if IsZipFile(buildpackUrl.Path) {
-			err = DownloadZipAndExtract(buildpackUrl, destination)
+			err = zipDownloader.DownloadAndExtract(buildpackUrl, destination)
 		} else {
 			err = Clone(*buildpackUrl, destination)
 		}

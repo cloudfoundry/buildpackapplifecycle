@@ -30,8 +30,6 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 
 	tmpDir, err = ioutil.TempDir("", "tmpDir")
 	Ω(err).ShouldNot(HaveOccurred())
-	tmpDir, err = ioutil.TempDir("", "tmpDir")
-	Ω(err).ShouldNot(HaveOccurred())
 	buildpackDir := filepath.Join(tmpDir, "fake-buildpack")
 	err = os.MkdirAll(buildpackDir, os.ModePerm)
 	Ω(err).ShouldNot(HaveOccurred())

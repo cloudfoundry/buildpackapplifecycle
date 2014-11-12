@@ -21,7 +21,9 @@ var _ = Describe("Tailoring", func() {
 	appFixtures := "fixtures/apps"
 
 	var (
-		tailorCmd                 *exec.Cmd
+		tailorCmd *exec.Cmd
+
+		tmpDir                    string
 		appDir                    string
 		buildpacksDir             string
 		outputDroplet             string
@@ -50,24 +52,25 @@ var _ = Describe("Tailoring", func() {
 	BeforeEach(func() {
 		var err error
 
-		appDir, err = ioutil.TempDir(os.TempDir(), "tailoring-app")
+		tmpDir, err = ioutil.TempDir("", "tailoring-tmp")
+		appDir, err = ioutil.TempDir(tmpDir, "tailoring-app")
 		Ω(err).ShouldNot(HaveOccurred())
 
-		buildpacksDir, err = ioutil.TempDir(os.TempDir(), "tailoring-buildpacks")
+		buildpacksDir, err = ioutil.TempDir(tmpDir, "tailoring-buildpacks")
 		Ω(err).ShouldNot(HaveOccurred())
 
-		outputDropletFile, err := ioutil.TempFile(os.TempDir(), "tailoring-droplet")
+		outputDropletFile, err := ioutil.TempFile(tmpDir, "tailoring-droplet")
 		Ω(err).ShouldNot(HaveOccurred())
 		outputDroplet = outputDropletFile.Name()
 
-		outputBuildArtifactsCacheDir, err := ioutil.TempDir(os.TempDir(), "tailoring-cache-output")
+		outputBuildArtifactsCacheDir, err := ioutil.TempDir(tmpDir, "tailoring-cache-output")
 		Ω(err).ShouldNot(HaveOccurred())
 		outputBuildArtifactsCache = filepath.Join(outputBuildArtifactsCacheDir, "cache.tgz")
 
-		buildArtifactsCacheDir, err = ioutil.TempDir(os.TempDir(), "tailoring-cache")
+		buildArtifactsCacheDir, err = ioutil.TempDir(tmpDir, "tailoring-cache")
 		Ω(err).ShouldNot(HaveOccurred())
 
-		outputMetadataFile, err := ioutil.TempFile(os.TempDir(), "tailoring-result")
+		outputMetadataFile, err := ioutil.TempFile(tmpDir, "tailoring-result")
 		Ω(err).ShouldNot(HaveOccurred())
 		outputMetadata = outputMetadataFile.Name()
 
@@ -75,9 +78,7 @@ var _ = Describe("Tailoring", func() {
 	})
 
 	AfterEach(func() {
-		os.RemoveAll(appDir)
-		os.RemoveAll(buildpacksDir)
-		os.Remove(outputDroplet)
+		os.RemoveAll(tmpDir)
 	})
 
 	JustBeforeEach(func() {
@@ -91,7 +92,8 @@ var _ = Describe("Tailoring", func() {
 			"-outputMetadata", outputMetadata,
 		)
 
-		tailorCmd.Env = os.Environ()
+		env := os.Environ()
+		tailorCmd.Env = append(env, "TMPDIR="+tmpDir)
 	})
 
 	resultJSON := func() []byte {
