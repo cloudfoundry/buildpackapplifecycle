@@ -291,7 +291,7 @@ start_command: the start command
 
 		It("should exit with an error", func() {
 			session := tailor()
-			Eventually(session.Err).Should(gbytes.Say("no valid buildpacks detected"))
+			Eventually(session.Err).Should(gbytes.Say("None of the buildpacks detected a compatible application"))
 			Eventually(session).Should(gexec.Exit(1))
 		})
 	})

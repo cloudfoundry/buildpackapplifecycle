@@ -237,7 +237,7 @@ func (runner *Runner) detect() (string, string, string, error) {
 		}
 	}
 
-	return "", "", "", newDescriptiveError(nil, "no valid buildpacks detected")
+	return "", "", "", newDescriptiveError(nil, "None of the buildpacks detected a compatible application")
 }
 
 func (runner *Runner) detectStartCommandFromProcfile() (string, error) {
