@@ -6,7 +6,7 @@ import (
 	"os/exec"
 )
 
-func Clone(repo url.URL, destination string) error {
+func GitClone(repo url.URL, destination string) error {
 	gitPath, err := exec.LookPath("git")
 	if err != nil {
 		return err

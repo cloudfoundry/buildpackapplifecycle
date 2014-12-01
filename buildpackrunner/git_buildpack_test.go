@@ -27,7 +27,7 @@ var _ = Describe("GitBuildpack", func() {
 		})
 
 		It("clones a URL", func() {
-			err := Clone(gitUrl, cloneTarget)
+			err := GitClone(gitUrl, cloneTarget)
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(currentBranch(cloneTarget)).Should(Equal("master"))
 		})
@@ -35,7 +35,7 @@ var _ = Describe("GitBuildpack", func() {
 		It("clones a URL with a branch", func() {
 			branchUrl := gitUrl
 			branchUrl.Fragment = "a_branch"
-			err := Clone(branchUrl, cloneTarget)
+			err := GitClone(branchUrl, cloneTarget)
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(currentBranch(cloneTarget)).Should(Equal("a_branch"))
 		})
@@ -43,7 +43,7 @@ var _ = Describe("GitBuildpack", func() {
 		It("clones a URL with a lightweight tag", func() {
 			branchUrl := gitUrl
 			branchUrl.Fragment = "a_lightweight_tag"
-			err := Clone(branchUrl, cloneTarget)
+			err := GitClone(branchUrl, cloneTarget)
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(currentBranch(cloneTarget)).Should(Equal("a_lightweight_tag"))
 		})
@@ -53,14 +53,14 @@ var _ = Describe("GitBuildpack", func() {
 				By("passing an invalid path", func() {
 					badUrl := gitUrl
 					badUrl.Path = "/a/bad/path"
-					err := Clone(badUrl, cloneTarget)
+					err := GitClone(badUrl, cloneTarget)
 					Ω(err).Should(HaveOccurred())
 				})
 
 				By("passing a bad tag/branch", func() {
 					badUrl := gitUrl
 					badUrl.Fragment = "notfound"
-					err := Clone(badUrl, cloneTarget)
+					err := GitClone(badUrl, cloneTarget)
 					Ω(err).Should(HaveOccurred())
 				})
 			})

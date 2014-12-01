@@ -53,6 +53,7 @@ var _ = Describe("ZipBuildpack", func() {
 
 		Context("with a valid zip file", func() {
 			var zipfile string
+			var zipSize uint64
 
 			BeforeEach(func() {
 				var err error
@@ -66,6 +67,9 @@ var _ = Describe("ZipBuildpack", func() {
 				f.Write([]byte("stuff"))
 				err = w.Close()
 				Ω(err).ShouldNot(HaveOccurred())
+				fi, err := z.Stat()
+				Ω(err).ShouldNot(HaveOccurred())
+				zipSize = uint64(fi.Size())
 			})
 
 			AfterEach(func() {
@@ -75,8 +79,9 @@ var _ = Describe("ZipBuildpack", func() {
 			It("downloads and extracts", func() {
 				u, _ := url.Parse(fileserver.URL)
 				u.Path = filepath.Base(zipfile)
-				err := zipDownloader.DownloadAndExtract(u, destination)
+				size, err := zipDownloader.DownloadAndExtract(u, destination)
 				Ω(err).ShouldNot(HaveOccurred())
+				Ω(size).Should(Equal(zipSize))
 				file, err := os.Open(filepath.Join(destination, "contents"))
 				Ω(err).ShouldNot(HaveOccurred())
 				defer file.Close()
@@ -89,15 +94,17 @@ var _ = Describe("ZipBuildpack", func() {
 
 		It("fails when the zip file does not exist", func() {
 			u, _ := url.Parse("file:///foobar_not_there")
-			err := zipDownloader.DownloadAndExtract(u, destination)
+			size, err := zipDownloader.DownloadAndExtract(u, destination)
 			Ω(err).Should(HaveOccurred())
+			Ω(size).Should(Equal(uint64(0)))
 		})
 
 		It("fails when the file is not a zip file", func() {
 			u, _ := url.Parse(fileserver.URL)
 			u.Path = filepath.Base(destination)
-			err := zipDownloader.DownloadAndExtract(u, destination)
+			size, err := zipDownloader.DownloadAndExtract(u, destination)
 			Ω(err).Should(HaveOccurred())
+			Ω(size).Should(Equal(uint64(0)))
 		})
 	})
 })

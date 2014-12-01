@@ -17,6 +17,7 @@ import (
 
 	"github.com/cloudfoundry-incubator/linux-circus/protocol"
 	"github.com/cloudfoundry-incubator/runtime-schema/models"
+	"github.com/pivotal-golang/bytefmt"
 
 	"github.com/cloudfoundry-incubator/candiedyaml"
 )
@@ -166,8 +167,6 @@ func (runner *Runner) makeDirectories() error {
 
 func (runner *Runner) downloadBuildpacks() error {
 	// Do we have a custom buildpack?
-	zipDownloader := NewZipDownloader(runner.config.SkipCertVerify())
-
 	for _, buildpackName := range runner.config.BuildpackOrder() {
 		buildpackUrl, err := url.Parse(buildpackName)
 		if err != nil {
@@ -180,9 +179,14 @@ func (runner *Runner) downloadBuildpacks() error {
 		destination := runner.config.BuildpackPath(buildpackName)
 
 		if IsZipFile(buildpackUrl.Path) {
-			err = zipDownloader.DownloadAndExtract(buildpackUrl, destination)
+			var size uint64
+			zipDownloader := NewZipDownloader(runner.config.SkipCertVerify())
+			size, err = zipDownloader.DownloadAndExtract(buildpackUrl, destination)
+			if err == nil {
+				fmt.Printf("Downloaded buildpack `%s` (%s)", buildpackUrl.String(), bytefmt.ByteSize(size))
+			}
 		} else {
-			err = Clone(*buildpackUrl, destination)
+			err = GitClone(*buildpackUrl, destination)
 		}
 		if err != nil {
 			return err

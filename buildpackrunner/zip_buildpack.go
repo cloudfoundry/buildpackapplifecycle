@@ -26,10 +26,10 @@ func NewZipDownloader(skipSSLVerification bool) *ZipDownloader {
 	}
 }
 
-func (z *ZipDownloader) DownloadAndExtract(u *url.URL, destination string) error {
+func (z *ZipDownloader) DownloadAndExtract(u *url.URL, destination string) (uint64, error) {
 	zipFile, err := ioutil.TempFile("", filepath.Base(u.Path))
 	if err != nil {
-		return fmt.Errorf("Could not create zip file: %s", err.Error())
+		return 0, fmt.Errorf("Could not create zip file: %s", err.Error())
 	}
 	defer os.Remove(zipFile.Name())
 
@@ -40,13 +40,18 @@ func (z *ZipDownloader) DownloadAndExtract(u *url.URL, destination string) error
 		cacheddownloader.CachingInfoType{},
 	)
 	if err != nil {
-		return fmt.Errorf("Failed to download buildpack '%s': %s", u.String(), err.Error())
+		return 0, fmt.Errorf("Failed to download buildpack '%s': %s", u.String(), err.Error())
+	}
+
+	fi, err := zipFile.Stat()
+	if err != nil {
+		return 0, fmt.Errorf("Failed to obtain the size of the buildpack '%s': %s", u.String(), err.Error())
 	}
 
 	err = extractor.NewZip().Extract(zipFile.Name(), destination)
 	if err != nil {
-		return fmt.Errorf("Failed to extract buildpack '%s': %s", u.String(), err.Error())
+		return 0, fmt.Errorf("Failed to extract buildpack '%s': %s", u.String(), err.Error())
 	}
 
-	return nil
+	return uint64(fi.Size()), nil
 }
