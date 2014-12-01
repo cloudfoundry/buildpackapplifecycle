@@ -44,14 +44,14 @@ func main() {
 	if err == nil {
 		vcapAppEnv["host"] = "0.0.0.0"
 
-		vcapAppEnv["instance_id"] = os.Getenv("CF_INSTANCE_GUID")
+		vcapAppEnv["instance_id"] = os.Getenv("INSTANCE_GUID")
 
 		port, err := strconv.Atoi(os.Getenv("PORT"))
 		if err == nil {
 			vcapAppEnv["port"] = port
 		}
 
-		index, err := strconv.Atoi(os.Getenv("CF_INSTANCE_INDEX"))
+		index, err := strconv.Atoi(os.Getenv("INSTANCE_INDEX"))
 		if err == nil {
 			vcapAppEnv["instance_index"] = index
 		}

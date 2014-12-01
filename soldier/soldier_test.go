@@ -38,8 +38,8 @@ var _ = Describe("Soldier", func() {
 			Env: append(
 				os.Environ(),
 				"PORT=8080",
-				"CF_INSTANCE_GUID=some-instance-guid",
-				"CF_INSTANCE_INDEX=123",
+				"INSTANCE_GUID=some-instance-guid",
+				"INSTANCE_INDEX=123",
 				`VCAP_APPLICATION={"foo":1}`,
 			),
 		}
