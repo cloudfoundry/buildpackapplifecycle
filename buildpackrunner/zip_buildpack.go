@@ -38,6 +38,7 @@ func (z *ZipDownloader) DownloadAndExtract(u *url.URL, destination string) (uint
 			return os.OpenFile(zipFile.Name(), os.O_WRONLY, 0666)
 		},
 		cacheddownloader.CachingInfoType{},
+		make(chan struct{}),
 	)
 	if err != nil {
 		return 0, fmt.Errorf("Failed to download buildpack '%s': %s", u.String(), err.Error())
