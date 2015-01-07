@@ -24,7 +24,7 @@ var _ = Describe("Tailoring", func() {
 		tailorCmd *exec.Cmd
 
 		tmpDir                    string
-		appDir                    string
+		buildDir                  string
 		buildpacksDir             string
 		outputDroplet             string
 		buildpackOrder            string
@@ -53,7 +53,7 @@ var _ = Describe("Tailoring", func() {
 		var err error
 
 		tmpDir, err = ioutil.TempDir("", "tailoring-tmp")
-		appDir, err = ioutil.TempDir(tmpDir, "tailoring-app")
+		buildDir, err = ioutil.TempDir(tmpDir, "tailoring-app")
 		Ω(err).ShouldNot(HaveOccurred())
 
 		buildpacksDir, err = ioutil.TempDir(tmpDir, "tailoring-buildpacks")
@@ -83,7 +83,7 @@ var _ = Describe("Tailoring", func() {
 
 	JustBeforeEach(func() {
 		tailorCmd = exec.Command(tailorPath,
-			"-appDir", appDir,
+			"-buildDir", buildDir,
 			"-buildpacksDir", buildpacksDir,
 			"-outputDroplet", outputDroplet,
 			"-outputBuildArtifactsCache", outputBuildArtifactsCache,
@@ -109,7 +109,7 @@ var _ = Describe("Tailoring", func() {
 
 			cpBuildpack("always-detects")
 			cpBuildpack("also-always-detects")
-			cp(path.Join(appFixtures, "bash-app", "app.sh"), appDir)
+			cp(path.Join(appFixtures, "bash-app", "app.sh"), buildDir)
 		})
 
 		JustBeforeEach(func() {
@@ -181,7 +181,7 @@ start_command: the start command
 			Context("when the app has a Procfile", func() {
 				Context("with web defined", func() {
 					BeforeEach(func() {
-						cp(path.Join(appFixtures, "with-procfile-with-web", "Procfile"), appDir)
+						cp(path.Join(appFixtures, "with-procfile-with-web", "Procfile"), buildDir)
 					})
 
 					It("chooses the Procfile-provided command", func() {
@@ -196,7 +196,7 @@ start_command: the start command
 
 				Context("without web", func() {
 					BeforeEach(func() {
-						cp(path.Join(appFixtures, "with-procfile", "Procfile"), appDir)
+						cp(path.Join(appFixtures, "with-procfile", "Procfile"), buildDir)
 					})
 
 					It("chooses the buildpack-provided command", func() {
@@ -225,7 +225,7 @@ start_command: the start command
 				})
 
 				BeforeEach(func() {
-					cp(path.Join(appFixtures, "with-procfile-with-web", "Procfile"), appDir)
+					cp(path.Join(appFixtures, "with-procfile-with-web", "Procfile"), buildDir)
 				})
 
 				It("uses the command defined by web in the Procfile", func() {
@@ -240,7 +240,7 @@ start_command: the start command
 
 			Context("without web", func() {
 				BeforeEach(func() {
-					cp(path.Join(appFixtures, "with-procfile", "Procfile"), appDir)
+					cp(path.Join(appFixtures, "with-procfile", "Procfile"), buildDir)
 				})
 
 				It("fails", func() {
@@ -253,7 +253,7 @@ start_command: the start command
 
 		Context("and the app has no Procfile", func() {
 			BeforeEach(func() {
-				cp(path.Join(appFixtures, "bash-app", "app.sh"), appDir)
+				cp(path.Join(appFixtures, "bash-app", "app.sh"), buildDir)
 			})
 
 			It("fails", func() {
@@ -271,7 +271,7 @@ start_command: the start command
 			cpBuildpack("always-detects")
 			cpBuildpack("also-always-detects")
 
-			cp(path.Join(appFixtures, "bogus-procfile", "Procfile"), appDir)
+			cp(path.Join(appFixtures, "bogus-procfile", "Procfile"), buildDir)
 		})
 
 		It("fails", func() {
@@ -285,7 +285,7 @@ start_command: the start command
 		BeforeEach(func() {
 			buildpackOrder = "always-fails"
 
-			cp(path.Join(appFixtures, "bash-app", "app.sh"), appDir)
+			cp(path.Join(appFixtures, "bash-app", "app.sh"), buildDir)
 			cpBuildpack("always-fails")
 		})
 
@@ -301,7 +301,7 @@ start_command: the start command
 			buildpackOrder = "fails-to-compile"
 
 			cpBuildpack("fails-to-compile")
-			cp(path.Join(appFixtures, "bash-app", "app.sh"), appDir)
+			cp(path.Join(appFixtures, "bash-app", "app.sh"), buildDir)
 		})
 
 		It("should exit with an error", func() {
@@ -316,7 +316,7 @@ start_command: the start command
 			buildpackOrder = "release-generates-bad-yaml"
 
 			cpBuildpack("release-generates-bad-yaml")
-			cp(path.Join(appFixtures, "bash-app", "app.sh"), appDir)
+			cp(path.Join(appFixtures, "bash-app", "app.sh"), buildDir)
 		})
 
 		It("should exit with an error", func() {
@@ -331,7 +331,7 @@ start_command: the start command
 			buildpackOrder = "fails-to-release"
 
 			cpBuildpack("fails-to-release")
-			cp(path.Join(appFixtures, "bash-app", "app.sh"), appDir)
+			cp(path.Join(appFixtures, "bash-app", "app.sh"), buildDir)
 		})
 
 		It("should exit with an error", func() {
@@ -353,7 +353,7 @@ start_command: the start command
 			Ω(err).ShouldNot(HaveOccurred())
 
 			cp(path.Join(buildpackFixtures, "always-detects"), nestedBuildpackDir)
-			cp(path.Join(appFixtures, "bash-app", "app.sh"), appDir)
+			cp(path.Join(appFixtures, "bash-app", "app.sh"), buildDir)
 		})
 
 		It("should detect the nested buildpack", func() {

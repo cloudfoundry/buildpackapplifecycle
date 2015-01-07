@@ -115,7 +115,7 @@ func (runner *Runner) Run() error {
 	}
 
 	appDir := path.Join(contentsDir, "app")
-	err = runner.copyApp(runner.config.AppDir(), appDir)
+	err = runner.copyApp(runner.config.BuildDir(), appDir)
 	if err != nil {
 		return newDescriptiveError(err, "Failed to copy compiled droplet")
 	}
@@ -234,7 +234,7 @@ func (runner *Runner) detect() (string, string, string, error) {
 			continue
 		}
 
-		err = runner.run(exec.Command(path.Join(buildpackPath, "bin", "detect"), runner.config.AppDir()), output)
+		err = runner.run(exec.Command(path.Join(buildpackPath, "bin", "detect"), runner.config.BuildDir()), output)
 
 		if err == nil {
 			return buildpack, buildpackPath, strings.TrimRight(output.String(), "\n"), nil
@@ -245,7 +245,7 @@ func (runner *Runner) detect() (string, string, string, error) {
 }
 
 func (runner *Runner) detectStartCommandFromProcfile() (string, error) {
-	procFile, err := os.Open(filepath.Join(runner.config.AppDir(), "Procfile"))
+	procFile, err := os.Open(filepath.Join(runner.config.BuildDir(), "Procfile"))
 	if err != nil {
 		if os.IsNotExist(err) {
 			// Procfiles are optional
@@ -269,13 +269,13 @@ func (runner *Runner) detectStartCommandFromProcfile() (string, error) {
 }
 
 func (runner *Runner) compile(buildpackDir string) error {
-	return runner.run(exec.Command(path.Join(buildpackDir, "bin", "compile"), runner.config.AppDir(), runner.config.BuildArtifactsCacheDir()), os.Stdout)
+	return runner.run(exec.Command(path.Join(buildpackDir, "bin", "compile"), runner.config.BuildDir(), runner.config.BuildArtifactsCacheDir()), os.Stdout)
 }
 
 func (runner *Runner) release(buildpackDir string, webStartCommand string) (Release, error) {
 	output := new(bytes.Buffer)
 
-	err := runner.run(exec.Command(path.Join(buildpackDir, "bin", "release"), runner.config.AppDir()), output)
+	err := runner.run(exec.Command(path.Join(buildpackDir, "bin", "release"), runner.config.BuildDir()), output)
 	if err != nil {
 		return Release{}, err
 	}
@@ -338,8 +338,8 @@ func (runner *Runner) saveInfo(infoFilePath, buildpack, detectOutput string, rel
 	return nil
 }
 
-func (runner *Runner) copyApp(appDir, stageDir string) error {
-	return runner.run(exec.Command("cp", "-a", appDir, stageDir), os.Stdout)
+func (runner *Runner) copyApp(buildDir, stageDir string) error {
+	return runner.run(exec.Command("cp", "-a", buildDir, stageDir), os.Stdout)
 }
 
 func (runner *Runner) run(cmd *exec.Cmd, output io.Writer) error {
