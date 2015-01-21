@@ -1,6 +1,7 @@
 package main_test
 
 import (
+	"net"
 	"os/exec"
 
 	. "github.com/onsi/ginkgo"
@@ -17,12 +18,20 @@ var _ = Describe("Spy", func() {
 	)
 
 	BeforeEach(func() {
-		server = ghttp.NewServer()
-		serverAddr = server.HTTPTestServer.Listener.Addr().String()
+		ip := getNonLoopbackIP()
+		server = ghttp.NewUnstartedServer()
+		listener, err := net.Listen("tcp", ip+":0")
+		Ω(err).ShouldNot(HaveOccurred())
+
+		server.HTTPTestServer.Listener = listener
+		serverAddr = listener.Addr().String()
+		server.Start()
 	})
 
 	runSpy := func() *gexec.Session {
-		session, err := gexec.Start(exec.Command(spy, "-addr", serverAddr), GinkgoWriter, GinkgoWriter)
+		_, port, err := net.SplitHostPort(serverAddr)
+		Ω(err).ShouldNot(HaveOccurred())
+		session, err := gexec.Start(exec.Command(spy, "-port", port), GinkgoWriter, GinkgoWriter)
 		Ω(err).ShouldNot(HaveOccurred())
 		return session
 	}
@@ -55,3 +64,24 @@ var _ = Describe("Spy", func() {
 		})
 	})
 })
+
+func getNonLoopbackIP() string {
+	interfaces, err := net.Interfaces()
+	Ω(err).ShouldNot(HaveOccurred())
+	for _, intf := range interfaces {
+		addrs, err := intf.Addrs()
+		if err != nil {
+			continue
+		}
+
+		for _, a := range addrs {
+			if ipnet, ok := a.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+				if ipnet.IP.To4() != nil {
+					return ipnet.IP.String()
+				}
+			}
+		}
+	}
+	Fail("no non-loopback address found")
+	panic("non-reachable")
+}
