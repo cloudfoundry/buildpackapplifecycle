@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/pivotal-golang/archiver/extractor"
-	"github.com/pivotal-golang/cacheddownloader"
+	"github.com/cloudfoundry-incubator/linux-circus/Godeps/_workspace/src/github.com/pivotal-golang/archiver/extractor"
+	"github.com/cloudfoundry-incubator/linux-circus/Godeps/_workspace/src/github.com/pivotal-golang/cacheddownloader"
 )
 
 type ZipDownloader struct {

@@ -15,17 +15,16 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cloudfoundry-incubator/linux-circus"
+	"github.com/cloudfoundry-incubator/linux-circus/Godeps/_workspace/src/github.com/cloudfoundry-incubator/candiedyaml"
+	"github.com/cloudfoundry-incubator/linux-circus/Godeps/_workspace/src/github.com/pivotal-golang/bytefmt"
 	"github.com/cloudfoundry-incubator/linux-circus/protocol"
-	"github.com/cloudfoundry-incubator/runtime-schema/models"
-	"github.com/pivotal-golang/bytefmt"
-
-	"github.com/cloudfoundry-incubator/candiedyaml"
 )
 
 const DOWNLOAD_TIMEOUT = 10 * time.Minute
 
 type Runner struct {
-	config *models.CircusTailorConfig
+	config *linux_circus.CircusTailorConfig
 }
 
 type descriptiveError struct {
@@ -53,7 +52,7 @@ type Release struct {
 	} `yaml:"default_process_types"`
 }
 
-func New(config *models.CircusTailorConfig) *Runner {
+func New(config *linux_circus.CircusTailorConfig) *Runner {
 	return &Runner{
 		config: config,
 	}
@@ -325,7 +324,7 @@ func (runner *Runner) saveInfo(infoFilePath, buildpack, detectOutput string, rel
 		return err
 	}
 
-	err = json.NewEncoder(resultFile).Encode(models.StagingResult{
+	err = json.NewEncoder(resultFile).Encode(linux_circus.StagingResult{
 		BuildpackKey:         buildpack,
 		DetectedBuildpack:    detectOutput,
 		ExecutionMetadata:    string(executionMetadata),

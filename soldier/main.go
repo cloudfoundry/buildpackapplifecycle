@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"syscall"
 
-	"github.com/cloudfoundry-incubator/candiedyaml"
+	"github.com/cloudfoundry-incubator/linux-circus/Godeps/_workspace/src/github.com/cloudfoundry-incubator/candiedyaml"
 	"github.com/cloudfoundry-incubator/linux-circus/protocol"
 )
 

@@ -8,8 +8,8 @@ import (
 
 	. "github.com/cloudfoundry-incubator/linux-circus/buildpackrunner"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	. "github.com/cloudfoundry-incubator/linux-circus/Godeps/_workspace/src/github.com/onsi/ginkgo"
+	. "github.com/cloudfoundry-incubator/linux-circus/Godeps/_workspace/src/github.com/onsi/gomega"
 )
 
 var _ = Describe("GitBuildpack", func() {
