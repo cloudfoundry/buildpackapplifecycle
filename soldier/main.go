@@ -24,7 +24,7 @@ fi
 
 shift
 
-eval "$@"
+exec bash -c "$@"
 `
 
 func main() {
