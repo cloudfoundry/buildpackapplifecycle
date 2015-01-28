@@ -4,7 +4,7 @@ import (
 	"flag"
 	"runtime"
 
-	"github.com/cloudfoundry-incubator/linux-circus/Godeps/_workspace/src/github.com/onsi/ginkgo/config"
+	"github.com/cloudfoundry-incubator/buildpack_app_lifecycle/Godeps/_workspace/src/github.com/onsi/ginkgo/config"
 )
 
 type RunWatchAndBuildCommandFlags struct {

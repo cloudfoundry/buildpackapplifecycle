@@ -10,18 +10,18 @@ import (
 	"path/filepath"
 	"strings"
 
-	. "github.com/cloudfoundry-incubator/linux-circus/Godeps/_workspace/src/github.com/onsi/ginkgo"
-	. "github.com/cloudfoundry-incubator/linux-circus/Godeps/_workspace/src/github.com/onsi/gomega"
-	"github.com/cloudfoundry-incubator/linux-circus/Godeps/_workspace/src/github.com/onsi/gomega/gbytes"
-	"github.com/cloudfoundry-incubator/linux-circus/Godeps/_workspace/src/github.com/onsi/gomega/gexec"
+	. "github.com/cloudfoundry-incubator/buildpack_app_lifecycle/Godeps/_workspace/src/github.com/onsi/ginkgo"
+	. "github.com/cloudfoundry-incubator/buildpack_app_lifecycle/Godeps/_workspace/src/github.com/onsi/gomega"
+	"github.com/cloudfoundry-incubator/buildpack_app_lifecycle/Godeps/_workspace/src/github.com/onsi/gomega/gbytes"
+	"github.com/cloudfoundry-incubator/buildpack_app_lifecycle/Godeps/_workspace/src/github.com/onsi/gomega/gexec"
 )
 
-var _ = Describe("Tailoring", func() {
+var _ = Describe("Building", func() {
 	buildpackFixtures := "fixtures/buildpacks"
 	appFixtures := "fixtures/apps"
 
 	var (
-		tailorCmd *exec.Cmd
+		builderCmd *exec.Cmd
 
 		tmpDir                    string
 		buildDir                  string
@@ -33,9 +33,9 @@ var _ = Describe("Tailoring", func() {
 		outputBuildArtifactsCache string
 	)
 
-	tailor := func() *gexec.Session {
+	builder := func() *gexec.Session {
 		session, err := gexec.Start(
-			tailorCmd,
+			builderCmd,
 			GinkgoWriter,
 			GinkgoWriter,
 		)
@@ -52,25 +52,25 @@ var _ = Describe("Tailoring", func() {
 	BeforeEach(func() {
 		var err error
 
-		tmpDir, err = ioutil.TempDir("", "tailoring-tmp")
-		buildDir, err = ioutil.TempDir(tmpDir, "tailoring-app")
+		tmpDir, err = ioutil.TempDir("", "building-tmp")
+		buildDir, err = ioutil.TempDir(tmpDir, "building-app")
 		Ω(err).ShouldNot(HaveOccurred())
 
-		buildpacksDir, err = ioutil.TempDir(tmpDir, "tailoring-buildpacks")
+		buildpacksDir, err = ioutil.TempDir(tmpDir, "building-buildpacks")
 		Ω(err).ShouldNot(HaveOccurred())
 
-		outputDropletFile, err := ioutil.TempFile(tmpDir, "tailoring-droplet")
+		outputDropletFile, err := ioutil.TempFile(tmpDir, "building-droplet")
 		Ω(err).ShouldNot(HaveOccurred())
 		outputDroplet = outputDropletFile.Name()
 
-		outputBuildArtifactsCacheDir, err := ioutil.TempDir(tmpDir, "tailoring-cache-output")
+		outputBuildArtifactsCacheDir, err := ioutil.TempDir(tmpDir, "building-cache-output")
 		Ω(err).ShouldNot(HaveOccurred())
 		outputBuildArtifactsCache = filepath.Join(outputBuildArtifactsCacheDir, "cache.tgz")
 
-		buildArtifactsCacheDir, err = ioutil.TempDir(tmpDir, "tailoring-cache")
+		buildArtifactsCacheDir, err = ioutil.TempDir(tmpDir, "building-cache")
 		Ω(err).ShouldNot(HaveOccurred())
 
-		outputMetadataFile, err := ioutil.TempFile(tmpDir, "tailoring-result")
+		outputMetadataFile, err := ioutil.TempFile(tmpDir, "building-result")
 		Ω(err).ShouldNot(HaveOccurred())
 		outputMetadata = outputMetadataFile.Name()
 
@@ -82,7 +82,7 @@ var _ = Describe("Tailoring", func() {
 	})
 
 	JustBeforeEach(func() {
-		tailorCmd = exec.Command(tailorPath,
+		builderCmd = exec.Command(builderPath,
 			"-buildDir", buildDir,
 			"-buildpacksDir", buildpacksDir,
 			"-outputDroplet", outputDroplet,
@@ -93,7 +93,7 @@ var _ = Describe("Tailoring", func() {
 		)
 
 		env := os.Environ()
-		tailorCmd.Env = append(env, "TMPDIR="+tmpDir)
+		builderCmd.Env = append(env, "TMPDIR="+tmpDir)
 	})
 
 	resultJSON := func() []byte {
@@ -113,7 +113,7 @@ var _ = Describe("Tailoring", func() {
 		})
 
 		JustBeforeEach(func() {
-			Eventually(tailor()).Should(gexec.Exit(0))
+			Eventually(builder()).Should(gexec.Exit(0))
 		})
 
 		Describe("the contents of the output tgz", func() {
@@ -221,7 +221,7 @@ start_command: the start command
 		Context("when the app has a Procfile", func() {
 			Context("with web defined", func() {
 				JustBeforeEach(func() {
-					Eventually(tailor()).Should(gexec.Exit(0))
+					Eventually(builder()).Should(gexec.Exit(0))
 				})
 
 				BeforeEach(func() {
@@ -244,7 +244,7 @@ start_command: the start command
 				})
 
 				It("fails", func() {
-					session := tailor()
+					session := builder()
 					Eventually(session.Err).Should(gbytes.Say("No start command detected"))
 					Eventually(session).Should(gexec.Exit(0))
 				})
@@ -257,7 +257,7 @@ start_command: the start command
 			})
 
 			It("fails", func() {
-				session := tailor()
+				session := builder()
 				Eventually(session.Err).Should(gbytes.Say("No start command detected"))
 				Eventually(session).Should(gexec.Exit(0))
 			})
@@ -275,7 +275,7 @@ start_command: the start command
 		})
 
 		It("fails", func() {
-			session := tailor()
+			session := builder()
 			Eventually(session.Err).Should(gbytes.Say("Failed to read command from Procfile: invalid YAML"))
 			Eventually(session).Should(gexec.Exit(1))
 		})
@@ -290,7 +290,7 @@ start_command: the start command
 		})
 
 		It("should exit with an error", func() {
-			session := tailor()
+			session := builder()
 			Eventually(session.Err).Should(gbytes.Say("None of the buildpacks detected a compatible application"))
 			Eventually(session).Should(gexec.Exit(1))
 		})
@@ -305,7 +305,7 @@ start_command: the start command
 		})
 
 		It("should exit with an error", func() {
-			session := tailor()
+			session := builder()
 			Eventually(session.Err).Should(gbytes.Say("Failed to compile droplet: exit status 1"))
 			Eventually(session).Should(gexec.Exit(1))
 		})
@@ -320,7 +320,7 @@ start_command: the start command
 		})
 
 		It("should exit with an error", func() {
-			session := tailor()
+			session := builder()
 			Eventually(session.Err).Should(gbytes.Say("buildpack's release output invalid"))
 			Eventually(session).Should(gexec.Exit(1))
 		})
@@ -335,7 +335,7 @@ start_command: the start command
 		})
 
 		It("should exit with an error", func() {
-			session := tailor()
+			session := builder()
 			Eventually(session.Err).Should(gbytes.Say("Failed to build droplet release: exit status 1"))
 			Eventually(session).Should(gexec.Exit(1))
 		})
@@ -357,7 +357,7 @@ start_command: the start command
 		})
 
 		It("should detect the nested buildpack", func() {
-			Eventually(tailor()).Should(gexec.Exit(0))
+			Eventually(builder()).Should(gexec.Exit(0))
 		})
 	})
 })

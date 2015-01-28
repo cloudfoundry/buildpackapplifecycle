@@ -4,12 +4,12 @@ import (
 	"flag"
 	"os"
 
-	"github.com/cloudfoundry-incubator/linux-circus"
-	"github.com/cloudfoundry-incubator/linux-circus/buildpackrunner"
+	"github.com/cloudfoundry-incubator/buildpack_app_lifecycle"
+	"github.com/cloudfoundry-incubator/buildpack_app_lifecycle/buildpackrunner"
 )
 
 func main() {
-	config := linux_circus.NewCircusTailorConfig([]string{}, false)
+	config := buildpack_app_lifecycle.NewLifecycleBuilderConfig([]string{}, false)
 
 	if err := config.Parse(os.Args[1:len(os.Args)]); err != nil {
 		println(err.Error())

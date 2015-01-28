@@ -9,11 +9,11 @@ import (
 	"strconv"
 	"syscall"
 
-	"github.com/cloudfoundry-incubator/linux-circus/Godeps/_workspace/src/github.com/cloudfoundry-incubator/candiedyaml"
-	"github.com/cloudfoundry-incubator/linux-circus/protocol"
+	"github.com/cloudfoundry-incubator/buildpack_app_lifecycle/Godeps/_workspace/src/github.com/cloudfoundry-incubator/candiedyaml"
+	"github.com/cloudfoundry-incubator/buildpack_app_lifecycle/protocol"
 )
 
-const soldier = `
+const launcher = `
 cd "$1"
 
 if [ -d .profile.d ]; then
@@ -89,7 +89,7 @@ func main() {
 	syscall.Exec("/bin/bash", []string{
 		"bash",
 		"-c",
-		soldier,
+		launcher,
 		os.Args[0],
 		dir,
 		command,

@@ -1,8 +1,8 @@
 package bipartitegraph
 
-import . "github.com/cloudfoundry-incubator/linux-circus/Godeps/_workspace/src/github.com/onsi/gomega/matchers/support/goraph/node"
-import . "github.com/cloudfoundry-incubator/linux-circus/Godeps/_workspace/src/github.com/onsi/gomega/matchers/support/goraph/edge"
-import "github.com/cloudfoundry-incubator/linux-circus/Godeps/_workspace/src/github.com/onsi/gomega/matchers/support/goraph/util"
+import . "github.com/cloudfoundry-incubator/buildpack_app_lifecycle/Godeps/_workspace/src/github.com/onsi/gomega/matchers/support/goraph/node"
+import . "github.com/cloudfoundry-incubator/buildpack_app_lifecycle/Godeps/_workspace/src/github.com/onsi/gomega/matchers/support/goraph/edge"
+import "github.com/cloudfoundry-incubator/buildpack_app_lifecycle/Godeps/_workspace/src/github.com/onsi/gomega/matchers/support/goraph/util"
 
 func (bg *BipartiteGraph) LargestMatching() (matching EdgeSet) {
 	paths := bg.maximalDisjointSLAPCollection(matching)

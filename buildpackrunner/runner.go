@@ -15,16 +15,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cloudfoundry-incubator/linux-circus"
-	"github.com/cloudfoundry-incubator/linux-circus/Godeps/_workspace/src/github.com/cloudfoundry-incubator/candiedyaml"
-	"github.com/cloudfoundry-incubator/linux-circus/Godeps/_workspace/src/github.com/pivotal-golang/bytefmt"
-	"github.com/cloudfoundry-incubator/linux-circus/protocol"
+	"github.com/cloudfoundry-incubator/buildpack_app_lifecycle"
+	"github.com/cloudfoundry-incubator/buildpack_app_lifecycle/Godeps/_workspace/src/github.com/cloudfoundry-incubator/candiedyaml"
+	"github.com/cloudfoundry-incubator/buildpack_app_lifecycle/Godeps/_workspace/src/github.com/pivotal-golang/bytefmt"
+	"github.com/cloudfoundry-incubator/buildpack_app_lifecycle/protocol"
 )
 
 const DOWNLOAD_TIMEOUT = 10 * time.Minute
 
 type Runner struct {
-	config *linux_circus.CircusTailorConfig
+	config *buildpack_app_lifecycle.LifecycleBuilderConfig
 }
 
 type descriptiveError struct {
@@ -52,7 +52,7 @@ type Release struct {
 	} `yaml:"default_process_types"`
 }
 
-func New(config *linux_circus.CircusTailorConfig) *Runner {
+func New(config *buildpack_app_lifecycle.LifecycleBuilderConfig) *Runner {
 	return &Runner{
 		config: config,
 	}
@@ -324,7 +324,7 @@ func (runner *Runner) saveInfo(infoFilePath, buildpack, detectOutput string, rel
 		return err
 	}
 
-	err = json.NewEncoder(resultFile).Encode(linux_circus.StagingResult{
+	err = json.NewEncoder(resultFile).Encode(buildpack_app_lifecycle.StagingResult{
 		BuildpackKey:         buildpack,
 		DetectedBuildpack:    detectOutput,
 		ExecutionMetadata:    string(executionMetadata),

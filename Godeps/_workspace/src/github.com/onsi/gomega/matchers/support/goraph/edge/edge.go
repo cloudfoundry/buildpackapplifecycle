@@ -1,6 +1,6 @@
 package edge
 
-import . "github.com/cloudfoundry-incubator/linux-circus/Godeps/_workspace/src/github.com/onsi/gomega/matchers/support/goraph/node"
+import . "github.com/cloudfoundry-incubator/buildpack_app_lifecycle/Godeps/_workspace/src/github.com/onsi/gomega/matchers/support/goraph/node"
 
 type Edge struct {
 	Node1 Node

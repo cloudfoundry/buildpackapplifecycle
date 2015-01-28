@@ -1,4 +1,4 @@
-package linux_circus
+package buildpack_app_lifecycle
 
 type StagingResult struct {
 	BuildpackKey         string            `json:"buildpack_key,omitempty"`

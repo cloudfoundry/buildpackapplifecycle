@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/cloudfoundry-incubator/linux-circus/Godeps/_workspace/src/github.com/onsi/gomega/types"
+	"github.com/cloudfoundry-incubator/buildpack_app_lifecycle/Godeps/_workspace/src/github.com/onsi/gomega/types"
 )
 
 type AsyncAssertionType uint

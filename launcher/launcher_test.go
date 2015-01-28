@@ -9,16 +9,16 @@ import (
 	"path/filepath"
 	"regexp"
 
-	. "github.com/cloudfoundry-incubator/linux-circus/Godeps/_workspace/src/github.com/onsi/ginkgo"
-	. "github.com/cloudfoundry-incubator/linux-circus/Godeps/_workspace/src/github.com/onsi/gomega"
-	"github.com/cloudfoundry-incubator/linux-circus/Godeps/_workspace/src/github.com/onsi/gomega/gbytes"
-	"github.com/cloudfoundry-incubator/linux-circus/Godeps/_workspace/src/github.com/onsi/gomega/gexec"
+	. "github.com/cloudfoundry-incubator/buildpack_app_lifecycle/Godeps/_workspace/src/github.com/onsi/ginkgo"
+	. "github.com/cloudfoundry-incubator/buildpack_app_lifecycle/Godeps/_workspace/src/github.com/onsi/gomega"
+	"github.com/cloudfoundry-incubator/buildpack_app_lifecycle/Godeps/_workspace/src/github.com/onsi/gomega/gbytes"
+	"github.com/cloudfoundry-incubator/buildpack_app_lifecycle/Godeps/_workspace/src/github.com/onsi/gomega/gexec"
 )
 
-var _ = Describe("Soldier", func() {
+var _ = Describe("Launcher", func() {
 	var extractDir string
 	var appDir string
-	var soldierCmd *exec.Cmd
+	var launcherCmd *exec.Cmd
 	var session *gexec.Session
 
 	BeforeEach(func() {
@@ -32,8 +32,8 @@ var _ = Describe("Soldier", func() {
 		err = os.MkdirAll(appDir, 0755)
 		Ω(err).ShouldNot(HaveOccurred())
 
-		soldierCmd = &exec.Cmd{
-			Path: soldier,
+		launcherCmd = &exec.Cmd{
+			Path: launcher,
 			Dir:  extractDir,
 			Env: append(
 				os.Environ(),
@@ -52,7 +52,7 @@ var _ = Describe("Soldier", func() {
 
 	JustBeforeEach(func() {
 		var err error
-		session, err = gexec.Start(soldierCmd, GinkgoWriter, GinkgoWriter)
+		session, err = gexec.Start(launcherCmd, GinkgoWriter, GinkgoWriter)
 		Ω(err).ShouldNot(HaveOccurred())
 	})
 
@@ -123,8 +123,8 @@ var _ = Describe("Soldier", func() {
 
 	Context("when a start command is given", func() {
 		BeforeEach(func() {
-			soldierCmd.Args = []string{
-				"soldier",
+			launcherCmd.Args = []string{
+				"launcher",
 				appDir,
 				"env; echo running app",
 				`{ "start_command": "echo should not run this" }`,
@@ -136,8 +136,8 @@ var _ = Describe("Soldier", func() {
 
 	Context("when no start command is given", func() {
 		BeforeEach(func() {
-			soldierCmd.Args = []string{
-				"soldier",
+			launcherCmd.Args = []string{
+				"launcher",
 				appDir,
 				"",
 				`{ "start_command": "env; echo running app" }`,
@@ -150,14 +150,14 @@ var _ = Describe("Soldier", func() {
 	var ItPrintsUsageInformation = func() {
 		It("prints usage information", func() {
 			Eventually(session).Should(gexec.Exit(1))
-			Eventually(session.Err).Should(gbytes.Say("Usage: soldier <app directory> <start command> <metadata>"))
+			Eventually(session.Err).Should(gbytes.Say("Usage: launcher <app directory> <start command> <metadata>"))
 		})
 	}
 
 	Context("when the start command and start_command metadata are empty", func() {
 		BeforeEach(func() {
-			soldierCmd.Args = []string{
-				"soldier",
+			launcherCmd.Args = []string{
+				"launcher",
 				appDir,
 				"",
 				"",
@@ -214,8 +214,8 @@ var _ = Describe("Soldier", func() {
 
 	Context("when arguments are missing", func() {
 		BeforeEach(func() {
-			soldierCmd.Args = []string{
-				"soldier",
+			launcherCmd.Args = []string{
+				"launcher",
 				appDir,
 				"env",
 			}
@@ -226,8 +226,8 @@ var _ = Describe("Soldier", func() {
 
 	Context("when the given execution metadata is not valid JSON", func() {
 		BeforeEach(func() {
-			soldierCmd.Args = []string{
-				"soldier",
+			launcherCmd.Args = []string{
+				"launcher",
 				appDir,
 				"",
 				"{ not-valid-json }",

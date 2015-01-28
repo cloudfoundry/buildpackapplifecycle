@@ -4,14 +4,14 @@ import (
 	"net"
 	"os/exec"
 
-	. "github.com/cloudfoundry-incubator/linux-circus/Godeps/_workspace/src/github.com/onsi/ginkgo"
-	. "github.com/cloudfoundry-incubator/linux-circus/Godeps/_workspace/src/github.com/onsi/gomega"
-	"github.com/cloudfoundry-incubator/linux-circus/Godeps/_workspace/src/github.com/onsi/gomega/gbytes"
-	"github.com/cloudfoundry-incubator/linux-circus/Godeps/_workspace/src/github.com/onsi/gomega/gexec"
-	"github.com/cloudfoundry-incubator/linux-circus/Godeps/_workspace/src/github.com/onsi/gomega/ghttp"
+	. "github.com/cloudfoundry-incubator/buildpack_app_lifecycle/Godeps/_workspace/src/github.com/onsi/ginkgo"
+	. "github.com/cloudfoundry-incubator/buildpack_app_lifecycle/Godeps/_workspace/src/github.com/onsi/gomega"
+	"github.com/cloudfoundry-incubator/buildpack_app_lifecycle/Godeps/_workspace/src/github.com/onsi/gomega/gbytes"
+	"github.com/cloudfoundry-incubator/buildpack_app_lifecycle/Godeps/_workspace/src/github.com/onsi/gomega/gexec"
+	"github.com/cloudfoundry-incubator/buildpack_app_lifecycle/Godeps/_workspace/src/github.com/onsi/gomega/ghttp"
 )
 
-var _ = Describe("Spy", func() {
+var _ = Describe("HealthCheck", func() {
 	var (
 		server     *ghttp.Server
 		serverAddr string
@@ -28,22 +28,22 @@ var _ = Describe("Spy", func() {
 		server.Start()
 	})
 
-	runSpy := func() *gexec.Session {
+	runHealthCheck := func() *gexec.Session {
 		_, port, err := net.SplitHostPort(serverAddr)
 		Ω(err).ShouldNot(HaveOccurred())
-		session, err := gexec.Start(exec.Command(spy, "-port", port), GinkgoWriter, GinkgoWriter)
+		session, err := gexec.Start(exec.Command(healthCheck, "-port", port), GinkgoWriter, GinkgoWriter)
 		Ω(err).ShouldNot(HaveOccurred())
 		return session
 	}
 
 	Context("when the address is listening", func() {
 		It("exits 0", func() {
-			session := runSpy()
+			session := runHealthCheck()
 			Eventually(session).Should(gexec.Exit(0))
 		})
 
 		It("logs that the healthcheck passed", func() {
-			session := runSpy()
+			session := runHealthCheck()
 			Eventually(session.Out).Should(gbytes.Say("healthcheck passed"))
 		})
 	})
@@ -54,12 +54,12 @@ var _ = Describe("Spy", func() {
 		})
 
 		It("exits 1", func() {
-			session := runSpy()
+			session := runHealthCheck()
 			Eventually(session).Should(gexec.Exit(1))
 		})
 
 		It("logs that the healthcheck failed", func() {
-			session := runSpy()
+			session := runHealthCheck()
 			Eventually(session.Out).Should(gbytes.Say("healthcheck failed"))
 		})
 	})

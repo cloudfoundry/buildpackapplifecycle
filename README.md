@@ -1,7 +1,13 @@
-# The Linux Smelter
+# buildpack app lifecycle 
 
-* [![Coverage Status](https://coveralls.io/repos/cloudfoundry-incubator/linux-smelter/badge.png?branch=HEAD)](https://coveralls.io/r/cloudfoundry-incubator/linux-smelter?branch=HEAD)
+The buildpack lifecycle implements the traditional Cloud Foundry deployment
+strategy.
 
-The Linux smelter is a function of app bits to compiled app bits.
+The **Builder** downloads buildpacks and app bits, and produces a droplet.
 
-####Learn more about Diego and its components at [diego-design-notes](https://github.com/cloudfoundry-incubator/diego-design-notes)
+The **Launcher** runs the start command using a standard rootfs and
+environment.
+
+The **Healthcheck** runs a tcp port check, defaulting to port 8080.
+
+Read about the app lifecycle spec here: https://github.com/cloudfoundry-incubator/diego-design-notes#app-lifecycles
