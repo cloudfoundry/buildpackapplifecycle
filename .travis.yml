@@ -4,7 +4,7 @@ go:
   - 1.4
 
 install:
-  - go install github.com/cloudfoundry-incubator/linux-circus/Godeps/_workspace/src/github.com/onsi/ginkgo/ginkgo
+  - go install github.com/cloudfoundry-incubator/buildpack_app_lifecycle/Godeps/_workspace/src/github.com/onsi/ginkgo/ginkgo
 
 before_script:
   - export PATH=$HOME/gopath/bin:$PATH
