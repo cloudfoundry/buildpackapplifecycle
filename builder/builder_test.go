@@ -222,7 +222,7 @@ start_command: the start command
 		Context("when the app has a Procfile", func() {
 			Context("with web defined", func() {
 				JustBeforeEach(func() {
-					Eventually(builder() * time.Second).Should(gexec.Exit(0))
+					Eventually(builder(), 5*time.Second).Should(gexec.Exit(0))
 				})
 
 				BeforeEach(func() {
