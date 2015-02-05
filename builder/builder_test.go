@@ -9,6 +9,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"time"
 
 	. "github.com/cloudfoundry-incubator/buildpack_app_lifecycle/Godeps/_workspace/src/github.com/onsi/ginkgo"
 	. "github.com/cloudfoundry-incubator/buildpack_app_lifecycle/Godeps/_workspace/src/github.com/onsi/gomega"
@@ -113,7 +114,7 @@ var _ = Describe("Building", func() {
 		})
 
 		JustBeforeEach(func() {
-			Eventually(builder()).Should(gexec.Exit(0))
+			Eventually(builder(), 5*time.Second).Should(gexec.Exit(0))
 		})
 
 		Describe("the contents of the output tgz", func() {
@@ -221,7 +222,7 @@ start_command: the start command
 		Context("when the app has a Procfile", func() {
 			Context("with web defined", func() {
 				JustBeforeEach(func() {
-					Eventually(builder()).Should(gexec.Exit(0))
+					Eventually(builder() * time.Second).Should(gexec.Exit(0))
 				})
 
 				BeforeEach(func() {
