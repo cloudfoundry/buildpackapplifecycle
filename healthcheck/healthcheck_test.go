@@ -31,20 +31,16 @@ var _ = Describe("HealthCheck", func() {
 	runHealthCheck := func() *gexec.Session {
 		_, port, err := net.SplitHostPort(serverAddr)
 		Ω(err).ShouldNot(HaveOccurred())
-		session, err := gexec.Start(exec.Command(healthCheck, "-port", port), GinkgoWriter, GinkgoWriter)
+		session, err := gexec.Start(exec.Command(healthCheck, "-port", port, "-timeout", "100ms"), GinkgoWriter, GinkgoWriter)
 		Ω(err).ShouldNot(HaveOccurred())
 		return session
 	}
 
 	Context("when the address is listening", func() {
-		It("exits 0", func() {
+		It("exits 0 and logs it passed", func() {
 			session := runHealthCheck()
 			Eventually(session).Should(gexec.Exit(0))
-		})
-
-		It("logs that the healthcheck passed", func() {
-			session := runHealthCheck()
-			Eventually(session.Out).Should(gbytes.Say("healthcheck passed"))
+			Ω(session.Out).Should(gbytes.Say("healthcheck passed"))
 		})
 	})
 
@@ -53,14 +49,10 @@ var _ = Describe("HealthCheck", func() {
 			server.Close()
 		})
 
-		It("exits 1", func() {
+		It("exits 1 and logs it failed", func() {
 			session := runHealthCheck()
 			Eventually(session).Should(gexec.Exit(1))
-		})
-
-		It("logs that the healthcheck failed", func() {
-			session := runHealthCheck()
-			Eventually(session.Out).Should(gbytes.Say("healthcheck failed"))
+			Ω(session.Out).Should(gbytes.Say("healthcheck failed"))
 		})
 	})
 })
