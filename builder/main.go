@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	config := buildpack_app_lifecycle.NewLifecycleBuilderConfig([]string{}, false)
+	config := buildpack_app_lifecycle.NewLifecycleBuilderConfig([]string{}, false, false)
 
 	if err := config.Parse(os.Args[1:len(os.Args)]); err != nil {
 		println(err.Error())

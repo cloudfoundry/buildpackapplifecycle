@@ -23,6 +23,7 @@ const (
 	lifecycleBuilderBuildpacksDirFlag             = "buildpacksDir"
 	lifecycleBuilderBuildArtifactsCacheDirFlag    = "buildArtifactsCacheDir"
 	lifecycleBuilderBuildpackOrderFlag            = "buildpackOrder"
+	lifecycleBuilderSkipDetect                    = "skipDetect"
 	lifecycleBuilderSkipCertVerify                = "skipCertVerify"
 )
 
@@ -35,7 +36,7 @@ var lifecycleBuilderDefaults = map[string]string{
 	lifecycleBuilderBuildArtifactsCacheDirFlag:    "/tmp/cache",
 }
 
-func NewLifecycleBuilderConfig(buildpacks []string, skipCertVerify bool) LifecycleBuilderConfig {
+func NewLifecycleBuilderConfig(buildpacks []string, skipDetect bool, skipCertVerify bool) LifecycleBuilderConfig {
 	flagSet := flag.NewFlagSet("builder", flag.ExitOnError)
 
 	flagSet.String(
@@ -78,6 +79,12 @@ func NewLifecycleBuilderConfig(buildpacks []string, skipCertVerify bool) Lifecyc
 		lifecycleBuilderBuildpackOrderFlag,
 		strings.Join(buildpacks, ","),
 		"comma-separated list of buildpacks, to be tried in order",
+	)
+
+	flagSet.Bool(
+		lifecycleBuilderSkipDetect,
+		skipDetect,
+		"skip buildpack detect",
 	)
 
 	flagSet.Bool(
@@ -159,6 +166,10 @@ func (s LifecycleBuilderConfig) OutputBuildArtifactsCache() string {
 
 func (s LifecycleBuilderConfig) SkipCertVerify() bool {
 	return s.Lookup(lifecycleBuilderSkipCertVerify).Value.String() == "true"
+}
+
+func (s LifecycleBuilderConfig) SkipDetect() bool {
+	return s.Lookup(lifecycleBuilderSkipDetect).Value.String() == "true"
 }
 
 type ValidationError []error

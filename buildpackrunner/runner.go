@@ -223,9 +223,9 @@ func (runner *Runner) pathHasBinDirectory(pathToTest string) bool {
 	return err == nil
 }
 
+// returns buildpack name,  buildpack path, buildpack detect output, error
 func (runner *Runner) detect() (string, string, string, error) {
 	for _, buildpack := range runner.config.BuildpackOrder() {
-		output := new(bytes.Buffer)
 
 		buildpackPath, err := runner.buildpackPath(buildpack)
 		if err != nil {
@@ -233,6 +233,11 @@ func (runner *Runner) detect() (string, string, string, error) {
 			continue
 		}
 
+		if runner.config.SkipDetect() {
+			return buildpack, buildpackPath, "", nil
+		}
+
+		output := new(bytes.Buffer)
 		err = runner.run(exec.Command(path.Join(buildpackPath, "bin", "detect"), runner.config.BuildDir()), output)
 
 		if err == nil {

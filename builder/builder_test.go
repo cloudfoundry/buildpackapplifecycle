@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -32,6 +33,7 @@ var _ = Describe("Building", func() {
 		buildArtifactsCacheDir    string
 		outputMetadata            string
 		outputBuildArtifactsCache string
+		skipDetect                bool
 	)
 
 	builder := func() *gexec.Session {
@@ -76,6 +78,8 @@ var _ = Describe("Building", func() {
 		outputMetadata = outputMetadataFile.Name()
 
 		buildpackOrder = ""
+
+		skipDetect = false
 	})
 
 	AfterEach(func() {
@@ -91,6 +95,7 @@ var _ = Describe("Building", func() {
 			"-buildArtifactsCacheDir", buildArtifactsCacheDir,
 			"-buildpackOrder", buildpackOrder,
 			"-outputMetadata", outputMetadata,
+			"-skipDetect="+strconv.FormatBool(skipDetect),
 		)
 
 		env := os.Environ()
@@ -359,6 +364,21 @@ start_command: the start command
 
 		It("should detect the nested buildpack", func() {
 			Eventually(builder()).Should(gexec.Exit(0))
+		})
+	})
+
+	Context("skipping detect", func() {
+		BeforeEach(func() {
+			buildpackOrder = "always-fails"
+			skipDetect = true
+
+			cp(path.Join(appFixtures, "bash-app", "app.sh"), buildDir)
+			cpBuildpack("always-fails")
+		})
+
+		It("should exit with an error", func() {
+			session := builder()
+			Eventually(session).Should(gexec.Exit(0))
 		})
 	})
 })

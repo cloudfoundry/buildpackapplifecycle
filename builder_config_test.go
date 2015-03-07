@@ -8,9 +8,14 @@ import (
 
 var _ = Describe("LifecycleBuilderConfig", func() {
 	var builderConfig LifecycleBuilderConfig
+	var skipDetect bool
 
 	BeforeEach(func() {
-		builderConfig = NewLifecycleBuilderConfig([]string{"ocaml-buildpack", "haskell-buildpack", "bash-buildpack"}, false)
+		skipDetect = false
+	})
+
+	JustBeforeEach(func() {
+		builderConfig = NewLifecycleBuilderConfig([]string{"ocaml-buildpack", "haskell-buildpack", "bash-buildpack"}, skipDetect, false)
 	})
 
 	Context("with defaults", func() {
@@ -24,6 +29,7 @@ var _ = Describe("LifecycleBuilderConfig", func() {
 				"-outputMetadata=/tmp/result.json",
 				"-outputBuildArtifactsCache=/tmp/output-cache",
 				"-skipCertVerify=false",
+				"-skipDetect=false",
 			}
 
 			Ω(builderConfig.Path()).Should(Equal("/tmp/lifecycle/builder"))
@@ -33,6 +39,10 @@ var _ = Describe("LifecycleBuilderConfig", func() {
 
 	Context("with overrides", func() {
 		BeforeEach(func() {
+			skipDetect = true
+		})
+
+		JustBeforeEach(func() {
 			builderConfig.Set("buildDir", "/some/build/dir")
 			builderConfig.Set("outputDroplet", "/some/droplet")
 			builderConfig.Set("outputMetadata", "/some/result/dir")
@@ -40,6 +50,7 @@ var _ = Describe("LifecycleBuilderConfig", func() {
 			builderConfig.Set("buildArtifactsCacheDir", "/some/cache/dir")
 			builderConfig.Set("outputBuildArtifactsCache", "/some/cache-file")
 			builderConfig.Set("skipCertVerify", "true")
+			builderConfig.Set("skipDetect", "true")
 		})
 
 		It("generates a script for running its builder", func() {
@@ -52,6 +63,7 @@ var _ = Describe("LifecycleBuilderConfig", func() {
 				"-outputMetadata=/some/result/dir",
 				"-outputBuildArtifactsCache=/some/cache-file",
 				"-skipCertVerify=true",
+				"-skipDetect=true",
 			}
 
 			Ω(builderConfig.Path()).Should(Equal("/tmp/lifecycle/builder"))
