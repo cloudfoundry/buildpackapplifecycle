@@ -6,7 +6,7 @@ import (
 	"os/exec"
 	"strings"
 
-	. "github.com/cloudfoundry-incubator/buildpack_app_lifecycle/buildpackrunner"
+	"github.com/cloudfoundry-incubator/buildpack_app_lifecycle/buildpackrunner"
 
 	. "github.com/cloudfoundry-incubator/buildpack_app_lifecycle/Godeps/_workspace/src/github.com/onsi/ginkgo"
 	. "github.com/cloudfoundry-incubator/buildpack_app_lifecycle/Godeps/_workspace/src/github.com/onsi/gomega"
@@ -27,7 +27,7 @@ var _ = Describe("GitBuildpack", func() {
 		})
 
 		It("clones a URL", func() {
-			err := GitClone(gitUrl, cloneTarget)
+			err := buildpackrunner.GitClone(gitUrl, cloneTarget)
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(currentBranch(cloneTarget)).Should(Equal("master"))
 		})
@@ -35,7 +35,7 @@ var _ = Describe("GitBuildpack", func() {
 		It("clones a URL with a branch", func() {
 			branchUrl := gitUrl
 			branchUrl.Fragment = "a_branch"
-			err := GitClone(branchUrl, cloneTarget)
+			err := buildpackrunner.GitClone(branchUrl, cloneTarget)
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(currentBranch(cloneTarget)).Should(Equal("a_branch"))
 		})
@@ -43,7 +43,7 @@ var _ = Describe("GitBuildpack", func() {
 		It("clones a URL with a lightweight tag", func() {
 			branchUrl := gitUrl
 			branchUrl.Fragment = "a_lightweight_tag"
-			err := GitClone(branchUrl, cloneTarget)
+			err := buildpackrunner.GitClone(branchUrl, cloneTarget)
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(currentBranch(cloneTarget)).Should(Equal("a_lightweight_tag"))
 		})
@@ -53,14 +53,14 @@ var _ = Describe("GitBuildpack", func() {
 				By("passing an invalid path", func() {
 					badUrl := gitUrl
 					badUrl.Path = "/a/bad/path"
-					err := GitClone(badUrl, cloneTarget)
+					err := buildpackrunner.GitClone(badUrl, cloneTarget)
 					Ω(err).Should(HaveOccurred())
 				})
 
 				By("passing a bad tag/branch", func() {
 					badUrl := gitUrl
 					badUrl.Fragment = "notfound"
-					err := GitClone(badUrl, cloneTarget)
+					err := buildpackrunner.GitClone(badUrl, cloneTarget)
 					Ω(err).Should(HaveOccurred())
 				})
 			})

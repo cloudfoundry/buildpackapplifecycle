@@ -9,7 +9,7 @@ import (
 	"os"
 	"path/filepath"
 
-	. "github.com/cloudfoundry-incubator/buildpack_app_lifecycle/buildpackrunner"
+	"github.com/cloudfoundry-incubator/buildpack_app_lifecycle/buildpackrunner"
 
 	. "github.com/cloudfoundry-incubator/buildpack_app_lifecycle/Godeps/_workspace/src/github.com/onsi/ginkgo"
 	. "github.com/cloudfoundry-incubator/buildpack_app_lifecycle/Godeps/_workspace/src/github.com/onsi/gomega"
@@ -30,20 +30,20 @@ var _ = Describe("ZipBuildpack", func() {
 
 	Describe("IsZipFile", func() {
 		It("returns true with .zip extension", func() {
-			Ω(IsZipFile("abc.zip")).Should(BeTrue())
+			Ω(buildpackrunner.IsZipFile("abc.zip")).Should(BeTrue())
 		})
 
 		It("returns false without .zip extension", func() {
-			Ω(IsZipFile("abc.tar")).Should(BeFalse())
+			Ω(buildpackrunner.IsZipFile("abc.tar")).Should(BeFalse())
 		})
 	})
 
 	Describe("DownloadZipAndExtract", func() {
 		var fileserver *httptest.Server
-		var zipDownloader *ZipDownloader
+		var zipDownloader *buildpackrunner.ZipDownloader
 
 		BeforeEach(func() {
-			zipDownloader = NewZipDownloader(false)
+			zipDownloader = buildpackrunner.NewZipDownloader(false)
 			fileserver = httptest.NewServer(http.FileServer(http.Dir(os.TempDir())))
 		})
 

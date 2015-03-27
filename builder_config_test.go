@@ -1,13 +1,13 @@
 package buildpack_app_lifecycle_test
 
 import (
-	. "github.com/cloudfoundry-incubator/buildpack_app_lifecycle"
+	"github.com/cloudfoundry-incubator/buildpack_app_lifecycle"
 	. "github.com/cloudfoundry-incubator/buildpack_app_lifecycle/Godeps/_workspace/src/github.com/onsi/ginkgo"
 	. "github.com/cloudfoundry-incubator/buildpack_app_lifecycle/Godeps/_workspace/src/github.com/onsi/gomega"
 )
 
 var _ = Describe("LifecycleBuilderConfig", func() {
-	var builderConfig LifecycleBuilderConfig
+	var builderConfig buildpack_app_lifecycle.LifecycleBuilderConfig
 	var skipDetect bool
 
 	BeforeEach(func() {
@@ -15,7 +15,7 @@ var _ = Describe("LifecycleBuilderConfig", func() {
 	})
 
 	JustBeforeEach(func() {
-		builderConfig = NewLifecycleBuilderConfig([]string{"ocaml-buildpack", "haskell-buildpack", "bash-buildpack"}, skipDetect, false)
+		builderConfig = buildpack_app_lifecycle.NewLifecycleBuilderConfig([]string{"ocaml-buildpack", "haskell-buildpack", "bash-buildpack"}, skipDetect, false)
 	})
 
 	Context("with defaults", func() {
