@@ -72,9 +72,12 @@ var _ = Describe("Launcher", func() {
 			Eventually(session).Should(gbytes.Say("PWD=" + appDir))
 		})
 
-		It("executes the start command with $TMPDIR as the given dir + /tmp", func() {
+		It("executes the start command with $TMPDIR as the extract directory + /tmp", func() {
+			absDir, err := filepath.Abs(filepath.Join(appDir, "..", "tmp"))
+			Ω(err).ShouldNot(HaveOccurred())
+
 			Eventually(session).Should(gexec.Exit(0))
-			Eventually(session).Should(gbytes.Say("TMPDIR=" + appDir + "/tmp"))
+			Eventually(session).Should(gbytes.Say("TMPDIR=" + absDir))
 		})
 
 		It("munges VCAP_APPLICATION appropriately", func() {

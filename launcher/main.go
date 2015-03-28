@@ -36,11 +36,19 @@ func main() {
 	startCommand := os.Args[2]
 	metadata := os.Args[3]
 
+	absDir, err := filepath.Abs(dir)
+	if err == nil {
+		dir = absDir
+	}
 	os.Setenv("HOME", dir)
-	os.Setenv("TMPDIR", filepath.Join(dir, "tmp"))
+
+	tmpDir, err := filepath.Abs(filepath.Join(dir, "..", "tmp"))
+	if err == nil {
+		os.Setenv("TMPDIR", tmpDir)
+	}
 
 	vcapAppEnv := map[string]interface{}{}
-	err := json.Unmarshal([]byte(os.Getenv("VCAP_APPLICATION")), &vcapAppEnv)
+	err = json.Unmarshal([]byte(os.Getenv("VCAP_APPLICATION")), &vcapAppEnv)
 	if err == nil {
 		vcapAppEnv["host"] = "0.0.0.0"
 
