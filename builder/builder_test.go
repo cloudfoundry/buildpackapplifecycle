@@ -42,7 +42,7 @@ var _ = Describe("Building", func() {
 			GinkgoWriter,
 			GinkgoWriter,
 		)
-		Ω(err).ShouldNot(HaveOccurred())
+		Expect(err).NotTo(HaveOccurred())
 
 		return session
 	}
@@ -57,24 +57,24 @@ var _ = Describe("Building", func() {
 
 		tmpDir, err = ioutil.TempDir("", "building-tmp")
 		buildDir, err = ioutil.TempDir(tmpDir, "building-app")
-		Ω(err).ShouldNot(HaveOccurred())
+		Expect(err).NotTo(HaveOccurred())
 
 		buildpacksDir, err = ioutil.TempDir(tmpDir, "building-buildpacks")
-		Ω(err).ShouldNot(HaveOccurred())
+		Expect(err).NotTo(HaveOccurred())
 
 		outputDropletFile, err := ioutil.TempFile(tmpDir, "building-droplet")
-		Ω(err).ShouldNot(HaveOccurred())
+		Expect(err).NotTo(HaveOccurred())
 		outputDroplet = outputDropletFile.Name()
 
 		outputBuildArtifactsCacheDir, err := ioutil.TempDir(tmpDir, "building-cache-output")
-		Ω(err).ShouldNot(HaveOccurred())
+		Expect(err).NotTo(HaveOccurred())
 		outputBuildArtifactsCache = filepath.Join(outputBuildArtifactsCacheDir, "cache.tgz")
 
 		buildArtifactsCacheDir, err = ioutil.TempDir(tmpDir, "building-cache")
-		Ω(err).ShouldNot(HaveOccurred())
+		Expect(err).NotTo(HaveOccurred())
 
 		outputMetadataFile, err := ioutil.TempFile(tmpDir, "building-result")
-		Ω(err).ShouldNot(HaveOccurred())
+		Expect(err).NotTo(HaveOccurred())
 		outputMetadata = outputMetadataFile.Name()
 
 		buildpackOrder = ""
@@ -104,7 +104,7 @@ var _ = Describe("Building", func() {
 
 	resultJSON := func() []byte {
 		resultInfo, err := ioutil.ReadFile(outputMetadata)
-		Ω(err).ShouldNot(HaveOccurred())
+		Expect(err).NotTo(HaveOccurred())
 
 		return resultInfo
 	}
@@ -127,35 +127,35 @@ var _ = Describe("Building", func() {
 
 			JustBeforeEach(func() {
 				result, err := exec.Command("tar", "-tzf", outputDroplet).Output()
-				Ω(err).ShouldNot(HaveOccurred())
+				Expect(err).NotTo(HaveOccurred())
 
 				files = strings.Split(string(result), "\n")
 			})
 
 			It("should contain an /app dir with the contents of the compilation", func() {
-				Ω(files).Should(ContainElement("./app/"))
-				Ω(files).Should(ContainElement("./app/app.sh"))
-				Ω(files).Should(ContainElement("./app/compiled"))
+				Expect(files).To(ContainElement("./app/"))
+				Expect(files).To(ContainElement("./app/app.sh"))
+				Expect(files).To(ContainElement("./app/compiled"))
 			})
 
 			It("should contain an empty /tmp directory", func() {
-				Ω(files).Should(ContainElement("./tmp/"))
-				Ω(files).ShouldNot(ContainElement(MatchRegexp("\\./tmp/.+")))
+				Expect(files).To(ContainElement("./tmp/"))
+				Expect(files).NotTo(ContainElement(MatchRegexp("\\./tmp/.+")))
 			})
 
 			It("should contain an empty /logs directory", func() {
-				Ω(files).Should(ContainElement("./logs/"))
-				Ω(files).ShouldNot(ContainElement(MatchRegexp("\\./logs/.+")))
+				Expect(files).To(ContainElement("./logs/"))
+				Expect(files).NotTo(ContainElement(MatchRegexp("\\./logs/.+")))
 			})
 
 			It("should contain a staging_info.yml with the detected buildpack", func() {
 				stagingInfo, err := exec.Command("tar", "-xzf", outputDroplet, "-O", "./staging_info.yml").Output()
-				Ω(err).ShouldNot(HaveOccurred())
+				Expect(err).NotTo(HaveOccurred())
 
 				expectedYAML := `detected_buildpack: Always Matching
 start_command: the start command
 `
-				Ω(string(stagingInfo)).Should(Equal(expectedYAML))
+				Expect(string(stagingInfo)).To(Equal(expectedYAML))
 			})
 		})
 
@@ -168,20 +168,21 @@ start_command: the start command
 
 			It("gets created", func() {
 				result, err := exec.Command("tar", "-tzf", outputBuildArtifactsCache).Output()
-				Ω(err).ShouldNot(HaveOccurred())
+				Expect(err).NotTo(HaveOccurred())
 
-				Ω(strings.Split(string(result), "\n")).Should(ContainElement("./build-artifact"))
+				Expect(strings.Split(string(result), "\n")).To(ContainElement("./build-artifact"))
 			})
 		})
 
 		Describe("the result.json, which is used to communicate back to the stager", func() {
 			It("exists, and contains the detected buildpack", func() {
-				Ω(resultJSON()).Should(MatchJSON(`{
+				Expect(resultJSON()).To(MatchJSON(`{
 					"detected_buildpack": "Always Matching",
 					"execution_metadata": "{\"start_command\":\"the start command\"}",
 					"buildpack_key": "always-detects",
 					"detected_start_command":{"web":"the start command"}
 				}`))
+
 			})
 
 			Context("when the app has a Procfile", func() {
@@ -191,12 +192,13 @@ start_command: the start command
 					})
 
 					It("chooses the Procfile-provided command", func() {
-						Ω(resultJSON()).Should(MatchJSON(`{
+						Expect(resultJSON()).To(MatchJSON(`{
 					"detected_buildpack": "Always Matching",
 					"execution_metadata": "{\"start_command\":\"procfile-provided start-command\"}",
 					"buildpack_key": "always-detects",
 					"detected_start_command":{"web":"procfile-provided start-command"}
 				}`))
+
 					})
 				})
 
@@ -206,12 +208,13 @@ start_command: the start command
 					})
 
 					It("chooses the buildpack-provided command", func() {
-						Ω(resultJSON()).Should(MatchJSON(`{
+						Expect(resultJSON()).To(MatchJSON(`{
 					"detected_buildpack": "Always Matching",
 					"execution_metadata": "{\"start_command\":\"the start command\"}",
 					"buildpack_key": "always-detects",
 					"detected_start_command":{"web":"the start command"}
 				}`))
+
 					})
 				})
 			})
@@ -235,12 +238,13 @@ start_command: the start command
 				})
 
 				It("uses the command defined by web in the Procfile", func() {
-					Ω(resultJSON()).Should(MatchJSON(`{
+					Expect(resultJSON()).To(MatchJSON(`{
 						"detected_buildpack": "Release Without Command",
 						"execution_metadata": "{\"start_command\":\"procfile-provided start-command\"}",
 						"buildpack_key": "release-without-command",
 						"detected_start_command":{"web":"procfile-provided start-command"}
 					}`))
+
 				})
 			})
 
@@ -356,7 +360,7 @@ start_command: the start command
 
 			nestedBuildpackDir := path.Join(buildpacksDir, nestedBuildpackHash)
 			err := os.MkdirAll(nestedBuildpackDir, 0777)
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 
 			cp(path.Join(buildpackFixtures, "always-detects"), nestedBuildpackDir)
 			cp(path.Join(appFixtures, "bash-app", "app.sh"), buildDir)
@@ -389,6 +393,6 @@ func cp(src string, dst string) {
 		GinkgoWriter,
 		GinkgoWriter,
 	)
-	Ω(err).ShouldNot(HaveOccurred())
+	Expect(err).NotTo(HaveOccurred())
 	Eventually(session).Should(gexec.Exit(0))
 }

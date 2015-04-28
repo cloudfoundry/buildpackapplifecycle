@@ -26,11 +26,11 @@ var _ = Describe("Launcher", func() {
 
 		var err error
 		extractDir, err = ioutil.TempDir("", "vcap")
-		Ω(err).ShouldNot(HaveOccurred())
+		Expect(err).NotTo(HaveOccurred())
 
 		appDir = path.Join(extractDir, "app")
 		err = os.MkdirAll(appDir, 0755)
-		Ω(err).ShouldNot(HaveOccurred())
+		Expect(err).NotTo(HaveOccurred())
 
 		launcherCmd = &exec.Cmd{
 			Path: launcher,
@@ -47,13 +47,13 @@ var _ = Describe("Launcher", func() {
 
 	AfterEach(func() {
 		err := os.RemoveAll(extractDir)
-		Ω(err).ShouldNot(HaveOccurred())
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	JustBeforeEach(func() {
 		var err error
 		session, err = gexec.Start(launcherCmd, GinkgoWriter, GinkgoWriter)
-		Ω(err).ShouldNot(HaveOccurred())
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	var ItExecutesTheCommandWithTheRightEnvironment = func() {
@@ -74,7 +74,7 @@ var _ = Describe("Launcher", func() {
 
 		It("executes the start command with $TMPDIR as the extract directory + /tmp", func() {
 			absDir, err := filepath.Abs(filepath.Join(appDir, "..", "tmp"))
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(session).Should(gexec.Exit(0))
 			Eventually(session).Should(gbytes.Say("TMPDIR=" + absDir))
@@ -88,13 +88,13 @@ var _ = Describe("Launcher", func() {
 
 			vcapApplication := map[string]interface{}{}
 			err := json.Unmarshal(vcapApplicationBytes, &vcapApplication)
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 
-			Ω(vcapApplication["host"]).Should(Equal("0.0.0.0"))
-			Ω(vcapApplication["port"]).Should(Equal(float64(8080)))
-			Ω(vcapApplication["instance_index"]).Should(Equal(float64(123)))
-			Ω(vcapApplication["instance_id"]).Should(Equal("some-instance-guid"))
-			Ω(vcapApplication["foo"]).Should(Equal(float64(1)))
+			Expect(vcapApplication["host"]).To(Equal("0.0.0.0"))
+			Expect(vcapApplication["port"]).To(Equal(float64(8080)))
+			Expect(vcapApplication["instance_index"]).To(Equal(float64(123)))
+			Expect(vcapApplication["instance_id"]).To(Equal("some-instance-guid"))
+			Expect(vcapApplication["foo"]).To(Equal(float64(1)))
 		})
 
 		Context("when the given dir has .profile.d with scripts in it", func() {
@@ -104,13 +104,13 @@ var _ = Describe("Launcher", func() {
 				profileDir := path.Join(appDir, ".profile.d")
 
 				err = os.MkdirAll(profileDir, 0755)
-				Ω(err).ShouldNot(HaveOccurred())
+				Expect(err).NotTo(HaveOccurred())
 
 				err = ioutil.WriteFile(path.Join(profileDir, "a.sh"), []byte("echo sourcing a\nexport A=1\n"), 0644)
-				Ω(err).ShouldNot(HaveOccurred())
+				Expect(err).NotTo(HaveOccurred())
 
 				err = ioutil.WriteFile(path.Join(profileDir, "b.sh"), []byte("echo sourcing b\nexport B=1\n"), 0644)
-				Ω(err).ShouldNot(HaveOccurred())
+				Expect(err).NotTo(HaveOccurred())
 			})
 
 			It("sources them before executing", func() {
@@ -246,5 +246,5 @@ var _ = Describe("Launcher", func() {
 
 func writeStagingInfo(extractDir, stagingInfo string) {
 	err := ioutil.WriteFile(filepath.Join(extractDir, "staging_info.yml"), []byte(stagingInfo), 0644)
-	Ω(err).ShouldNot(HaveOccurred())
+	Expect(err).NotTo(HaveOccurred())
 }

@@ -32,8 +32,8 @@ var _ = Describe("LifecycleBuilderConfig", func() {
 				"-skipDetect=false",
 			}
 
-			Ω(builderConfig.Path()).Should(Equal("/tmp/lifecycle/builder"))
-			Ω(builderConfig.Args()).Should(ConsistOf(commandFlags))
+			Expect(builderConfig.Path()).To(Equal("/tmp/lifecycle/builder"))
+			Expect(builderConfig.Args()).To(ConsistOf(commandFlags))
 		})
 	})
 
@@ -66,21 +66,21 @@ var _ = Describe("LifecycleBuilderConfig", func() {
 				"-skipDetect=true",
 			}
 
-			Ω(builderConfig.Path()).Should(Equal("/tmp/lifecycle/builder"))
-			Ω(builderConfig.Args()).Should(ConsistOf(commandFlags))
+			Expect(builderConfig.Path()).To(Equal("/tmp/lifecycle/builder"))
+			Expect(builderConfig.Args()).To(ConsistOf(commandFlags))
 		})
 	})
 
 	It("returns the path to the app bits", func() {
-		Ω(builderConfig.BuildDir()).To(Equal("/tmp/app"))
+		Expect(builderConfig.BuildDir()).To(Equal("/tmp/app"))
 	})
 
 	It("returns the path to a given buildpack", func() {
 		key := "my-buildpack/key/::"
-		Ω(builderConfig.BuildpackPath(key)).To(Equal("/tmp/buildpacks/8b2f72a0702aed614f8b5d8f7f5b431b"))
+		Expect(builderConfig.BuildpackPath(key)).To(Equal("/tmp/buildpacks/8b2f72a0702aed614f8b5d8f7f5b431b"))
 	})
 
 	It("returns the path to the staging metadata", func() {
-		Ω(builderConfig.OutputMetadata()).To(Equal("/tmp/result.json"))
+		Expect(builderConfig.OutputMetadata()).To(Equal("/tmp/result.json"))
 	})
 })

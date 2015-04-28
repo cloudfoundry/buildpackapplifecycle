@@ -25,13 +25,13 @@ var gitUrl url.URL
 
 var _ = SynchronizedBeforeSuite(func() []byte {
 	gitPath, err := exec.LookPath("git")
-	Ω(err).ShouldNot(HaveOccurred())
+	Expect(err).NotTo(HaveOccurred())
 
 	tmpDir, err = ioutil.TempDir("", "tmpDir")
-	Ω(err).ShouldNot(HaveOccurred())
+	Expect(err).NotTo(HaveOccurred())
 	buildpackDir := filepath.Join(tmpDir, "fake-buildpack")
 	err = os.MkdirAll(buildpackDir, os.ModePerm)
-	Ω(err).ShouldNot(HaveOccurred())
+	Expect(err).NotTo(HaveOccurred())
 
 	execute(buildpackDir, "rm", "-rf", ".git")
 	execute(buildpackDir, gitPath, "init")
@@ -40,7 +40,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 
 	err = ioutil.WriteFile(filepath.Join(buildpackDir, "content"),
 		[]byte("some content"), os.ModePerm)
-	Ω(err).ShouldNot(HaveOccurred())
+	Expect(err).NotTo(HaveOccurred())
 
 	execute(buildpackDir, gitPath, "add", ".")
 	execute(buildpackDir, gitPath, "add", "-A")
@@ -60,7 +60,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	return []byte(gitUrl.String())
 }, func(data []byte) {
 	u, err := url.Parse(string(data))
-	Ω(err).ShouldNot(HaveOccurred())
+	Expect(err).NotTo(HaveOccurred())
 	gitUrl = *u
 })
 
@@ -74,5 +74,5 @@ func execute(dir string, execCmd string, args ...string) {
 	cmd := exec.Command(execCmd, args...)
 	cmd.Dir = dir
 	err := cmd.Run()
-	Ω(err).ShouldNot(HaveOccurred())
+	Expect(err).NotTo(HaveOccurred())
 }

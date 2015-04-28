@@ -19,7 +19,7 @@ var _ = Describe("GitBuildpack", func() {
 		BeforeEach(func() {
 			var err error
 			cloneTarget, err = ioutil.TempDir(tmpDir, "clone")
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 		})
 
 		AfterEach(func() {
@@ -28,24 +28,24 @@ var _ = Describe("GitBuildpack", func() {
 
 		It("clones a URL", func() {
 			err := buildpackrunner.GitClone(gitUrl, cloneTarget)
-			Ω(err).ShouldNot(HaveOccurred())
-			Ω(currentBranch(cloneTarget)).Should(Equal("master"))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(currentBranch(cloneTarget)).To(Equal("master"))
 		})
 
 		It("clones a URL with a branch", func() {
 			branchUrl := gitUrl
 			branchUrl.Fragment = "a_branch"
 			err := buildpackrunner.GitClone(branchUrl, cloneTarget)
-			Ω(err).ShouldNot(HaveOccurred())
-			Ω(currentBranch(cloneTarget)).Should(Equal("a_branch"))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(currentBranch(cloneTarget)).To(Equal("a_branch"))
 		})
 
 		It("clones a URL with a lightweight tag", func() {
 			branchUrl := gitUrl
 			branchUrl.Fragment = "a_lightweight_tag"
 			err := buildpackrunner.GitClone(branchUrl, cloneTarget)
-			Ω(err).ShouldNot(HaveOccurred())
-			Ω(currentBranch(cloneTarget)).Should(Equal("a_lightweight_tag"))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(currentBranch(cloneTarget)).To(Equal("a_lightweight_tag"))
 		})
 
 		Context("with bogus git URLs", func() {
@@ -54,14 +54,14 @@ var _ = Describe("GitBuildpack", func() {
 					badUrl := gitUrl
 					badUrl.Path = "/a/bad/path"
 					err := buildpackrunner.GitClone(badUrl, cloneTarget)
-					Ω(err).Should(HaveOccurred())
+					Expect(err).To(HaveOccurred())
 				})
 
 				By("passing a bad tag/branch", func() {
 					badUrl := gitUrl
 					badUrl.Fragment = "notfound"
 					err := buildpackrunner.GitClone(badUrl, cloneTarget)
-					Ω(err).Should(HaveOccurred())
+					Expect(err).To(HaveOccurred())
 				})
 			})
 		})
@@ -79,6 +79,6 @@ func currentBranch(gitDir string) string {
 		cmd.Dir = gitDir
 		bytes, err = cmd.Output()
 	}
-	Ω(err).ShouldNot(HaveOccurred())
+	Expect(err).NotTo(HaveOccurred())
 	return strings.TrimSpace(string(bytes))
 }

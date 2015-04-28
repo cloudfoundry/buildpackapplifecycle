@@ -21,7 +21,7 @@ var _ = Describe("ZipBuildpack", func() {
 	BeforeEach(func() {
 		var err error
 		destination, err = ioutil.TempDir("", "unzipdir")
-		Ω(err).ShouldNot(HaveOccurred())
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
@@ -30,11 +30,11 @@ var _ = Describe("ZipBuildpack", func() {
 
 	Describe("IsZipFile", func() {
 		It("returns true with .zip extension", func() {
-			Ω(buildpackrunner.IsZipFile("abc.zip")).Should(BeTrue())
+			Expect(buildpackrunner.IsZipFile("abc.zip")).To(BeTrue())
 		})
 
 		It("returns false without .zip extension", func() {
-			Ω(buildpackrunner.IsZipFile("abc.tar")).Should(BeFalse())
+			Expect(buildpackrunner.IsZipFile("abc.tar")).To(BeFalse())
 		})
 	})
 
@@ -58,17 +58,17 @@ var _ = Describe("ZipBuildpack", func() {
 			BeforeEach(func() {
 				var err error
 				z, err := ioutil.TempFile("", "zipfile")
-				Ω(err).ShouldNot(HaveOccurred())
+				Expect(err).NotTo(HaveOccurred())
 				zipfile = z.Name()
 
 				w := zip.NewWriter(z)
 				f, err := w.Create("contents")
-				Ω(err).ShouldNot(HaveOccurred())
+				Expect(err).NotTo(HaveOccurred())
 				f.Write([]byte("stuff"))
 				err = w.Close()
-				Ω(err).ShouldNot(HaveOccurred())
+				Expect(err).NotTo(HaveOccurred())
 				fi, err := z.Stat()
-				Ω(err).ShouldNot(HaveOccurred())
+				Expect(err).NotTo(HaveOccurred())
 				zipSize = uint64(fi.Size())
 			})
 
@@ -80,31 +80,31 @@ var _ = Describe("ZipBuildpack", func() {
 				u, _ := url.Parse(fileserver.URL)
 				u.Path = filepath.Base(zipfile)
 				size, err := zipDownloader.DownloadAndExtract(u, destination)
-				Ω(err).ShouldNot(HaveOccurred())
-				Ω(size).Should(Equal(zipSize))
+				Expect(err).NotTo(HaveOccurred())
+				Expect(size).To(Equal(zipSize))
 				file, err := os.Open(filepath.Join(destination, "contents"))
-				Ω(err).ShouldNot(HaveOccurred())
+				Expect(err).NotTo(HaveOccurred())
 				defer file.Close()
 
 				bytes, err := ioutil.ReadAll(file)
-				Ω(err).ShouldNot(HaveOccurred())
-				Ω(bytes).Should(Equal([]byte("stuff")))
+				Expect(err).NotTo(HaveOccurred())
+				Expect(bytes).To(Equal([]byte("stuff")))
 			})
 		})
 
 		It("fails when the zip file does not exist", func() {
 			u, _ := url.Parse("file:///foobar_not_there")
 			size, err := zipDownloader.DownloadAndExtract(u, destination)
-			Ω(err).Should(HaveOccurred())
-			Ω(size).Should(Equal(uint64(0)))
+			Expect(err).To(HaveOccurred())
+			Expect(size).To(Equal(uint64(0)))
 		})
 
 		It("fails when the file is not a zip file", func() {
 			u, _ := url.Parse(fileserver.URL)
 			u.Path = filepath.Base(destination)
 			size, err := zipDownloader.DownloadAndExtract(u, destination)
-			Ω(err).Should(HaveOccurred())
-			Ω(size).Should(Equal(uint64(0)))
+			Expect(err).To(HaveOccurred())
+			Expect(size).To(Equal(uint64(0)))
 		})
 	})
 })

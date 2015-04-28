@@ -17,7 +17,7 @@ func TestBuildpackLifecycleHealthCheck(t *testing.T) {
 
 var _ = SynchronizedBeforeSuite(func() []byte {
 	healthCheckPath, err := gexec.Build("github.com/cloudfoundry-incubator/buildpack_app_lifecycle/healthcheck")
-	Ω(err).ShouldNot(HaveOccurred())
+	Expect(err).NotTo(HaveOccurred())
 	return []byte(healthCheckPath)
 }, func(healthCheckPath []byte) {
 	healthCheck = string(healthCheckPath)

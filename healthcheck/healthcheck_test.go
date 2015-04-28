@@ -21,7 +21,7 @@ var _ = Describe("HealthCheck", func() {
 		ip := getNonLoopbackIP()
 		server = ghttp.NewUnstartedServer()
 		listener, err := net.Listen("tcp", ip+":0")
-		Ω(err).ShouldNot(HaveOccurred())
+		Expect(err).NotTo(HaveOccurred())
 
 		server.HTTPTestServer.Listener = listener
 		serverAddr = listener.Addr().String()
@@ -30,9 +30,9 @@ var _ = Describe("HealthCheck", func() {
 
 	runHealthCheck := func() *gexec.Session {
 		_, port, err := net.SplitHostPort(serverAddr)
-		Ω(err).ShouldNot(HaveOccurred())
+		Expect(err).NotTo(HaveOccurred())
 		session, err := gexec.Start(exec.Command(healthCheck, "-port", port, "-timeout", "100ms"), GinkgoWriter, GinkgoWriter)
-		Ω(err).ShouldNot(HaveOccurred())
+		Expect(err).NotTo(HaveOccurred())
 		return session
 	}
 
@@ -40,7 +40,7 @@ var _ = Describe("HealthCheck", func() {
 		It("exits 0 and logs it passed", func() {
 			session := runHealthCheck()
 			Eventually(session).Should(gexec.Exit(0))
-			Ω(session.Out).Should(gbytes.Say("healthcheck passed"))
+			Expect(session.Out).To(gbytes.Say("healthcheck passed"))
 		})
 	})
 
@@ -52,14 +52,14 @@ var _ = Describe("HealthCheck", func() {
 		It("exits 1 and logs it failed", func() {
 			session := runHealthCheck()
 			Eventually(session).Should(gexec.Exit(1))
-			Ω(session.Out).Should(gbytes.Say("healthcheck failed"))
+			Expect(session.Out).To(gbytes.Say("healthcheck failed"))
 		})
 	})
 })
 
 func getNonLoopbackIP() string {
 	interfaces, err := net.Interfaces()
-	Ω(err).ShouldNot(HaveOccurred())
+	Expect(err).NotTo(HaveOccurred())
 	for _, intf := range interfaces {
 		addrs, err := intf.Addrs()
 		if err != nil {
