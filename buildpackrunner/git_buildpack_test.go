@@ -48,18 +48,6 @@ var _ = Describe("GitBuildpack", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(currentBranch(cloneTarget)).To(Equal("a_lightweight_tag"))
 			})
-
-			Context("when git repo has submodules", func() {
-				It("updates the submodules for the branch", func() {
-					branchUrl := gitUrl
-					branchUrl.Fragment = "a_branch"
-					err := buildpackrunner.GitClone(branchUrl, cloneTarget)
-					Expect(err).NotTo(HaveOccurred())
-
-					fileContents, _ := ioutil.ReadFile(cloneTarget + "/sub/README")
-					Expect(string(fileContents)).To(Equal("2nd commit"))
-				})
-			})
 		})
 
 		Context("With a Git transport that supports `--depth`", func() {

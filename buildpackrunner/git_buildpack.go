@@ -16,37 +16,36 @@ func GitClone(repo url.URL, destination string) error {
 	repo.Fragment = ""
 	gitUrl := repo.String()
 
-	err = performGitClone(gitPath,
-		[]string{
-			"--depth",
-			"1",
-			"--recursive",
-			gitUrl,
-			destination,
-		}, branch)
-
-	if err != nil {
-		err = performGitClone(gitPath,
-			[]string{
-				"--recursive",
-				gitUrl,
-				destination,
-			}, branch)
-
-		if err != nil {
-			return fmt.Errorf("Failed to clone git repository at %s", gitUrl)
-		}
+	args := []string{
+		"clone",
+		"--depth",
+		"1",
 	}
-
-	return nil
-}
-
-func performGitClone(gitPath string, args []string, branch string) error {
-	args = append([]string{"clone"}, args...)
 
 	if branch != "" {
 		args = append(args, "-b", branch)
 	}
+
+	args = append(args, "--recursive", gitUrl, destination)
 	cmd := exec.Command(gitPath, args...)
-	return cmd.Run()
+
+	err = cmd.Run()
+
+	if err != nil {
+		cmd = exec.Command(gitPath, "clone", "--recursive", gitUrl, destination)
+		err = cmd.Run()
+		if err != nil {
+			return fmt.Errorf("Failed to clone git repository at %s", gitUrl)
+		}
+
+		if branch != "" {
+			cmd = exec.Command(gitPath, "--git-dir="+destination+"/.git", "--work-tree="+destination, "checkout", branch)
+			err = cmd.Run()
+			if err != nil {
+				return fmt.Errorf("Failed to checkout branch '%s' for git repository at %s", branch, gitUrl)
+			}
+		}
+	}
+
+	return nil
 }
