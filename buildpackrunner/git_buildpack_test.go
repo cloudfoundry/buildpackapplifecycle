@@ -26,26 +26,64 @@ var _ = Describe("GitBuildpack", func() {
 			os.RemoveAll(cloneTarget)
 		})
 
-		It("clones a URL", func() {
-			err := buildpackrunner.GitClone(gitUrl, cloneTarget)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(currentBranch(cloneTarget)).To(Equal("master"))
+		Context("With a Git transport that doesn't support `--depth`", func() {
+			It("clones a URL", func() {
+				err := buildpackrunner.GitClone(gitUrl, cloneTarget)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(currentBranch(cloneTarget)).To(Equal("master"))
+			})
+
+			It("clones a URL with a branch", func() {
+				branchUrl := gitUrl
+				branchUrl.Fragment = "a_branch"
+				err := buildpackrunner.GitClone(branchUrl, cloneTarget)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(currentBranch(cloneTarget)).To(Equal("a_branch"))
+			})
+
+			It("clones a URL with a lightweight tag", func() {
+				branchUrl := gitUrl
+				branchUrl.Fragment = "a_lightweight_tag"
+				err := buildpackrunner.GitClone(branchUrl, cloneTarget)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(currentBranch(cloneTarget)).To(Equal("a_lightweight_tag"))
+			})
 		})
 
-		It("clones a URL with a branch", func() {
-			branchUrl := gitUrl
-			branchUrl.Fragment = "a_branch"
-			err := buildpackrunner.GitClone(branchUrl, cloneTarget)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(currentBranch(cloneTarget)).To(Equal("a_branch"))
-		})
+		Context("With a Git transport that supports `--depth`", func() {
+			It("clones a URL", func() {
+				err := buildpackrunner.GitClone(fileGitUrl, cloneTarget)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(currentBranch(cloneTarget)).To(Equal("master"))
+			})
 
-		It("clones a URL with a lightweight tag", func() {
-			branchUrl := gitUrl
-			branchUrl.Fragment = "a_lightweight_tag"
-			err := buildpackrunner.GitClone(branchUrl, cloneTarget)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(currentBranch(cloneTarget)).To(Equal("a_lightweight_tag"))
+			It("clones a URL with a branch", func() {
+				branchUrl := fileGitUrl
+				branchUrl.Fragment = "a_branch"
+				err := buildpackrunner.GitClone(branchUrl, cloneTarget)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(currentBranch(cloneTarget)).To(Equal("a_branch"))
+			})
+
+			It("clones a URL with a lightweight tag", func() {
+				branchUrl := fileGitUrl
+				branchUrl.Fragment = "a_lightweight_tag"
+				err := buildpackrunner.GitClone(branchUrl, cloneTarget)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(currentBranch(cloneTarget)).To(Equal("a_lightweight_tag"))
+			})
+
+			It("does a shallow clone of the repo", func() {
+				buildpackrunner.GitClone(fileGitUrl, cloneTarget)
+
+				cmd := exec.Command("git", "rev-list", "HEAD", "--count")
+				cmd.Dir = cloneTarget
+				bytes, err := cmd.Output()
+				output := strings.TrimSpace(string(bytes))
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(output).To(Equal("1"))
+			})
 		})
 
 		Context("with bogus git URLs", func() {

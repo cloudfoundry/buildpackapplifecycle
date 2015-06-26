@@ -22,6 +22,7 @@ func TestBuildpackrunner(t *testing.T) {
 var tmpDir string
 var httpServer *httptest.Server
 var gitUrl url.URL
+var fileGitUrl url.URL
 
 var _ = SynchronizedBeforeSuite(func() []byte {
 	gitPath, err := exec.LookPath("git")
@@ -45,6 +46,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	execute(buildpackDir, gitPath, "add", ".")
 	execute(buildpackDir, gitPath, "add", "-A")
 	execute(buildpackDir, gitPath, "commit", "-am", "fake commit")
+	execute(buildpackDir, gitPath, "commit", "--allow-empty", "-m", "empty commit")
 	execute(buildpackDir, gitPath, "branch", "a_branch")
 	execute(buildpackDir, gitPath, "tag", "-m", "annotated tag", "a_tag")
 	execute(buildpackDir, gitPath, "tag", "a_lightweight_tag")
@@ -57,6 +59,11 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 		Host:   httpServer.Listener.Addr().String(),
 		Path:   "/fake-buildpack/.git",
 	}
+	fileGitUrl = url.URL{
+		Scheme: "file",
+		Path:   buildpackDir,
+	}
+
 	return []byte(gitUrl.String())
 }, func(data []byte) {
 	u, err := url.Parse(string(data))
