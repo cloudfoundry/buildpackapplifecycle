@@ -60,6 +60,23 @@ var _ = Describe("GitBuildpack", func() {
 					Expect(string(fileContents)).To(Equal("2nd commit"))
 				})
 			})
+			Context("with bogus git URLs", func() {
+				It("returns an error", func() {
+					By("passing an invalid path", func() {
+						badUrl := gitUrl
+						badUrl.Path = "/a/bad/path"
+						err := buildpackrunner.GitClone(badUrl, cloneTarget)
+						Expect(err).To(HaveOccurred())
+					})
+
+					By("passing a bad tag/branch", func() {
+						badUrl := gitUrl
+						badUrl.Fragment = "notfound"
+						err := buildpackrunner.GitClone(badUrl, cloneTarget)
+						Expect(err).To(HaveOccurred())
+					})
+				})
+			})
 		})
 
 		Context("With a Git transport that supports `--depth`", func() {
@@ -97,25 +114,6 @@ var _ = Describe("GitBuildpack", func() {
 				Expect(output).To(Equal("1"))
 			})
 		})
-
-		Context("with bogus git URLs", func() {
-			It("returns an error", func() {
-				By("passing an invalid path", func() {
-					badUrl := gitUrl
-					badUrl.Path = "/a/bad/path"
-					err := buildpackrunner.GitClone(badUrl, cloneTarget)
-					Expect(err).To(HaveOccurred())
-				})
-
-				By("passing a bad tag/branch", func() {
-					badUrl := gitUrl
-					badUrl.Fragment = "notfound"
-					err := buildpackrunner.GitClone(badUrl, cloneTarget)
-					Expect(err).To(HaveOccurred())
-				})
-			})
-		})
-
 	})
 })
 

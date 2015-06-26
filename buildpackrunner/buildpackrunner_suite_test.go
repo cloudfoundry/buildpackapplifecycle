@@ -19,10 +19,11 @@ func TestBuildpackrunner(t *testing.T) {
 	RunSpecs(t, "Buildpackrunner Suite")
 }
 
-var tmpDir string
-var httpServer *httptest.Server
-var gitUrl url.URL
+var buildpackDir string
 var fileGitUrl url.URL
+var gitUrl url.URL
+var httpServer *httptest.Server
+var tmpDir string
 
 var _ = SynchronizedBeforeSuite(func() []byte {
 	gitPath, err := exec.LookPath("git")
@@ -68,6 +69,10 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	execute(buildpackDir, gitPath, "checkout", "master")
 	execute(buildpackDir, gitPath, "update-server-info")
 
+	return []byte(string(tmpDir))
+
+}, func(data []byte) {
+	tmpDir = string(data)
 	httpServer = httptest.NewServer(http.FileServer(http.Dir(tmpDir)))
 
 	gitUrl = url.URL{
@@ -75,16 +80,11 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 		Host:   httpServer.Listener.Addr().String(),
 		Path:   "/fake-buildpack/.git",
 	}
+
 	fileGitUrl = url.URL{
 		Scheme: "file",
-		Path:   buildpackDir,
+		Path:   tmpDir + "/fake-buildpack",
 	}
-
-	return []byte(gitUrl.String())
-}, func(data []byte) {
-	u, err := url.Parse(string(data))
-	Expect(err).NotTo(HaveOccurred())
-	gitUrl = *u
 })
 
 var _ = SynchronizedAfterSuite(func() {
