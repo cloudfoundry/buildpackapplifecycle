@@ -18,7 +18,7 @@ func GitClone(repo url.URL, destination string) error {
 
 	args := []string{
 		"clone",
-		"--depth",
+		"-depth",
 		"1",
 	}
 
