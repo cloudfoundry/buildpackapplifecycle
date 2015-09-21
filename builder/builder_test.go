@@ -178,44 +178,36 @@ start_command: the start command
 			It("exists, and contains the detected buildpack", func() {
 				Expect(resultJSON()).To(MatchJSON(`{
 					"detected_buildpack": "Always Matching",
-					"execution_metadata": "{\"start_command\":\"the start command\"}",
-					"buildpack_key": "always-detects",
-					"detected_start_command":{"web":"the start command"}
+					"execution_metadata": "{\"process_types\":{\"web\":\"the start command\"}}",
+					"buildpack_key": "always-detects"
 				}`))
-
 			})
 
 			Context("when the app has a Procfile", func() {
-				Context("with web defined", func() {
-					BeforeEach(func() {
-						cp(path.Join(appFixtures, "with-procfile-with-web", "Procfile"), buildDir)
-					})
-
-					It("chooses the Procfile-provided command", func() {
-						Expect(resultJSON()).To(MatchJSON(`{
-					"detected_buildpack": "Always Matching",
-					"execution_metadata": "{\"start_command\":\"procfile-provided start-command\"}",
-					"buildpack_key": "always-detects",
-					"detected_start_command":{"web":"procfile-provided start-command"}
-				}`))
-
-					})
+				BeforeEach(func() {
+					cp(path.Join(appFixtures, "with-procfile-with-web", "Procfile"), buildDir)
 				})
 
-				Context("without web", func() {
-					BeforeEach(func() {
-						cp(path.Join(appFixtures, "with-procfile", "Procfile"), buildDir)
-					})
-
-					It("chooses the buildpack-provided command", func() {
-						Expect(resultJSON()).To(MatchJSON(`{
+				It("uses the Procfile processes in the execution metadata", func() {
+					Expect(resultJSON()).To(MatchJSON(`{
 					"detected_buildpack": "Always Matching",
-					"execution_metadata": "{\"start_command\":\"the start command\"}",
-					"buildpack_key": "always-detects",
-					"detected_start_command":{"web":"the start command"}
-				}`))
+					"execution_metadata": "{\"process_types\":{\"web\":\"procfile-provided start-command\"}}",
+					"buildpack_key": "always-detects"
+				 }`))
+				})
+			})
 
-					})
+			Context("when the app does not have a Procfile", func() {
+				BeforeEach(func() {
+					cp(path.Join(appFixtures, "bash-app", "app.sh"), buildDir)
+				})
+
+				It("uses the default_process_types specified by the buildpack", func() {
+					Expect(resultJSON()).To(MatchJSON(`{
+					"detected_buildpack": "Always Matching",
+					"execution_metadata": "{\"process_types\":{\"web\":\"the start command\"}}",
+					"buildpack_key": "always-detects"
+				 }`))
 				})
 			})
 		})
@@ -237,14 +229,12 @@ start_command: the start command
 					cp(path.Join(appFixtures, "with-procfile-with-web", "Procfile"), buildDir)
 				})
 
-				It("uses the command defined by web in the Procfile", func() {
+				It("uses the Procfile for execution_metadata", func() {
 					Expect(resultJSON()).To(MatchJSON(`{
 						"detected_buildpack": "Release Without Command",
-						"execution_metadata": "{\"start_command\":\"procfile-provided start-command\"}",
-						"buildpack_key": "release-without-command",
-						"detected_start_command":{"web":"procfile-provided start-command"}
+						"execution_metadata": "{\"process_types\":{\"web\":\"procfile-provided start-command\"}}",
+						"buildpack_key": "release-without-command"
 					}`))
-
 				})
 			})
 
@@ -253,10 +243,16 @@ start_command: the start command
 					cp(path.Join(appFixtures, "with-procfile", "Procfile"), buildDir)
 				})
 
-				It("fails", func() {
+				It("displays an error and returns the Procfile data without web", func() {
 					session := builder()
 					Eventually(session.Err).Should(gbytes.Say("No start command detected"))
 					Eventually(session).Should(gexec.Exit(0))
+
+					Expect(resultJSON()).To(MatchJSON(`{
+						"detected_buildpack": "Release Without Command",
+						"execution_metadata": "{\"process_types\":{\"spider\":\"bogus command\"}}",
+						"buildpack_key": "release-without-command"
+					}`))
 				})
 			})
 		})

@@ -143,11 +143,11 @@ var _ = Describe("Launcher", func() {
 				"launcher",
 				appDir,
 				"",
-				`{ "start_command": "env; echo running app" }`,
+				`{ "process_types": { "web": "env; echo running app" } }`,
 			}
 		})
 
-		ItExecutesTheCommandWithTheRightEnvironment()
+		ItExecutesTheCommandWithTheRightEnvironment() // assuming web process
 	})
 
 	var ItPrintsUsageInformation = func() {

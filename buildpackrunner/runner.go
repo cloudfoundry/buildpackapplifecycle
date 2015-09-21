@@ -47,9 +47,7 @@ func newDescriptiveError(err error, message string, args ...interface{}) error {
 }
 
 type Release struct {
-	DefaultProcessTypes struct {
-		Web string `yaml:"web"`
-	} `yaml:"default_process_types"`
+	DefaultProcessTypes map[string]string `yaml:"default_process_types"`
 }
 
 func New(config *buildpack_app_lifecycle.LifecycleBuilderConfig) *Runner {
@@ -81,17 +79,17 @@ func (runner *Runner) Run() error {
 		return newDescriptiveError(nil, buildpack_app_lifecycle.CompileFailMsg)
 	}
 
-	startCommand, err := runner.detectStartCommandFromProcfile()
+	startCommands, err := runner.readProcfile()
 	if err != nil {
 		return newDescriptiveError(err, "Failed to read command from Procfile")
 	}
 
-	releaseInfo, err := runner.release(detectedBuildpackDir, startCommand)
+	releaseInfo, err := runner.release(detectedBuildpackDir, startCommands)
 	if err != nil {
 		return newDescriptiveError(err, buildpack_app_lifecycle.ReleaseFailMsg)
 	}
 
-	if len(releaseInfo.DefaultProcessTypes.Web) == 0 {
+	if releaseInfo.DefaultProcessTypes["web"] == "" {
 		printError("No start command detected; command must be provided at runtime")
 	}
 
@@ -248,35 +246,35 @@ func (runner *Runner) detect() (string, string, string, bool) {
 	return "", "", "", false
 }
 
-func (runner *Runner) detectStartCommandFromProcfile() (string, error) {
+func (runner *Runner) readProcfile() (map[string]string, error) {
+	processes := map[string]string{}
+
 	procFile, err := os.Open(filepath.Join(runner.config.BuildDir(), "Procfile"))
 	if err != nil {
 		if os.IsNotExist(err) {
 			// Procfiles are optional
-			return "", nil
+			return processes, nil
 		}
 
-		return "", err
+		return processes, err
 	}
 
 	defer procFile.Close()
 
-	processes := map[string]string{}
-
 	err = candiedyaml.NewDecoder(procFile).Decode(&processes)
 	if err != nil {
 		// clobber candiedyaml's super low-level error
-		return "", errors.New("invalid YAML")
+		return processes, errors.New("invalid YAML")
 	}
 
-	return processes["web"], nil
+	return processes, nil
 }
 
 func (runner *Runner) compile(buildpackDir string) error {
 	return runner.run(exec.Command(path.Join(buildpackDir, "bin", "compile"), runner.config.BuildDir(), runner.config.BuildArtifactsCacheDir()), os.Stdout)
 }
 
-func (runner *Runner) release(buildpackDir string, webStartCommand string) (Release, error) {
+func (runner *Runner) release(buildpackDir string, startCommands map[string]string) (Release, error) {
 	output := new(bytes.Buffer)
 
 	err := runner.run(exec.Command(path.Join(buildpackDir, "bin", "release"), runner.config.BuildDir()), output)
@@ -293,9 +291,8 @@ func (runner *Runner) release(buildpackDir string, webStartCommand string) (Rele
 		return Release{}, newDescriptiveError(err, "buildpack's release output invalid")
 	}
 
-	procfileContainsWebStartCommand := webStartCommand != ""
-	if procfileContainsWebStartCommand {
-		parsedRelease.DefaultProcessTypes.Web = webStartCommand
+	if len(startCommands) > 0 {
+		parsedRelease.DefaultProcessTypes = startCommands
 	}
 
 	return parsedRelease, nil
@@ -310,7 +307,7 @@ func (runner *Runner) saveInfo(infoFilePath, buildpack, detectOutput string, rel
 
 	err = candiedyaml.NewEncoder(deaInfoFile).Encode(DeaStagingInfo{
 		DetectedBuildpack: detectOutput,
-		StartCommand:      releaseInfo.DefaultProcessTypes.Web,
+		StartCommand:      releaseInfo.DefaultProcessTypes["web"],
 	})
 	if err != nil {
 		return err
@@ -323,17 +320,16 @@ func (runner *Runner) saveInfo(infoFilePath, buildpack, detectOutput string, rel
 	defer resultFile.Close()
 
 	executionMetadata, err := json.Marshal(protocol.ExecutionMetadata{
-		StartCommand: releaseInfo.DefaultProcessTypes.Web,
+		ProcessTypes: releaseInfo.DefaultProcessTypes,
 	})
 	if err != nil {
 		return err
 	}
 
 	err = json.NewEncoder(resultFile).Encode(buildpack_app_lifecycle.StagingResult{
-		BuildpackKey:         buildpack,
-		DetectedBuildpack:    detectOutput,
-		ExecutionMetadata:    string(executionMetadata),
-		DetectedStartCommand: map[string]string{"web": releaseInfo.DefaultProcessTypes.Web},
+		BuildpackKey:      buildpack,
+		DetectedBuildpack: detectOutput,
+		ExecutionMetadata: string(executionMetadata),
 	})
 	if err != nil {
 		return err
