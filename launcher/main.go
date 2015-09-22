@@ -80,7 +80,7 @@ func main() {
 			fmt.Fprintf(os.Stderr, "Invalid metadata - %s", err)
 			os.Exit(1)
 		} else {
-			command = executionMetadata.StartCommand
+			command = executionMetadata.ProcessTypes["web"]
 		}
 	} else {
 		command, err = startCommandFromStagingInfo("staging_info.yml")

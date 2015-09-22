@@ -1,5 +1,5 @@
 package protocol
 
 type ExecutionMetadata struct {
-	StartCommand string `json:"start_command"`
+	ProcessTypes map[string]string `json:"process_types"`
 }
