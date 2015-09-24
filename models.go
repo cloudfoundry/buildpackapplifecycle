@@ -25,8 +25,25 @@ func ExitCodeFromError(err error) int {
 	}
 }
 
-type StagingResult struct {
+type LifecycleMetadata struct {
 	BuildpackKey      string `json:"buildpack_key,omitempty"`
 	DetectedBuildpack string `json:"detected_buildpack"`
+}
+
+type ProcessTypes map[string]string
+
+type StagingResult struct {
+	LifecycleMetadata `json:"lifecycle_metadata"`
+	ProcessTypes      `json:"process_types"`
 	ExecutionMetadata string `json:"execution_metadata"`
+	LifecycleType     string `json:"lifecycle_type"`
+}
+
+func NewStagingResult(procTypes ProcessTypes, lifeMeta LifecycleMetadata) StagingResult {
+	return StagingResult{
+		LifecycleType:     "buildpack",
+		LifecycleMetadata: lifeMeta,
+		ProcessTypes:      procTypes,
+		ExecutionMetadata: "",
+	}
 }

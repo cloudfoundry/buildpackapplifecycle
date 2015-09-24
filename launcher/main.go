@@ -10,7 +10,6 @@ import (
 	"syscall"
 
 	"github.com/cloudfoundry-incubator/buildpack_app_lifecycle/Godeps/_workspace/src/github.com/cloudfoundry-incubator/candiedyaml"
-	"github.com/cloudfoundry-incubator/buildpack_app_lifecycle/protocol"
 )
 
 const launcher = `
@@ -34,7 +33,6 @@ func main() {
 
 	dir := os.Args[1]
 	startCommand := os.Args[2]
-	metadata := os.Args[3]
 
 	absDir, err := filepath.Abs(dir)
 	if err == nil {
@@ -73,15 +71,6 @@ func main() {
 	var command string
 	if startCommand != "" {
 		command = startCommand
-	} else if metadata != "" {
-		var executionMetadata protocol.ExecutionMetadata
-		err := json.Unmarshal([]byte(metadata), &executionMetadata)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Invalid metadata - %s", err)
-			os.Exit(1)
-		} else {
-			command = executionMetadata.ProcessTypes["web"]
-		}
 	} else {
 		command, err = startCommandFromStagingInfo("staging_info.yml")
 		if err != nil {

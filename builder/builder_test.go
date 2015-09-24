@@ -177,9 +177,13 @@ start_command: the start command
 		Describe("the result.json, which is used to communicate back to the stager", func() {
 			It("exists, and contains the detected buildpack", func() {
 				Expect(resultJSON()).To(MatchJSON(`{
-					"detected_buildpack": "Always Matching",
-					"execution_metadata": "{\"process_types\":{\"web\":\"the start command\"}}",
-					"buildpack_key": "always-detects"
+						"process_types":{"web":"the start command"},
+						"lifecycle_type": "buildpack",
+						"lifecycle_metadata":{
+							"detected_buildpack": "Always Matching",
+							"buildpack_key": "always-detects"
+						},
+						"execution_metadata": ""
 				}`))
 			})
 
@@ -190,9 +194,13 @@ start_command: the start command
 
 				It("uses the Procfile processes in the execution metadata", func() {
 					Expect(resultJSON()).To(MatchJSON(`{
-					"detected_buildpack": "Always Matching",
-					"execution_metadata": "{\"process_types\":{\"web\":\"procfile-provided start-command\"}}",
-					"buildpack_key": "always-detects"
+						"process_types":{"web":"procfile-provided start-command"},
+						"lifecycle_type": "buildpack",
+						"lifecycle_metadata":{
+							"detected_buildpack": "Always Matching",
+							"buildpack_key": "always-detects"
+						},
+						"execution_metadata": ""
 				 }`))
 				})
 			})
@@ -204,9 +212,13 @@ start_command: the start command
 
 				It("uses the default_process_types specified by the buildpack", func() {
 					Expect(resultJSON()).To(MatchJSON(`{
-					"detected_buildpack": "Always Matching",
-					"execution_metadata": "{\"process_types\":{\"web\":\"the start command\"}}",
-					"buildpack_key": "always-detects"
+						"process_types":{"web":"the start command"},
+						"lifecycle_type": "buildpack",
+						"lifecycle_metadata":{
+							"detected_buildpack": "Always Matching",
+							"buildpack_key": "always-detects"
+						},
+						"execution_metadata": ""
 				 }`))
 				})
 			})
@@ -231,9 +243,13 @@ start_command: the start command
 
 				It("uses the Procfile for execution_metadata", func() {
 					Expect(resultJSON()).To(MatchJSON(`{
-						"detected_buildpack": "Release Without Command",
-						"execution_metadata": "{\"process_types\":{\"web\":\"procfile-provided start-command\"}}",
-						"buildpack_key": "release-without-command"
+						"process_types":{"web":"procfile-provided start-command"},
+						"lifecycle_type": "buildpack",
+						"lifecycle_metadata":{
+							"detected_buildpack": "Release Without Command",
+							"buildpack_key": "release-without-command"
+						},
+						"execution_metadata": ""
 					}`))
 				})
 			})
@@ -249,9 +265,13 @@ start_command: the start command
 					Eventually(session).Should(gexec.Exit(0))
 
 					Expect(resultJSON()).To(MatchJSON(`{
-						"detected_buildpack": "Release Without Command",
-						"execution_metadata": "{\"process_types\":{\"spider\":\"bogus command\"}}",
-						"buildpack_key": "release-without-command"
+						"process_types":{"spider":"bogus command"},
+						"lifecycle_type": "buildpack",
+						"lifecycle_metadata": {
+							"detected_buildpack": "Release Without Command",
+							"buildpack_key": "release-without-command"
+						},
+						"execution_metadata": ""
 					}`))
 				})
 			})

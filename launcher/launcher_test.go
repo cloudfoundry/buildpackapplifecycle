@@ -137,19 +137,6 @@ var _ = Describe("Launcher", func() {
 		ItExecutesTheCommandWithTheRightEnvironment()
 	})
 
-	Context("when no start command is given", func() {
-		BeforeEach(func() {
-			launcherCmd.Args = []string{
-				"launcher",
-				appDir,
-				"",
-				`{ "process_types": { "web": "env; echo running app" } }`,
-			}
-		})
-
-		ItExecutesTheCommandWithTheRightEnvironment() // assuming web process
-	})
-
 	var ItPrintsUsageInformation = func() {
 		It("prints usage information", func() {
 			Eventually(session).Should(gexec.Exit(1))
@@ -157,7 +144,7 @@ var _ = Describe("Launcher", func() {
 		})
 	}
 
-	Context("when the start command and start_command metadata are empty", func() {
+	Context("when no start command is given", func() {
 		BeforeEach(func() {
 			launcherCmd.Args = []string{
 				"launcher",
@@ -225,22 +212,6 @@ var _ = Describe("Launcher", func() {
 		})
 
 		ItPrintsUsageInformation()
-	})
-
-	Context("when the given execution metadata is not valid JSON", func() {
-		BeforeEach(func() {
-			launcherCmd.Args = []string{
-				"launcher",
-				appDir,
-				"",
-				"{ not-valid-json }",
-			}
-		})
-
-		It("prints an error message", func() {
-			Eventually(session).Should(gexec.Exit(1))
-			Eventually(session.Err).Should(gbytes.Say("Invalid metadata"))
-		})
 	})
 })
 

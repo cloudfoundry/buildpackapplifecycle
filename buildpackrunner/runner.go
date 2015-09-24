@@ -18,7 +18,6 @@ import (
 	"github.com/cloudfoundry-incubator/buildpack_app_lifecycle"
 	"github.com/cloudfoundry-incubator/buildpack_app_lifecycle/Godeps/_workspace/src/github.com/cloudfoundry-incubator/candiedyaml"
 	"github.com/cloudfoundry-incubator/buildpack_app_lifecycle/Godeps/_workspace/src/github.com/pivotal-golang/bytefmt"
-	"github.com/cloudfoundry-incubator/buildpack_app_lifecycle/protocol"
 )
 
 const DOWNLOAD_TIMEOUT = 10 * time.Minute
@@ -47,7 +46,7 @@ func newDescriptiveError(err error, message string, args ...interface{}) error {
 }
 
 type Release struct {
-	DefaultProcessTypes map[string]string `yaml:"default_process_types"`
+	DefaultProcessTypes buildpack_app_lifecycle.ProcessTypes `yaml:"default_process_types"`
 }
 
 func New(config *buildpack_app_lifecycle.LifecycleBuilderConfig) *Runner {
@@ -319,18 +318,13 @@ func (runner *Runner) saveInfo(infoFilePath, buildpack, detectOutput string, rel
 	}
 	defer resultFile.Close()
 
-	executionMetadata, err := json.Marshal(protocol.ExecutionMetadata{
-		ProcessTypes: releaseInfo.DefaultProcessTypes,
-	})
-	if err != nil {
-		return err
-	}
-
-	err = json.NewEncoder(resultFile).Encode(buildpack_app_lifecycle.StagingResult{
-		BuildpackKey:      buildpack,
-		DetectedBuildpack: detectOutput,
-		ExecutionMetadata: string(executionMetadata),
-	})
+	err = json.NewEncoder(resultFile).Encode(buildpack_app_lifecycle.NewStagingResult(
+		releaseInfo.DefaultProcessTypes,
+		buildpack_app_lifecycle.LifecycleMetadata{
+			BuildpackKey:      buildpack,
+			DetectedBuildpack: detectOutput,
+		},
+	))
 	if err != nil {
 		return err
 	}
