@@ -21,6 +21,10 @@ if [ -d .profile.d ]; then
   done
 fi
 
+if [ -f run-hook.sh ]; then
+  source run-hook.sh
+fi
+
 shift
 
 exec bash -c "$@"

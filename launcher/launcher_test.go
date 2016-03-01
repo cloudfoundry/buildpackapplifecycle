@@ -32,6 +32,9 @@ var _ = Describe("Launcher", func() {
 		err = os.MkdirAll(appDir, 0755)
 		Expect(err).NotTo(HaveOccurred())
 
+		err = ioutil.WriteFile(filepath.Join(appDir, "run-hook.sh"), []byte("export RUNHOOK=true\n"), 0644)
+		Expect(err).NotTo(HaveOccurred())
+
 		launcherCmd = &exec.Cmd{
 			Path: launcher,
 			Dir:  extractDir,
@@ -65,6 +68,11 @@ var _ = Describe("Launcher", func() {
 		It("executes the start command with $HOME as the given dir", func() {
 			Eventually(session).Should(gexec.Exit(0))
 			Eventually(session).Should(gbytes.Say("HOME=" + appDir))
+		})
+
+		It("executes the start command after sourcing run-hook.sh", func() {
+			Eventually(session).Should(gexec.Exit(0))
+			Eventually(session).Should(gbytes.Say("RUNHOOK=true"))
 		})
 
 		It("changes to the app directory when running", func() {

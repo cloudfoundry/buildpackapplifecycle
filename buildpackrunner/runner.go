@@ -270,7 +270,22 @@ func (runner *Runner) readProcfile() (map[string]string, error) {
 }
 
 func (runner *Runner) compile(buildpackDir string) error {
-	return runner.run(exec.Command(path.Join(buildpackDir, "bin", "compile"), runner.config.BuildDir(), runner.config.BuildArtifactsCacheDir()), os.Stdout)
+	const script = `
+cd "%s"
+if [ -f pre-hook.sh ]; then
+  source pre-hook.sh
+fi
+
+set -e
+"%s" "$PWD" "%s"
+set +e
+
+if [ -f post-hook.sh ]; then
+  source post-hook.sh
+fi
+`
+	cmd := fmt.Sprintf(script, runner.config.BuildDir(), path.Join(buildpackDir, "bin", "compile"), runner.config.BuildArtifactsCacheDir())
+	return runner.run(exec.Command("/bin/bash", "-c", cmd), os.Stdout)
 }
 
 func (runner *Runner) release(buildpackDir string, startCommands map[string]string) (Release, error) {
