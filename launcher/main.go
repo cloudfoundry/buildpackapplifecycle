@@ -21,6 +21,10 @@ if [ -d .profile.d ]; then
   done
 fi
 
+if [ -f .profile ]; then
+  source .profile
+fi
+
 shift
 
 exec bash -c "$@"

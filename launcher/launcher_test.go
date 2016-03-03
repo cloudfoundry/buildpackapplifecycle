@@ -111,14 +111,20 @@ var _ = Describe("Launcher", func() {
 
 				err = ioutil.WriteFile(path.Join(profileDir, "b.sh"), []byte("echo sourcing b\nexport B=1\n"), 0644)
 				Expect(err).NotTo(HaveOccurred())
+
+				err = ioutil.WriteFile(path.Join(appDir, ".profile"), []byte("echo sourcing .profile\nexport C=$A$B\n"), 0644)
+				Expect(err).NotTo(HaveOccurred())
+
 			})
 
-			It("sources them before executing", func() {
+			It("sources them before sourcing .profile and before executing", func() {
 				Eventually(session).Should(gexec.Exit(0))
 				Eventually(session).Should(gbytes.Say("sourcing a"))
 				Eventually(session).Should(gbytes.Say("sourcing b"))
+				Eventually(session).Should(gbytes.Say("sourcing .profile"))
 				Eventually(session).Should(gbytes.Say("A=1"))
 				Eventually(session).Should(gbytes.Say("B=1"))
+				Eventually(session).Should(gbytes.Say("C=11"))
 				Eventually(session).Should(gbytes.Say("running app"))
 			})
 		})
