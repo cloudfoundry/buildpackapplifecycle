@@ -304,7 +304,8 @@ func (runner *Runner) saveInfo(infoFilePath, buildpack, detectOutput string, rel
 	}
 	defer deaInfoFile.Close()
 
-	err = candiedyaml.NewEncoder(deaInfoFile).Encode(DeaStagingInfo{
+	// JSON ⊂ YAML
+	err = json.NewEncoder(deaInfoFile).Encode(DeaStagingInfo{
 		DetectedBuildpack: detectOutput,
 		StartCommand:      releaseInfo.DefaultProcessTypes["web"],
 	})

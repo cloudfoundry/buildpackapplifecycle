@@ -152,10 +152,8 @@ var _ = Describe("Building", func() {
 				stagingInfo, err := exec.Command("tar", "-xzf", outputDroplet, "-O", "./staging_info.yml").Output()
 				Expect(err).NotTo(HaveOccurred())
 
-				expectedYAML := `detected_buildpack: Always Matching
-start_command: the start command
-`
-				Expect(string(stagingInfo)).To(Equal(expectedYAML))
+				expectedYAML := `{"detected_buildpack":"Always Matching","tart_command":"the start command"}`
+				Expect(string(stagingInfo)).To(MatchJSON(expectedYAML))
 			})
 		})
 
