@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/cloudfoundry-incubator/cacheddownloader"
+	"github.com/cloudfoundry/systemcerts"
 	"github.com/pivotal-golang/archiver/extractor"
 )
 
@@ -22,7 +23,7 @@ func IsZipFile(filename string) bool {
 
 func NewZipDownloader(skipSSLVerification bool) *ZipDownloader {
 	return &ZipDownloader{
-		downloader: cacheddownloader.NewDownloader(DOWNLOAD_TIMEOUT, 1, skipSSLVerification),
+		downloader: cacheddownloader.NewDownloader(DOWNLOAD_TIMEOUT, 1, skipSSLVerification, systemcerts.SystemRootsPool()),
 	}
 }
 
