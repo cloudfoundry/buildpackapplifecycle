@@ -221,6 +221,30 @@ var _ = Describe("Building", func() {
 				})
 			})
 		})
+
+		Context("when the app uses staging hooks", func() {
+			BeforeEach(func() {
+				cp(path.Join(appFixtures, "bash-app", "pre-hook.sh"), buildDir)
+				cp(path.Join(appFixtures, "bash-app", "post-hook.sh"), buildDir)
+			})
+
+			var files []string
+
+			JustBeforeEach(func() {
+				result, err := exec.Command("tar", "-tzf", outputDroplet).Output()
+				Expect(err).NotTo(HaveOccurred())
+
+				files = strings.Split(string(result), "\n")
+			})
+
+			It("exports variables from pre-hook.sh to bin/compile", func() {
+				Expect(files).To(ContainElement("./app/PREHOOK"))
+			})
+
+			It("runs post-hook.sh after build-compile", func() {
+				Expect(files).To(ContainElement("./app/POSTHOOK"))
+			})
+		})
 	})
 
 	Context("with a buildpack that does not determine a start command", func() {

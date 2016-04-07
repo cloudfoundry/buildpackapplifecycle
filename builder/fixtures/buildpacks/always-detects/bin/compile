@@ -3,3 +3,8 @@
 
 echo WOO
 touch $1/compiled
+
+# test if variables exported by pre-hook.sh are visible
+if [ -n "$PREHOOK" ]; then
+    touch PREHOOK
+fi
