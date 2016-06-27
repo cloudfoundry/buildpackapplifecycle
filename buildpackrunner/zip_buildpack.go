@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/cloudfoundry-incubator/cacheddownloader"
+	"code.cloudfoundry.org/cacheddownloader"
 	"github.com/cloudfoundry/systemcerts"
 	"github.com/pivotal-golang/archiver/extractor"
 )
