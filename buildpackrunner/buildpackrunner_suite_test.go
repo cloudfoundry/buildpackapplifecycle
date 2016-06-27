@@ -61,7 +61,6 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	execute(buildpackDir, gitPath, "add", "-A")
 	execute(buildpackDir, gitPath, "commit", "-m", "fake commit")
 	execute(buildpackDir, gitPath, "commit", "--allow-empty", "-m", "empty commit")
-	execute(buildpackDir, gitPath, "tag", "-m", "annotated tag", "a_tag")
 	execute(buildpackDir, gitPath, "tag", "a_lightweight_tag")
 	execute(buildpackDir, gitPath, "checkout", "-b", "a_branch")
 	execute(buildpackDir+"/sub", gitPath, "checkout", "master")

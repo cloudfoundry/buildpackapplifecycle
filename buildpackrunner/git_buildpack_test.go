@@ -60,6 +60,7 @@ var _ = Describe("GitBuildpack", func() {
 					Expect(string(fileContents)).To(Equal("2nd commit"))
 				})
 			})
+
 			Context("with bogus git URLs", func() {
 				It("returns an error", func() {
 					By("passing an invalid path", func() {
@@ -103,6 +104,14 @@ var _ = Describe("GitBuildpack", func() {
 			})
 
 			It("does a shallow clone of the repo", func() {
+				gitPath, err := exec.LookPath("git")
+				Expect(err).NotTo(HaveOccurred())
+				version, err := exec.Command(gitPath, "version").CombinedOutput()
+				Expect(err).NotTo(HaveOccurred())
+				if string(version) == "git version 2.9.0\n" {
+					Skip("shallow clone not support with submodules for git 2.9.0")
+				}
+
 				buildpackrunner.GitClone(fileGitUrl, cloneTarget)
 
 				cmd := exec.Command("git", "rev-list", "HEAD", "--count")

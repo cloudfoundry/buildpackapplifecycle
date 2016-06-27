@@ -3,6 +3,7 @@ package buildpackrunner
 import (
 	"fmt"
 	"net/url"
+	"os"
 	"os/exec"
 )
 
@@ -26,6 +27,8 @@ func GitClone(repo url.URL, destination string) error {
 		}, branch)
 
 	if err != nil {
+		os.RemoveAll(destination)
+
 		err = performGitClone(gitPath,
 			[]string{
 				"--recursive",
