@@ -1,4 +1,4 @@
-package buildpack_app_lifecycle
+package buildpackapplifecycle
 
 import "strings"
 

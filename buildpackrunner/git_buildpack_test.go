@@ -6,7 +6,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/cloudfoundry-incubator/buildpack_app_lifecycle/buildpackrunner"
+	"code.cloudfoundry.org/buildpackapplifecycle/buildpackrunner"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

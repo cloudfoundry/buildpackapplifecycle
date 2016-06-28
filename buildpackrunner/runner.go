@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cloudfoundry-incubator/buildpack_app_lifecycle"
+	"code.cloudfoundry.org/buildpackapplifecycle"
 	"github.com/cloudfoundry-incubator/candiedyaml"
 	"github.com/pivotal-golang/bytefmt"
 )
@@ -23,7 +23,7 @@ import (
 const DOWNLOAD_TIMEOUT = 10 * time.Minute
 
 type Runner struct {
-	config *buildpack_app_lifecycle.LifecycleBuilderConfig
+	config *buildpackapplifecycle.LifecycleBuilderConfig
 }
 
 type descriptiveError struct {
@@ -46,10 +46,10 @@ func newDescriptiveError(err error, message string, args ...interface{}) error {
 }
 
 type Release struct {
-	DefaultProcessTypes buildpack_app_lifecycle.ProcessTypes `yaml:"default_process_types"`
+	DefaultProcessTypes buildpackapplifecycle.ProcessTypes `yaml:"default_process_types"`
 }
 
-func New(config *buildpack_app_lifecycle.LifecycleBuilderConfig) *Runner {
+func New(config *buildpackapplifecycle.LifecycleBuilderConfig) *Runner {
 	return &Runner{
 		config: config,
 	}
@@ -70,12 +70,12 @@ func (runner *Runner) Run() error {
 	//detect, compile, release
 	detectedBuildpack, detectedBuildpackDir, detectOutput, ok := runner.detect()
 	if !ok {
-		return newDescriptiveError(nil, buildpack_app_lifecycle.DetectFailMsg)
+		return newDescriptiveError(nil, buildpackapplifecycle.DetectFailMsg)
 	}
 
 	err = runner.compile(detectedBuildpackDir)
 	if err != nil {
-		return newDescriptiveError(nil, buildpack_app_lifecycle.CompileFailMsg)
+		return newDescriptiveError(nil, buildpackapplifecycle.CompileFailMsg)
 	}
 
 	startCommands, err := runner.readProcfile()
@@ -85,7 +85,7 @@ func (runner *Runner) Run() error {
 
 	releaseInfo, err := runner.release(detectedBuildpackDir, startCommands)
 	if err != nil {
-		return newDescriptiveError(err, buildpack_app_lifecycle.ReleaseFailMsg)
+		return newDescriptiveError(err, buildpackapplifecycle.ReleaseFailMsg)
 	}
 
 	if releaseInfo.DefaultProcessTypes["web"] == "" {
@@ -319,9 +319,9 @@ func (runner *Runner) saveInfo(infoFilePath, buildpack, detectOutput string, rel
 	}
 	defer resultFile.Close()
 
-	err = json.NewEncoder(resultFile).Encode(buildpack_app_lifecycle.NewStagingResult(
+	err = json.NewEncoder(resultFile).Encode(buildpackapplifecycle.NewStagingResult(
 		releaseInfo.DefaultProcessTypes,
-		buildpack_app_lifecycle.LifecycleMetadata{
+		buildpackapplifecycle.LifecycleMetadata{
 			BuildpackKey:      buildpack,
 			DetectedBuildpack: detectOutput,
 		},

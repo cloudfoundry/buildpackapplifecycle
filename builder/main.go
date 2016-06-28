@@ -4,12 +4,12 @@ import (
 	"flag"
 	"os"
 
-	"github.com/cloudfoundry-incubator/buildpack_app_lifecycle"
-	"github.com/cloudfoundry-incubator/buildpack_app_lifecycle/buildpackrunner"
+	"code.cloudfoundry.org/buildpackapplifecycle"
+	"code.cloudfoundry.org/buildpackapplifecycle/buildpackrunner"
 )
 
 func main() {
-	config := buildpack_app_lifecycle.NewLifecycleBuilderConfig([]string{}, false, false)
+	config := buildpackapplifecycle.NewLifecycleBuilderConfig([]string{}, false, false)
 
 	if err := config.Parse(os.Args[1:len(os.Args)]); err != nil {
 		println(err.Error())
@@ -26,7 +26,7 @@ func main() {
 	err := runner.Run()
 	if err != nil {
 		println(err.Error())
-		os.Exit(buildpack_app_lifecycle.ExitCodeFromError(err))
+		os.Exit(buildpackapplifecycle.ExitCodeFromError(err))
 	}
 
 	os.Exit(0)

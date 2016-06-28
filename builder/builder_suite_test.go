@@ -16,7 +16,7 @@ func TestBuildpackLifecycleBuilder(t *testing.T) {
 }
 
 var _ = SynchronizedBeforeSuite(func() []byte {
-	builder, err := gexec.Build("github.com/cloudfoundry-incubator/buildpack_app_lifecycle/builder")
+	builder, err := gexec.Build("code.cloudfoundry.org/buildpackapplifecycle/builder")
 	Expect(err).NotTo(HaveOccurred())
 	return []byte(builder)
 }, func(builder []byte) {

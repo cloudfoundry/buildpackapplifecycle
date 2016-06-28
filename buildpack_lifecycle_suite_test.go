@@ -1,4 +1,4 @@
-package buildpack_app_lifecycle_test
+package buildpackapplifecycle_test
 
 import (
 	"testing"
