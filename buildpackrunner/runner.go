@@ -16,8 +16,8 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/buildpackapplifecycle"
+	"code.cloudfoundry.org/bytefmt"
 	"github.com/cloudfoundry-incubator/candiedyaml"
-	"github.com/pivotal-golang/bytefmt"
 )
 
 const DOWNLOAD_TIMEOUT = 10 * time.Minute
