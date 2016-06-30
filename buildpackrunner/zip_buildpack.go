@@ -8,9 +8,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"code.cloudfoundry.org/archiver/extractor"
 	"code.cloudfoundry.org/cacheddownloader"
 	"github.com/cloudfoundry/systemcerts"
-	"github.com/pivotal-golang/archiver/extractor"
 )
 
 type ZipDownloader struct {
