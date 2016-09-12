@@ -259,7 +259,8 @@ var _ = Describe("Building", func() {
 
 				It("displays an error and returns the Procfile data without web", func() {
 					session := builder()
-					Eventually(session.Err).Should(gbytes.Say("No start command detected"))
+					Eventually(session.Err).Should(gbytes.Say("No start command specified by buildpack or via Procfile."))
+					Eventually(session.Err).Should(gbytes.Say("App will not start unless a command is provided at runtime."))
 					Eventually(session).Should(gexec.Exit(0))
 
 					Expect(resultJSON()).To(MatchJSON(`{
@@ -282,7 +283,8 @@ var _ = Describe("Building", func() {
 
 			It("fails", func() {
 				session := builder()
-				Eventually(session.Err).Should(gbytes.Say("No start command detected"))
+				Eventually(session.Err).Should(gbytes.Say("No start command specified by buildpack or via Procfile."))
+				Eventually(session.Err).Should(gbytes.Say("App will not start unless a command is provided at runtime."))
 				Eventually(session).Should(gexec.Exit(0))
 			})
 		})

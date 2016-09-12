@@ -89,7 +89,8 @@ func (runner *Runner) Run() error {
 	}
 
 	if releaseInfo.DefaultProcessTypes["web"] == "" {
-		printError("No start command detected; command must be provided at runtime")
+		printError("No start command specified by buildpack or via Procfile.")
+		printError("App will not start unless a command is provided at runtime.")
 	}
 
 	tarPath, err := exec.LookPath("tar")
