@@ -10,6 +10,7 @@ import (
 
 	"code.cloudfoundry.org/archiver/extractor"
 	"code.cloudfoundry.org/cacheddownloader"
+	"code.cloudfoundry.org/lager"
 	"github.com/cloudfoundry/systemcerts"
 )
 
@@ -34,7 +35,9 @@ func (z *ZipDownloader) DownloadAndExtract(u *url.URL, destination string) (uint
 	}
 	defer os.Remove(zipFile.Name())
 
-	_, _, err = z.downloader.Download(u,
+	_, _, err = z.downloader.Download(
+		lager.NewLogger("noop"),
+		u,
 		func() (*os.File, error) {
 			return os.OpenFile(zipFile.Name(), os.O_WRONLY, 0666)
 		},
