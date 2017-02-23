@@ -184,7 +184,7 @@ func (runner *runner) downloadBuildpacks() error {
 			zipDownloader := NewZipDownloader(runner.config.SkipCertVerify())
 			size, err = zipDownloader.DownloadAndExtract(buildpackUrl, destination)
 			if err == nil {
-				fmt.Printf("Downloaded buildpack `%s` (%s)", buildpackUrl.String(), bytefmt.ByteSize(size))
+				fmt.Printf("Downloaded buildpack `%s` (%s)\n", buildpackUrl.String(), bytefmt.ByteSize(size))
 			}
 		} else {
 			err = GitClone(*buildpackUrl, destination)
