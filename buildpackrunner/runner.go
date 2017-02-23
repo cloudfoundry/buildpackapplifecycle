@@ -23,7 +23,7 @@ import (
 const DOWNLOAD_TIMEOUT = 10 * time.Minute
 
 type Runner interface {
-	Run(config *buildpackapplifecycle.LifecycleBuilderConfig) error
+	Run(config *buildpackapplifecycle.LifecycleBuilderConfig) (string, error)
 }
 
 type runner struct {
@@ -57,39 +57,39 @@ func New() Runner {
 	return &runner{}
 }
 
-func (runner *runner) Run(config *buildpackapplifecycle.LifecycleBuilderConfig) error {
+func (runner *runner) Run(config *buildpackapplifecycle.LifecycleBuilderConfig) (string, error) {
 	runner.config = config
 
 	//set up the world
 	err := runner.makeDirectories()
 	if err != nil {
-		return newDescriptiveError(err, "Failed to set up filesystem when generating droplet")
+		return "", newDescriptiveError(err, "Failed to set up filesystem when generating droplet")
 	}
 
 	err = runner.downloadBuildpacks()
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	//detect, compile, release
 	detectedBuildpack, detectedBuildpackDir, detectOutput, ok := runner.detect()
 	if !ok {
-		return newDescriptiveError(nil, buildpackapplifecycle.DetectFailMsg)
+		return "", newDescriptiveError(nil, buildpackapplifecycle.DetectFailMsg)
 	}
 
 	err = runner.compile(detectedBuildpackDir)
 	if err != nil {
-		return newDescriptiveError(nil, buildpackapplifecycle.CompileFailMsg)
+		return "", newDescriptiveError(nil, buildpackapplifecycle.CompileFailMsg)
 	}
 
 	startCommands, err := runner.readProcfile()
 	if err != nil {
-		return newDescriptiveError(err, "Failed to read command from Procfile")
+		return "", newDescriptiveError(err, "Failed to read command from Procfile")
 	}
 
 	releaseInfo, err := runner.release(detectedBuildpackDir, startCommands)
 	if err != nil {
-		return newDescriptiveError(err, buildpackapplifecycle.ReleaseFailMsg)
+		return "", newDescriptiveError(err, buildpackapplifecycle.ReleaseFailMsg)
 	}
 
 	if releaseInfo.DefaultProcessTypes["web"] == "" {
@@ -99,55 +99,55 @@ func (runner *runner) Run(config *buildpackapplifecycle.LifecycleBuilderConfig) 
 
 	tarPath, err := exec.LookPath("tar")
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	//prepare the final droplet directory
 	contentsDir, err := ioutil.TempDir("", "contents")
 	if err != nil {
-		return newDescriptiveError(err, "Failed to create droplet contents dir")
+		return "", newDescriptiveError(err, "Failed to create droplet contents dir")
 	}
 
 	//generate staging_info.yml and result json file
 	infoFilePath := path.Join(contentsDir, "staging_info.yml")
 	err = runner.saveInfo(infoFilePath, detectedBuildpack, detectOutput, releaseInfo)
 	if err != nil {
-		return newDescriptiveError(err, "Failed to encode generated metadata")
+		return "", newDescriptiveError(err, "Failed to encode generated metadata")
 	}
 
 	appDir := path.Join(contentsDir, "app")
 	err = runner.copyApp(runner.config.BuildDir(), appDir)
 	if err != nil {
-		return newDescriptiveError(err, "Failed to copy compiled droplet")
+		return "", newDescriptiveError(err, "Failed to copy compiled droplet")
 	}
 
 	err = os.MkdirAll(path.Join(contentsDir, "tmp"), 0755)
 	if err != nil {
-		return newDescriptiveError(err, "Failed to set up droplet filesystem")
+		return "", newDescriptiveError(err, "Failed to set up droplet filesystem")
 	}
 
 	err = os.MkdirAll(path.Join(contentsDir, "logs"), 0755)
 	if err != nil {
-		return newDescriptiveError(err, "Failed to set up droplet filesystem")
+		return "", newDescriptiveError(err, "Failed to set up droplet filesystem")
 	}
 
 	err = exec.Command(tarPath, "-czf", runner.config.OutputDroplet(), "-C", contentsDir, ".").Run()
 	if err != nil {
-		return newDescriptiveError(err, "Failed to compress droplet")
+		return "", newDescriptiveError(err, "Failed to compress droplet")
 	}
 
 	//prepare the build artifacts cache output directory
 	err = os.MkdirAll(filepath.Dir(runner.config.OutputBuildArtifactsCache()), 0755)
 	if err != nil {
-		return newDescriptiveError(err, "Failed to create output build artifacts cache dir")
+		return "", newDescriptiveError(err, "Failed to create output build artifacts cache dir")
 	}
 
 	err = exec.Command(tarPath, "-czf", runner.config.OutputBuildArtifactsCache(), "-C", runner.config.BuildArtifactsCacheDir(), ".").Run()
 	if err != nil {
-		return newDescriptiveError(err, "Failed to compress build artifacts")
+		return "", newDescriptiveError(err, "Failed to compress build artifacts")
 	}
 
-	return nil
+	return infoFilePath, nil
 }
 
 func (runner *runner) makeDirectories() error {

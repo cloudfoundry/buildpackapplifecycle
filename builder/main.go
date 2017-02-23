@@ -23,7 +23,7 @@ func main() {
 
 	runner := buildpackrunner.New()
 
-	err := runner.Run(&config)
+	_, err := runner.Run(&config)
 	if err != nil {
 		println(err.Error())
 		os.Exit(buildpackapplifecycle.ExitCodeFromError(err))
