@@ -21,9 +21,9 @@ func main() {
 		usage()
 	}
 
-	runner := buildpackrunner.New(&config)
+	runner := buildpackrunner.New()
 
-	err := runner.Run()
+	err := runner.Run(&config)
 	if err != nil {
 		println(err.Error())
 		os.Exit(buildpackapplifecycle.ExitCodeFromError(err))

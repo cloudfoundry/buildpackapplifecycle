@@ -22,7 +22,11 @@ import (
 
 const DOWNLOAD_TIMEOUT = 10 * time.Minute
 
-type Runner struct {
+type Runner interface {
+	Run(config *buildpackapplifecycle.LifecycleBuilderConfig) error
+}
+
+type runner struct {
 	config *buildpackapplifecycle.LifecycleBuilderConfig
 }
 
@@ -49,13 +53,13 @@ type Release struct {
 	DefaultProcessTypes buildpackapplifecycle.ProcessTypes `yaml:"default_process_types"`
 }
 
-func New(config *buildpackapplifecycle.LifecycleBuilderConfig) *Runner {
-	return &Runner{
-		config: config,
-	}
+func New() Runner {
+	return &runner{}
 }
 
-func (runner *Runner) Run() error {
+func (runner *runner) Run(config *buildpackapplifecycle.LifecycleBuilderConfig) error {
+	runner.config = config
+
 	//set up the world
 	err := runner.makeDirectories()
 	if err != nil {
@@ -146,7 +150,7 @@ func (runner *Runner) Run() error {
 	return nil
 }
 
-func (runner *Runner) makeDirectories() error {
+func (runner *runner) makeDirectories() error {
 	if err := os.MkdirAll(filepath.Dir(runner.config.OutputDroplet()), 0755); err != nil {
 		return err
 	}
@@ -162,7 +166,7 @@ func (runner *Runner) makeDirectories() error {
 	return nil
 }
 
-func (runner *Runner) downloadBuildpacks() error {
+func (runner *runner) downloadBuildpacks() error {
 	// Do we have a custom buildpack?
 	for _, buildpackName := range runner.config.BuildpackOrder() {
 		buildpackUrl, err := url.Parse(buildpackName)
@@ -193,7 +197,7 @@ func (runner *Runner) downloadBuildpacks() error {
 	return nil
 }
 
-func (runner *Runner) buildpackPath(buildpack string) (string, error) {
+func (runner *runner) buildpackPath(buildpack string) (string, error) {
 	buildpackPath := runner.config.BuildpackPath(buildpack)
 
 	if runner.pathHasBinDirectory(buildpackPath) {
@@ -216,13 +220,13 @@ func (runner *Runner) buildpackPath(buildpack string) (string, error) {
 	return "", newDescriptiveError(nil, "malformed buildpack does not contain a /bin dir: %s", buildpack)
 }
 
-func (runner *Runner) pathHasBinDirectory(pathToTest string) bool {
+func (runner *runner) pathHasBinDirectory(pathToTest string) bool {
 	_, err := os.Stat(path.Join(pathToTest, "bin"))
 	return err == nil
 }
 
 // returns buildpack name,  buildpack path, buildpack detect output, ok
-func (runner *Runner) detect() (string, string, string, bool) {
+func (runner *runner) detect() (string, string, string, bool) {
 	for _, buildpack := range runner.config.BuildpackOrder() {
 
 		buildpackPath, err := runner.buildpackPath(buildpack)
@@ -246,7 +250,7 @@ func (runner *Runner) detect() (string, string, string, bool) {
 	return "", "", "", false
 }
 
-func (runner *Runner) readProcfile() (map[string]string, error) {
+func (runner *runner) readProcfile() (map[string]string, error) {
 	processes := map[string]string{}
 
 	procFile, err := os.Open(filepath.Join(runner.config.BuildDir(), "Procfile"))
@@ -270,11 +274,11 @@ func (runner *Runner) readProcfile() (map[string]string, error) {
 	return processes, nil
 }
 
-func (runner *Runner) compile(buildpackDir string) error {
+func (runner *runner) compile(buildpackDir string) error {
 	return runner.run(exec.Command(path.Join(buildpackDir, "bin", "compile"), runner.config.BuildDir(), runner.config.BuildArtifactsCacheDir()), os.Stdout)
 }
 
-func (runner *Runner) release(buildpackDir string, startCommands map[string]string) (Release, error) {
+func (runner *runner) release(buildpackDir string, startCommands map[string]string) (Release, error) {
 	output := new(bytes.Buffer)
 
 	err := runner.run(exec.Command(path.Join(buildpackDir, "bin", "release"), runner.config.BuildDir()), output)
@@ -298,7 +302,7 @@ func (runner *Runner) release(buildpackDir string, startCommands map[string]stri
 	return parsedRelease, nil
 }
 
-func (runner *Runner) saveInfo(infoFilePath, buildpack, detectOutput string, releaseInfo Release) error {
+func (runner *runner) saveInfo(infoFilePath, buildpack, detectOutput string, releaseInfo Release) error {
 	deaInfoFile, err := os.Create(infoFilePath)
 	if err != nil {
 		return err
@@ -334,11 +338,11 @@ func (runner *Runner) saveInfo(infoFilePath, buildpack, detectOutput string, rel
 	return nil
 }
 
-func (runner *Runner) copyApp(buildDir, stageDir string) error {
+func (runner *runner) copyApp(buildDir, stageDir string) error {
 	return runner.run(exec.Command("cp", "-a", buildDir, stageDir), os.Stdout)
 }
 
-func (runner *Runner) run(cmd *exec.Cmd, output io.Writer) error {
+func (runner *runner) run(cmd *exec.Cmd, output io.Writer) error {
 	cmd.Stdout = output
 	cmd.Stderr = os.Stderr
 
