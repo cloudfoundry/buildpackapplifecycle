@@ -223,6 +223,82 @@ var _ = Describe("Building", func() {
 		})
 	})
 
+	Context("with multi-buildpack support", func() {
+		BeforeEach(func() {
+			buildpackOrder = "always-detects,also-always-detects"
+			skipDetect = true
+
+			cpBuildpack("always-detects")
+			cpBuildpack("also-always-detects")
+			cp(path.Join(appFixtures, "bash-app", "app.sh"), buildDir)
+		})
+
+		JustBeforeEach(func() {
+			Eventually(builder(), 5*time.Second).Should(gexec.Exit(0))
+		})
+
+		Describe("the contents of the output tgz", func() {
+			var files []string
+
+			JustBeforeEach(func() {
+				result, err := exec.Command("tar", "-tzf", outputDroplet).Output()
+				Expect(err).NotTo(HaveOccurred())
+
+				files = strings.Split(string(result), "\n")
+			})
+
+			It("contains an /deps/UUID dir with the contents of the supply command", func() {
+				content, err := exec.Command("tar", "-xzf", outputDroplet, "--wildcards", "./deps/*/supplied", "-O").Output()
+				Expect(err).To(BeNil())
+				Expect(string(content)).To(Equal("always-detects-buildpack\n"))
+			})
+
+			It("contains an /app dir with the contents of the compilation", func() {
+				Expect(files).To(ContainElement("./app/"))
+				Expect(files).To(ContainElement("./app/app.sh"))
+				Expect(files).To(ContainElement("./app/compiled"))
+
+				content, err := exec.Command("tar", "-xzf", outputDroplet, "./app/compiled", "-O").Output()
+				Expect(err).To(BeNil())
+				Expect(string(content)).To(Equal("also-always-detects-buildpack\n"))
+			})
+
+			It("the /deps dir is passed to the primary compile command", func() {
+				content, err := exec.Command("tar", "-xzf", outputDroplet, "./deps/compiled", "-O").Output()
+				Expect(err).To(BeNil())
+				Expect(string(content)).To(Equal("also-always-detects-buildpack\n"))
+			})
+		})
+
+		Describe("the contents of the cache tgz", func() {
+			var files []string
+
+			JustBeforeEach(func() {
+				result, err := exec.Command("tar", "-tzf", outputBuildArtifactsCache).Output()
+				Expect(err).NotTo(HaveOccurred())
+
+				files = strings.Split(string(result), "\n")
+			})
+
+			It("caches compile output as $CACHE_DIR/primary", func() {
+				Expect(files).To(ContainElement("./primary/compiled"))
+
+				content, err := exec.Command("tar", "-xzf", outputBuildArtifactsCache, "./primary/compiled", "-O").Output()
+				Expect(err).To(BeNil())
+				Expect(string(content)).To(Equal("also-always-detects-buildpack\n"))
+			})
+
+			It("caches supply output as $CACHE_DIR/<md5sum of buildpack URL>", func() {
+				supplyCacheDir := fmt.Sprintf("%x", md5.Sum([]byte("always-detects")))
+				Expect(files).To(ContainElement("./" + supplyCacheDir + "/supplied"))
+
+				content, err := exec.Command("tar", "-xzf", outputBuildArtifactsCache, "./"+supplyCacheDir+"/supplied", "-O").Output()
+				Expect(err).To(BeNil())
+				Expect(string(content)).To(Equal("always-detects-buildpack\n"))
+			})
+		})
+	})
+
 	Context("with a buildpack that does not determine a start command", func() {
 		BeforeEach(func() {
 			buildpackOrder = "release-without-command"

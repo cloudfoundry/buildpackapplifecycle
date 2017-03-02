@@ -14,7 +14,11 @@ import (
 	"github.com/cloudfoundry/systemcerts"
 )
 
-type ZipDownloader struct {
+type ZipDownloader interface {
+	DownloadAndExtract(u *url.URL, destination string) (uint64, error)
+}
+
+type zipDownloader struct {
 	downloader *cacheddownloader.Downloader
 }
 
@@ -22,13 +26,13 @@ func IsZipFile(filename string) bool {
 	return strings.HasSuffix(filename, ".zip")
 }
 
-func NewZipDownloader(skipSSLVerification bool) *ZipDownloader {
-	return &ZipDownloader{
+func NewZipDownloader(skipSSLVerification bool) ZipDownloader {
+	return &zipDownloader{
 		downloader: cacheddownloader.NewDownloader(DOWNLOAD_TIMEOUT, 1, skipSSLVerification, systemcerts.SystemRootsPool()),
 	}
 }
 
-func (z *ZipDownloader) DownloadAndExtract(u *url.URL, destination string) (uint64, error) {
+func (z *zipDownloader) DownloadAndExtract(u *url.URL, destination string) (uint64, error) {
 	zipFile, err := ioutil.TempFile("", filepath.Base(u.Path))
 	if err != nil {
 		return 0, fmt.Errorf("Could not create zip file: %s", err.Error())

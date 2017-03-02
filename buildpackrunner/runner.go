@@ -2,6 +2,7 @@ package buildpackrunner
 
 import (
 	"bytes"
+	"crypto/md5"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -18,6 +19,7 @@ import (
 	"code.cloudfoundry.org/buildpackapplifecycle"
 	"code.cloudfoundry.org/bytefmt"
 	"github.com/cloudfoundry-incubator/candiedyaml"
+	"github.com/google/uuid"
 )
 
 const DOWNLOAD_TIMEOUT = 10 * time.Minute
@@ -27,12 +29,17 @@ type Runner interface {
 }
 
 type runner struct {
-	config *buildpackapplifecycle.LifecycleBuilderConfig
+	config        *buildpackapplifecycle.LifecycleBuilderConfig
+	zipDownloader ZipDownloader
 }
 
 type descriptiveError struct {
 	message string
 	err     error
+}
+
+type Release struct {
+	DefaultProcessTypes buildpackapplifecycle.ProcessTypes `yaml:"default_process_types"`
 }
 
 func (e descriptiveError) Error() string {
@@ -49,12 +56,10 @@ func newDescriptiveError(err error, message string, args ...interface{}) error {
 	return descriptiveError{message: fmt.Sprintf(message, args...), err: err}
 }
 
-type Release struct {
-	DefaultProcessTypes buildpackapplifecycle.ProcessTypes `yaml:"default_process_types"`
-}
-
-func New() Runner {
-	return &runner{}
+func New(zipDownloader ZipDownloader) Runner {
+	return &runner{
+		zipDownloader: zipDownloader,
+	}
 }
 
 func (runner *runner) Run(config *buildpackapplifecycle.LifecycleBuilderConfig) (string, error) {
@@ -72,7 +77,14 @@ func (runner *runner) Run(config *buildpackapplifecycle.LifecycleBuilderConfig) 
 	}
 
 	//detect, compile, release
-	detectedBuildpack, detectedBuildpackDir, detectOutput, ok := runner.detect()
+	var detectedBuildpack, detectOutput, detectedBuildpackDir string
+	var ok bool
+
+	if config.SkipDetect() {
+		detectedBuildpackDir, ok = runner.supply()
+	} else {
+		detectedBuildpack, detectedBuildpackDir, detectOutput, ok = runner.detect()
+	}
 	if !ok {
 		return "", newDescriptiveError(nil, buildpackapplifecycle.DetectFailMsg)
 	}
@@ -102,11 +114,7 @@ func (runner *runner) Run(config *buildpackapplifecycle.LifecycleBuilderConfig) 
 		return "", err
 	}
 
-	//prepare the final droplet directory
-	contentsDir, err := ioutil.TempDir("", "contents")
-	if err != nil {
-		return "", newDescriptiveError(err, "Failed to create droplet contents dir")
-	}
+	contentsDir := runner.config.BuildRootDir()
 
 	//generate staging_info.yml and result json file
 	infoFilePath := path.Join(contentsDir, "staging_info.yml")
@@ -115,25 +123,28 @@ func (runner *runner) Run(config *buildpackapplifecycle.LifecycleBuilderConfig) 
 		return "", newDescriptiveError(err, "Failed to encode generated metadata")
 	}
 
-	appDir := path.Join(contentsDir, "app")
-	err = runner.copyApp(runner.config.BuildDir(), appDir)
-	if err != nil {
-		return "", newDescriptiveError(err, "Failed to copy compiled droplet")
+	for _, name := range []string{"tmp", "logs"} {
+		if err := os.RemoveAll(path.Join(contentsDir, name)); err != nil {
+			return "", newDescriptiveError(err, "Failed to set up droplet filesystem")
+		}
+
+		if err := os.MkdirAll(path.Join(contentsDir, name), 0755); err != nil {
+			return "", newDescriptiveError(err, "Failed to set up droplet filesystem")
+		}
 	}
 
-	err = os.MkdirAll(path.Join(contentsDir, "tmp"), 0755)
-	if err != nil {
-		return "", newDescriptiveError(err, "Failed to set up droplet filesystem")
+	if path.Base(runner.config.BuildDir()) != "app" {
+		os.RemoveAll(filepath.Join(runner.config.BuildRootDir(), "app"))
+
+		err = os.Rename(runner.config.BuildDir(), filepath.Join(runner.config.BuildRootDir(), "app"))
+		if err != nil {
+			return "", newDescriptiveError(err, "Failed to set up droplet filesystem")
+		}
 	}
 
-	err = os.MkdirAll(path.Join(contentsDir, "logs"), 0755)
+	err = exec.Command(tarPath, "-czf", runner.config.OutputDroplet(), "-C", contentsDir, "./app", "./deps", "./staging_info.yml", "./tmp", "./logs").Run()
 	if err != nil {
-		return "", newDescriptiveError(err, "Failed to set up droplet filesystem")
-	}
-
-	err = exec.Command(tarPath, "-czf", runner.config.OutputDroplet(), "-C", contentsDir, ".").Run()
-	if err != nil {
-		return "", newDescriptiveError(err, "Failed to compress droplet")
+		return "", newDescriptiveError(err, "Failed to compress droplet filesystem")
 	}
 
 	//prepare the build artifacts cache output directory
@@ -163,6 +174,16 @@ func (runner *runner) makeDirectories() error {
 		return err
 	}
 
+	if runner.config.IsMultiBuildpack() {
+		if err := os.MkdirAll(filepath.Join(runner.config.BuildArtifactsCacheDir(), "primary"), 0755); err != nil {
+			return err
+		}
+	}
+
+	if err := os.MkdirAll(runner.config.DepsDir(), 0755); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -181,8 +202,7 @@ func (runner *runner) downloadBuildpacks() error {
 
 		if IsZipFile(buildpackUrl.Path) {
 			var size uint64
-			zipDownloader := NewZipDownloader(runner.config.SkipCertVerify())
-			size, err = zipDownloader.DownloadAndExtract(buildpackUrl, destination)
+			size, err = runner.zipDownloader.DownloadAndExtract(buildpackUrl, destination)
 			if err == nil {
 				fmt.Printf("Downloaded buildpack `%s` (%s)\n", buildpackUrl.String(), bytefmt.ByteSize(size))
 			}
@@ -225,6 +245,48 @@ func (runner *runner) pathHasBinDirectory(pathToTest string) bool {
 	return err == nil
 }
 
+func (runner *runner) supplyCachePath(buildpack string) string {
+	return filepath.Join(runner.config.BuildArtifactsCacheDir(), fmt.Sprintf("%x", md5.Sum([]byte(buildpack))))
+}
+
+// returns buildpack path, ok
+func (runner *runner) supply() (string, bool) {
+	buildpacks := runner.config.BuildpackOrder()
+	supplyBuildpacks := buildpacks[0:(len(buildpacks) - 1)]
+	compileBuildpack := buildpacks[len(buildpacks)-1]
+
+	for _, buildpack := range supplyBuildpacks {
+		buildpackPath, err := runner.buildpackPath(buildpack)
+		if err != nil {
+			printError(err.Error())
+			continue
+		}
+
+		output := new(bytes.Buffer)
+		guid := uuid.Must(uuid.NewRandom()).String()
+		err = os.MkdirAll(path.Join(runner.config.DepsDir(), guid), 0755)
+		if err != nil {
+			printError(err.Error())
+			continue
+		}
+
+		err = os.MkdirAll(runner.supplyCachePath(buildpack), 0755)
+		if err != nil {
+			printError(err.Error())
+			continue
+		}
+
+		err = runner.run(exec.Command(path.Join(buildpackPath, "bin", "supply"), runner.config.BuildDir(), runner.supplyCachePath(buildpack), guid, runner.config.DepsDir()), output)
+		if err != nil {
+			printError(err.Error())
+			continue
+		}
+	}
+
+	buildpackPath, err := runner.buildpackPath(compileBuildpack)
+	return buildpackPath, (err == nil)
+}
+
 // returns buildpack name,  buildpack path, buildpack detect output, ok
 func (runner *runner) detect() (string, string, string, bool) {
 	for _, buildpack := range runner.config.BuildpackOrder() {
@@ -233,10 +295,6 @@ func (runner *runner) detect() (string, string, string, bool) {
 		if err != nil {
 			printError(err.Error())
 			continue
-		}
-
-		if runner.config.SkipDetect() {
-			return buildpack, buildpackPath, "", true
 		}
 
 		output := new(bytes.Buffer)
@@ -275,7 +333,12 @@ func (runner *runner) readProcfile() (map[string]string, error) {
 }
 
 func (runner *runner) compile(buildpackDir string) error {
-	return runner.run(exec.Command(path.Join(buildpackDir, "bin", "compile"), runner.config.BuildDir(), runner.config.BuildArtifactsCacheDir()), os.Stdout)
+	compileCacheDir := runner.config.BuildArtifactsCacheDir()
+	if runner.config.IsMultiBuildpack() {
+		compileCacheDir = filepath.Join(compileCacheDir, "primary")
+	}
+
+	return runner.run(exec.Command(path.Join(buildpackDir, "bin", "compile"), runner.config.BuildDir(), compileCacheDir, "", runner.config.DepsDir()), os.Stdout)
 }
 
 func (runner *runner) release(buildpackDir string, startCommands map[string]string) (Release, error) {
@@ -336,10 +399,6 @@ func (runner *runner) saveInfo(infoFilePath, buildpack, detectOutput string, rel
 	}
 
 	return nil
-}
-
-func (runner *runner) copyApp(buildDir, stageDir string) error {
-	return runner.run(exec.Command("cp", "-a", buildDir, stageDir), os.Stdout)
 }
 
 func (runner *runner) run(cmd *exec.Cmd, output io.Writer) error {

@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"path"
+	"path/filepath"
 	"strings"
 )
 
@@ -131,8 +132,17 @@ func (s LifecycleBuilderConfig) Validate() error {
 	return nil
 }
 
+func (s LifecycleBuilderConfig) BuildRootDir() string {
+	dir := s.Lookup(lifecycleBuilderBuildDirFlag).Value.String()
+	return path.Dir(dir)
+}
+
 func (s LifecycleBuilderConfig) BuildDir() string {
 	return s.Lookup(lifecycleBuilderBuildDirFlag).Value.String()
+}
+
+func (s LifecycleBuilderConfig) DepsDir() string {
+	return filepath.Join(s.BuildRootDir(), "deps")
 }
 
 func (s LifecycleBuilderConfig) BuildpackPath(buildpackName string) string {
@@ -170,6 +180,10 @@ func (s LifecycleBuilderConfig) SkipCertVerify() bool {
 
 func (s LifecycleBuilderConfig) SkipDetect() bool {
 	return s.Lookup(lifecycleBuilderSkipDetect).Value.String() == "true"
+}
+
+func (s LifecycleBuilderConfig) IsMultiBuildpack() bool {
+	return s.SkipDetect() && len(s.BuildpackOrder()) > 1
 }
 
 type ValidationError []error
