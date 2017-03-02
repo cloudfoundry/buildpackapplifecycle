@@ -30,8 +30,7 @@ type Runner interface {
 }
 
 type runner struct {
-	config        *buildpackapplifecycle.LifecycleBuilderConfig
-	zipDownloader ZipDownloader
+	config *buildpackapplifecycle.LifecycleBuilderConfig
 }
 
 type descriptiveError struct {
@@ -57,10 +56,8 @@ func newDescriptiveError(err error, message string, args ...interface{}) error {
 	return descriptiveError{message: fmt.Sprintf(message, args...), err: err}
 }
 
-func New(zipDownloader ZipDownloader) Runner {
-	return &runner{
-		zipDownloader: zipDownloader,
-	}
+func New() Runner {
+	return &runner{}
 }
 
 func (runner *runner) Run(config *buildpackapplifecycle.LifecycleBuilderConfig) (string, error) {
@@ -191,24 +188,24 @@ func (runner *runner) makeDirectories() error {
 func (runner *runner) downloadBuildpacks() error {
 	// Do we have a custom buildpack?
 	for _, buildpackName := range runner.config.BuildpackOrder() {
-		buildpackUrl, err := url.Parse(buildpackName)
+		buildpackURL, err := url.Parse(buildpackName)
 		if err != nil {
 			return fmt.Errorf("Invalid buildpack url (%s): %s", buildpackName, err.Error())
 		}
-		if !buildpackUrl.IsAbs() {
+		if !buildpackURL.IsAbs() {
 			continue
 		}
 
 		destination := runner.config.BuildpackPath(buildpackName)
 
-		if IsZipFile(buildpackUrl.Path) {
-			var size uint64
-			size, err = runner.zipDownloader.DownloadAndExtract(buildpackUrl, destination)
+		if IsZipFile(buildpackURL.Path) {
+			zipDownloader := NewZipDownloader(runner.config.SkipCertVerify())
+			size, err := zipDownloader.DownloadAndExtract(buildpackURL, destination)
 			if err == nil {
-				fmt.Printf("Downloaded buildpack `%s` (%s)\n", buildpackUrl.String(), bytefmt.ByteSize(size))
+				fmt.Printf("Downloaded buildpack `%s` (%s)\n", buildpackURL.String(), bytefmt.ByteSize(size))
 			}
 		} else {
-			err = GitClone(*buildpackUrl, destination)
+			err = GitClone(*buildpackURL, destination)
 		}
 		if err != nil {
 			return err

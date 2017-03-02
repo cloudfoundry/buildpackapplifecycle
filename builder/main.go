@@ -21,12 +21,10 @@ func main() {
 		usage()
 	}
 
-	zipDownloader := buildpackrunner.NewZipDownloader(config.SkipCertVerify())
-	runner := buildpackrunner.New(zipDownloader)
+	runner := buildpackrunner.New()
 
 	_, err := runner.Run(&config)
 	if err != nil {
-		println(err)
 		println(err.Error())
 		os.Exit(buildpackapplifecycle.ExitCodeFromError(err))
 	}
