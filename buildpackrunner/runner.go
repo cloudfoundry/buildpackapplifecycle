@@ -260,7 +260,6 @@ func (runner *runner) supply() (string, bool) {
 			continue
 		}
 
-		output := new(bytes.Buffer)
 		guid := uuid.Must(uuid.NewRandom()).String()
 		err = os.MkdirAll(path.Join(runner.config.DepsDir(), guid), 0755)
 		if err != nil {
@@ -274,7 +273,7 @@ func (runner *runner) supply() (string, bool) {
 			continue
 		}
 
-		err = runner.run(exec.Command(path.Join(buildpackPath, "bin", "supply"), runner.config.BuildDir(), runner.supplyCachePath(buildpack), guid, runner.config.DepsDir()), output)
+		err = runner.run(exec.Command(path.Join(buildpackPath, "bin", "supply"), runner.config.BuildDir(), runner.supplyCachePath(buildpack), guid, runner.config.DepsDir()), os.Stdout)
 		if err != nil {
 			printError(err.Error())
 			continue
