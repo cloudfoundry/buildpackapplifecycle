@@ -40,7 +40,7 @@ var _ = Describe("ZipBuildpack", func() {
 
 	Describe("DownloadZipAndExtract", func() {
 		var fileserver *httptest.Server
-		var zipDownloader buildpackrunner.ZipDownloader
+		var zipDownloader *buildpackrunner.ZipDownloader
 
 		BeforeEach(func() {
 			zipDownloader = buildpackrunner.NewZipDownloader(false)
