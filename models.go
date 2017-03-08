@@ -6,9 +6,11 @@ const (
 	DetectFailMsg     = "None of the buildpacks detected a compatible application"
 	CompileFailMsg    = "Failed to compile droplet"
 	ReleaseFailMsg    = "Failed to build droplet release"
+	SupplyFailMsg     = "Failed to run all supply scripts"
 	DETECT_FAIL_CODE  = 222
 	COMPILE_FAIL_CODE = 223
 	RELEASE_FAIL_CODE = 224
+	SUPPLY_FAIL_CODE  = 225
 )
 
 func ExitCodeFromError(err error) int {
@@ -20,6 +22,8 @@ func ExitCodeFromError(err error) int {
 		return COMPILE_FAIL_CODE
 	case strings.Contains(errMsg, ReleaseFailMsg):
 		return RELEASE_FAIL_CODE
+	case strings.Contains(errMsg, SupplyFailMsg):
+		return SUPPLY_FAIL_CODE
 	default:
 		return 1
 	}

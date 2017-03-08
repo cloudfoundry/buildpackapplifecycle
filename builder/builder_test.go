@@ -413,6 +413,23 @@ var _ = Describe("Building", func() {
 		})
 	})
 
+	Context("when a buildpack fails a supply script", func() {
+		BeforeEach(func() {
+			buildpackOrder = "fails-to-supply,always-detects"
+			skipDetect = true
+
+			cpBuildpack("fails-to-supply")
+			cpBuildpack("always-detects")
+			cp(path.Join(appFixtures, "bash-app", "app.sh"), buildDir)
+		})
+
+		It("should exit with an error", func() {
+			session := builder()
+			Eventually(session).Should(gexec.Exit(225))
+			Expect(session.Err).Should(gbytes.Say("Failed to run all supply scripts"))
+		})
+	})
+
 	Context("when the buildpack release generates invalid yaml", func() {
 		BeforeEach(func() {
 			buildpackOrder = "release-generates-bad-yaml"

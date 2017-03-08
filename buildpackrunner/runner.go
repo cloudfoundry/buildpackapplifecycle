@@ -80,11 +80,14 @@ func (runner *runner) Run(config *buildpackapplifecycle.LifecycleBuilderConfig) 
 
 	if config.SkipDetect() {
 		detectedBuildpackDir, ok = runner.supply()
+		if !ok {
+			return "", newDescriptiveError(nil, buildpackapplifecycle.SupplyFailMsg)
+		}
 	} else {
 		detectedBuildpack, detectedBuildpackDir, detectOutput, ok = runner.detect()
-	}
-	if !ok {
-		return "", newDescriptiveError(nil, buildpackapplifecycle.DetectFailMsg)
+		if !ok {
+			return "", newDescriptiveError(nil, buildpackapplifecycle.DetectFailMsg)
+		}
 	}
 
 	err = runner.compile(detectedBuildpackDir)
@@ -257,26 +260,25 @@ func (runner *runner) supply() (string, bool) {
 		buildpackPath, err := runner.buildpackPath(buildpack)
 		if err != nil {
 			printError(err.Error())
-			continue
+			return "", false
 		}
 
 		guid := uuid.Must(uuid.NewRandom()).String()
 		err = os.MkdirAll(path.Join(runner.config.DepsDir(), guid), 0755)
 		if err != nil {
 			printError(err.Error())
-			continue
+			return "", false
 		}
 
 		err = os.MkdirAll(runner.supplyCachePath(buildpack), 0755)
 		if err != nil {
 			printError(err.Error())
-			continue
+			return "", false
 		}
 
 		err = runner.run(exec.Command(path.Join(buildpackPath, "bin", "supply"), runner.config.BuildDir(), runner.supplyCachePath(buildpack), guid, runner.config.DepsDir()), os.Stdout)
 		if err != nil {
-			printError(err.Error())
-			continue
+			return "", false
 		}
 	}
 
