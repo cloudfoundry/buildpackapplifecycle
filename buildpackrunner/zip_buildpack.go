@@ -1,6 +1,7 @@
 package buildpackrunner
 
 import (
+	"crypto/tls"
 	"fmt"
 	"io/ioutil"
 	"net/url"
@@ -23,8 +24,13 @@ func IsZipFile(filename string) bool {
 }
 
 func NewZipDownloader(skipSSLVerification bool) *ZipDownloader {
+	tlsConfig := &tls.Config{
+		RootCAs:            systemcerts.SystemRootsPool().AsX509CertPool(),
+		InsecureSkipVerify: skipSSLVerification,
+	}
+
 	return &ZipDownloader{
-		downloader: cacheddownloader.NewDownloader(DOWNLOAD_TIMEOUT, 1, skipSSLVerification, systemcerts.SystemRootsPool()),
+		downloader: cacheddownloader.NewDownloader(DOWNLOAD_TIMEOUT, 1, tlsConfig),
 	}
 }
 
