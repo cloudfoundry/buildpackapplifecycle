@@ -7,5 +7,11 @@ DEP_DIR=$4
 
 echo SUPPLYING
 
-echo always-detects-buildpack > $CACHE_DIR/supplied
-echo always-detects-buildpack > $DEP_DIR/$GUID/supplied
+if [ -e "$CACHE_DIR/old-supply" ]; then
+  contents=$(cat "$CACHE_DIR/old-supply")
+else
+  contents="always-detects-buildpack"
+fi
+
+echo $contents > $CACHE_DIR/supplied
+echo $contents > $DEP_DIR/$GUID/supplied

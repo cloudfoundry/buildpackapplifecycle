@@ -70,6 +70,11 @@ func (runner *Runner) Run() (string, error) {
 		return "", err
 	}
 
+	err = runner.cleanCacheDir()
+	if err != nil {
+		return "", err
+	}
+
 	//detect, compile, release
 	var detectedBuildpack, detectOutput, detectedBuildpackDir string
 	var ok bool
@@ -212,6 +217,48 @@ func (runner *Runner) downloadBuildpacks() error {
 	}
 
 	return nil
+}
+
+func (runner *Runner) cleanCacheDir() error {
+	if !runner.config.IsMultiBuildpack() {
+		return nil
+	}
+
+	neededCacheDirs := []string{filepath.Join(runner.config.BuildArtifactsCacheDir(), "primary")}
+	buildpacks := runner.config.BuildpackOrder()
+	supplyBuildpacks := buildpacks[0:(len(buildpacks) - 1)]
+
+	for _, bp := range supplyBuildpacks {
+		neededCacheDirs = append(neededCacheDirs, runner.supplyCachePath(bp))
+	}
+
+	dirs, err := ioutil.ReadDir(runner.config.BuildArtifactsCacheDir())
+	if err != nil {
+		return err
+	}
+	var foundCacheDirs []string
+	for _, dirInfo := range dirs {
+		foundCacheDirs = append(foundCacheDirs, filepath.Join(runner.config.BuildArtifactsCacheDir(), dirInfo.Name()))
+	}
+
+	for _, dir := range foundCacheDirs {
+		if runner.dirUnused(dir, neededCacheDirs) {
+			err = os.RemoveAll(dir)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (runner *Runner) dirUnused(dir string, neededDirs []string) bool {
+	for _, i := range neededDirs {
+		if i == dir {
+			return false
+		}
+	}
+	return true
 }
 
 func (runner *Runner) buildpackPath(buildpack string) (string, error) {

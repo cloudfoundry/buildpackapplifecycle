@@ -6,7 +6,13 @@ CACHE_DIR=$2
 DEPS_DIR=$4
 
 echo WOO
-echo also-always-detects-buildpack > $BUILD_DIR/compiled
-echo also-always-detects-buildpack > $CACHE_DIR/compiled
-echo also-always-detects-buildpack > $DEPS_DIR/compiled
 
+if [ -e "$CACHE_DIR/old-compile" ]; then
+  contents=$(cat "$CACHE_DIR/old-compile")
+else
+  contents="also-always-detects-buildpack"
+fi
+
+echo $contents > $BUILD_DIR/compiled
+echo $contents > $CACHE_DIR/compiled
+echo $contents > $DEPS_DIR/compiled

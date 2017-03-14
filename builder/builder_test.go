@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"os"
 	"os/exec"
 	"path"
@@ -280,21 +281,73 @@ var _ = Describe("Building", func() {
 				files = strings.Split(string(result), "\n")
 			})
 
-			It("caches compile output as $CACHE_DIR/primary", func() {
-				Expect(files).To(ContainElement("./primary/compiled"))
+			Describe("the buildArtifactsCacheDir is empty", func() {
+				It("caches compile output as $CACHE_DIR/primary", func() {
+					Expect(files).To(ContainElement("./primary/compiled"))
 
-				content, err := exec.Command("tar", "-xzf", outputBuildArtifactsCache, "./primary/compiled", "-O").Output()
-				Expect(err).To(BeNil())
-				Expect(string(content)).To(Equal("also-always-detects-buildpack\n"))
+					content, err := exec.Command("tar", "-xzf", outputBuildArtifactsCache, "./primary/compiled", "-O").Output()
+					Expect(err).To(BeNil())
+					Expect(string(content)).To(Equal("also-always-detects-buildpack\n"))
+				})
+
+				It("caches supply output as $CACHE_DIR/<md5sum of buildpack URL>", func() {
+					supplyCacheDir := fmt.Sprintf("%x", md5.Sum([]byte("always-detects")))
+					Expect(files).To(ContainElement("./" + supplyCacheDir + "/supplied"))
+
+					content, err := exec.Command("tar", "-xzf", outputBuildArtifactsCache, "./"+supplyCacheDir+"/supplied", "-O").Output()
+					Expect(err).To(BeNil())
+					Expect(string(content)).To(Equal("always-detects-buildpack\n"))
+				})
 			})
 
-			It("caches supply output as $CACHE_DIR/<md5sum of buildpack URL>", func() {
-				supplyCacheDir := fmt.Sprintf("%x", md5.Sum([]byte("always-detects")))
-				Expect(files).To(ContainElement("./" + supplyCacheDir + "/supplied"))
+			Describe("the buildArtifactsCacheDir contains relevant and old buildpack cache directories", func() {
+				//test setup
+				var (
+					alwaysDetectsMD5       string
+					notInBuildpackOrderMD5 string
+					cachedSupply           string
+					cachedCompile          string
+				)
 
-				content, err := exec.Command("tar", "-xzf", outputBuildArtifactsCache, "./"+supplyCacheDir+"/supplied", "-O").Output()
-				Expect(err).To(BeNil())
-				Expect(string(content)).To(Equal("always-detects-buildpack\n"))
+				BeforeEach(func() {
+					rand.Seed(time.Now().UnixNano())
+					cachedSupply = fmt.Sprintf("%d", rand.Int())
+					alwaysDetectsMD5 = fmt.Sprintf("%x", md5.Sum([]byte("always-detects")))
+					err := os.MkdirAll(filepath.Join(buildArtifactsCacheDir, alwaysDetectsMD5), 0755)
+					Expect(err).To(BeNil())
+					err = ioutil.WriteFile(filepath.Join(buildArtifactsCacheDir, alwaysDetectsMD5, "old-supply"), []byte(cachedSupply), 0644)
+					Expect(err).To(BeNil())
+
+					notInBuildpackOrderMD5 = fmt.Sprintf("%x", md5.Sum([]byte("not-in-buildpack-order")))
+					err = os.MkdirAll(filepath.Join(buildArtifactsCacheDir, notInBuildpackOrderMD5), 0755)
+					Expect(err).To(BeNil())
+
+					cachedCompile = fmt.Sprintf("%d", rand.Int())
+					err = os.MkdirAll(filepath.Join(buildArtifactsCacheDir, "primary"), 0755)
+					Expect(err).To(BeNil())
+					err = ioutil.WriteFile(filepath.Join(buildArtifactsCacheDir, "primary", "old-compile"), []byte(cachedCompile), 0644)
+					Expect(err).To(BeNil())
+				})
+
+				It("does not remove the cached contents of $CACHE_DIR/primary", func() {
+					Expect(files).To(ContainElement("./primary/compiled"))
+
+					content, err := exec.Command("tar", "-xzf", outputBuildArtifactsCache, "./primary/compiled", "-O").Output()
+					Expect(err).To(BeNil())
+					Expect(string(content)).To(Equal(cachedCompile + "\n"))
+				})
+
+				It("does not remove the cached contents of buildpacks in buildpack order", func() {
+					Expect(files).To(ContainElement("./" + alwaysDetectsMD5 + "/supplied"))
+
+					content, err := exec.Command("tar", "-xzf", outputBuildArtifactsCache, "./"+alwaysDetectsMD5+"/supplied", "-O").Output()
+					Expect(err).To(BeNil())
+					Expect(string(content)).To(Equal(cachedSupply + "\n"))
+				})
+
+				It("removes the cached contents of buildpacks not in buildpack order", func() {
+					Expect(files).NotTo(ContainElement("./" + notInBuildpackOrderMD5 + "/"))
+				})
 			})
 		})
 	})
