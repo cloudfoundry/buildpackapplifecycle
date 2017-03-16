@@ -10,7 +10,7 @@ echo SUPPLYING
 if [ -e "$CACHE_DIR/old-supply" ]; then
   contents=$(cat "$CACHE_DIR/old-supply")
 else
-  contents="always-detects-buildpack"
+  contents="always-detects-creates-buildpack-artifacts"
 fi
 
 echo $contents > $CACHE_DIR/supplied

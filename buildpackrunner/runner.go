@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math"
 	"net/url"
 	"os"
 	"os/exec"
@@ -20,7 +21,6 @@ import (
 
 	"code.cloudfoundry.org/buildpackapplifecycle"
 	"code.cloudfoundry.org/bytefmt"
-	"github.com/google/uuid"
 )
 
 const DOWNLOAD_TIMEOUT = 10 * time.Minute
@@ -298,16 +298,23 @@ func (runner *Runner) supply() (string, bool) {
 	buildpacks := runner.config.BuildpackOrder()
 	supplyBuildpacks := buildpacks[0:(len(buildpacks) - 1)]
 	compileBuildpack := buildpacks[len(buildpacks)-1]
+	padDigits := 1
 
-	for _, buildpack := range supplyBuildpacks {
+	if len(supplyBuildpacks) > 0 {
+		padDigits = int(math.Log10(float64(len(supplyBuildpacks)))) + 1
+	}
+
+	dirFormat := fmt.Sprintf("%%0%dd", padDigits)
+
+	for i, buildpack := range supplyBuildpacks {
 		buildpackPath, err := runner.buildpackPath(buildpack)
 		if err != nil {
 			printError(err.Error())
 			return "", false
 		}
 
-		guid := uuid.Must(uuid.NewRandom()).String()
-		err = os.MkdirAll(path.Join(runner.config.DepsDir(), guid), 0755)
+		depsSubDir := fmt.Sprintf(dirFormat, i)
+		err = os.MkdirAll(path.Join(runner.config.DepsDir(), depsSubDir), 0755)
 		if err != nil {
 			printError(err.Error())
 			return "", false
@@ -319,7 +326,7 @@ func (runner *Runner) supply() (string, bool) {
 			return "", false
 		}
 
-		err = runner.run(exec.Command(path.Join(buildpackPath, "bin", "supply"), runner.config.BuildDir(), runner.supplyCachePath(buildpack), guid, runner.config.DepsDir()), os.Stdout)
+		err = runner.run(exec.Command(path.Join(buildpackPath, "bin", "supply"), runner.config.BuildDir(), runner.supplyCachePath(buildpack), depsSubDir, runner.config.DepsDir()), os.Stdout)
 		if err != nil {
 			return "", false
 		}

@@ -226,9 +226,10 @@ var _ = Describe("Building", func() {
 
 	Context("with multi-buildpack support", func() {
 		BeforeEach(func() {
-			buildpackOrder = "always-detects,also-always-detects"
+			buildpackOrder = "always-detects-creates-build-artifacts,always-detects,also-always-detects"
 			skipDetect = true
 
+			cpBuildpack("always-detects-creates-build-artifacts")
 			cpBuildpack("always-detects")
 			cpBuildpack("also-always-detects")
 			cp(path.Join(appFixtures, "bash-app", "app.sh"), buildDir)
@@ -248,8 +249,12 @@ var _ = Describe("Building", func() {
 				files = strings.Split(string(result), "\n")
 			})
 
-			It("contains an /deps/UUID dir with the contents of the supply command", func() {
-				content, err := exec.Command("tar", "-xzf", outputDroplet, "--wildcards", "./deps/*/supplied", "-O").Output()
+			It("contains an /deps/xxxxx dir with the contents of the supply command", func() {
+				content, err := exec.Command("tar", "-xzf", outputDroplet, "./deps/0/supplied", "-O").Output()
+				Expect(err).To(BeNil())
+				Expect(string(content)).To(Equal("always-detects-creates-buildpack-artifacts\n"))
+
+				content, err = exec.Command("tar", "-xzf", outputDroplet, "./deps/1/supplied", "-O").Output()
 				Expect(err).To(BeNil())
 				Expect(string(content)).To(Equal("always-detects-buildpack\n"))
 			})
@@ -291,7 +296,10 @@ var _ = Describe("Building", func() {
 				})
 
 				It("caches supply output as $CACHE_DIR/<md5sum of buildpack URL>", func() {
-					supplyCacheDir := fmt.Sprintf("%x", md5.Sum([]byte("always-detects")))
+					supplyCacheDir := fmt.Sprintf("%x", md5.Sum([]byte("always-detects-creates-build-artifacts")))
+					Expect(files).To(ContainElement("./" + supplyCacheDir + "/supplied"))
+
+					supplyCacheDir = fmt.Sprintf("%x", md5.Sum([]byte("always-detects")))
 					Expect(files).To(ContainElement("./" + supplyCacheDir + "/supplied"))
 
 					content, err := exec.Command("tar", "-xzf", outputBuildArtifactsCache, "./"+supplyCacheDir+"/supplied", "-O").Output()
