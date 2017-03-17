@@ -50,6 +50,11 @@ func main() {
 		os.Setenv("TMPDIR", tmpDir)
 	}
 
+	depsDir, err := filepath.Abs(filepath.Join(dir, "..", "deps"))
+	if err == nil {
+		os.Setenv("DEPS_DIR", depsDir)
+	}
+
 	vcapAppEnv := map[string]interface{}{}
 	err = json.Unmarshal([]byte(os.Getenv("VCAP_APPLICATION")), &vcapAppEnv)
 	if err == nil {
