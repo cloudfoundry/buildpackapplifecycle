@@ -5,8 +5,8 @@ import (
 	"crypto/md5"
 	"flag"
 	"fmt"
+	"math"
 	"path"
-	"path/filepath"
 	"strings"
 )
 
@@ -132,17 +132,8 @@ func (s LifecycleBuilderConfig) Validate() error {
 	return nil
 }
 
-func (s LifecycleBuilderConfig) BuildRootDir() string {
-	dir := s.Lookup(lifecycleBuilderBuildDirFlag).Value.String()
-	return path.Dir(dir)
-}
-
 func (s LifecycleBuilderConfig) BuildDir() string {
 	return s.Lookup(lifecycleBuilderBuildDirFlag).Value.String()
-}
-
-func (s LifecycleBuilderConfig) DepsDir() string {
-	return filepath.Join(s.BuildRootDir(), "deps")
 }
 
 func (s LifecycleBuilderConfig) BuildpackPath(buildpackName string) string {
@@ -152,6 +143,38 @@ func (s LifecycleBuilderConfig) BuildpackPath(buildpackName string) string {
 func (s LifecycleBuilderConfig) BuildpackOrder() []string {
 	buildpackOrder := s.Lookup(lifecycleBuilderBuildpackOrderFlag).Value.String()
 	return strings.Split(buildpackOrder, ",")
+}
+
+func (s LifecycleBuilderConfig) NumBuildpacks() int {
+	return len(s.BuildpackOrder())
+}
+
+func (s LifecycleBuilderConfig) SupplyBuildpacks() []string {
+	return s.BuildpackOrder()[0 : s.NumBuildpacks()-1]
+}
+
+func (s LifecycleBuilderConfig) FinalBuildpack() string {
+	return s.BuildpackOrder()[s.NumBuildpacks()-1]
+}
+
+func (s LifecycleBuilderConfig) DepsSubDirs() []string {
+	var dirs []string
+	padDigits := 1
+
+	if s.NumBuildpacks() > 0 {
+		padDigits = int(math.Log10(float64(s.NumBuildpacks()))) + 1
+	}
+
+	dirFormat := fmt.Sprintf("%%0%dd", padDigits)
+	for i := 0; i < s.NumBuildpacks(); i++ {
+		dirs = append(dirs, fmt.Sprintf(dirFormat, i))
+	}
+
+	return dirs
+}
+
+func (s LifecycleBuilderConfig) FinalDepsSubDir() string {
+	return s.DepsSubDirs()[s.NumBuildpacks()-1]
 }
 
 func (s LifecycleBuilderConfig) BuildpacksDir() string {

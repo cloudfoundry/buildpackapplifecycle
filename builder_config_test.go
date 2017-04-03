@@ -40,9 +40,6 @@ var _ = Describe("LifecycleBuilderConfig", func() {
 			Expect(builderConfig.BuildDir()).To(Equal("/tmp/app"))
 		})
 
-		It("returns the path to the deps", func() {
-			Expect(builderConfig.DepsDir()).To(Equal("/tmp/deps"))
-		})
 	})
 
 	Context("with overrides", func() {
@@ -78,9 +75,6 @@ var _ = Describe("LifecycleBuilderConfig", func() {
 			Expect(builderConfig.Args()).To(ConsistOf(commandFlags))
 		})
 
-		It("returns the path to the deps bits", func() {
-			Expect(builderConfig.DepsDir()).To(Equal("/some/build/deps"))
-		})
 		It("returns the path to the app bits", func() {
 			Expect(builderConfig.BuildDir()).To(Equal("/some/build/dir"))
 		})
