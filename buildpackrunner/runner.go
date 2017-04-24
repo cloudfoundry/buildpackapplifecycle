@@ -305,14 +305,26 @@ func (runner *Runner) supplyCachePath(buildpack string) string {
 	return filepath.Join(runner.config.BuildArtifactsCacheDir(), fmt.Sprintf("%x", md5.Sum([]byte(buildpack))))
 }
 
-func hasFinalize(buildpackPath string) bool {
+func hasFinalize(buildpackPath string) (bool, error) {
 	_, err := os.Stat(filepath.Join(buildpackPath, "bin", "finalize"))
-	return err == nil
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
 }
 
-func hasSupply(buildpackPath string) bool {
+func hasSupply(buildpackPath string) (bool, error) {
 	_, err := os.Stat(filepath.Join(buildpackPath, "bin", "supply"))
-	return err == nil
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
 }
 
 // returns buildpack path, ok
@@ -343,8 +355,18 @@ func (runner *Runner) runFinalBuildpack() (string, error) {
 	depsIndex := runner.config.FinalDepsIndex()
 	cacheDir := filepath.Join(runner.config.BuildArtifactsCacheDir(), "primary")
 
-	if hasFinalize(buildpackPath) {
-		if hasSupply(buildpackPath) {
+	hasFinalize, err := hasFinalize(buildpackPath)
+	if err != nil {
+		return "", newDescriptiveError(err, buildpackapplifecycle.FinalizeFailMsg)
+	}
+
+	if hasFinalize {
+		hasSupply, err := hasSupply(buildpackPath)
+		if err != nil {
+			return "", newDescriptiveError(err, buildpackapplifecycle.SupplyFailMsg)
+		}
+
+		if hasSupply {
 			if err := runner.run(exec.Command(path.Join(buildpackPath, "bin", "supply"), runner.config.BuildDir(), cacheDir, runner.depsDir, depsIndex), os.Stdout); err != nil {
 				return "", newDescriptiveError(err, buildpackapplifecycle.SupplyFailMsg)
 			}
