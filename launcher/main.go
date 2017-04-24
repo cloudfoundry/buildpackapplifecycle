@@ -4,13 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
 	"syscall"
 
-	yaml "gopkg.in/yaml.v2"
+	"github.com/cloudfoundry-incubator/candiedyaml"
 )
 
 const launcher = `
@@ -113,17 +112,18 @@ type stagingInfo struct {
 }
 
 func startCommandFromStagingInfo(stagingInfoPath string) (string, error) {
-	stagingInfoData, err := ioutil.ReadFile(stagingInfoPath)
+	stagingInfoFile, err := os.Open(stagingInfoPath)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return "", nil
 		}
 		return "", err
 	}
+	defer stagingInfoFile.Close()
 
 	info := stagingInfo{}
 
-	err = yaml.Unmarshal(stagingInfoData, &info)
+	err = candiedyaml.NewDecoder(stagingInfoFile).Decode(&info)
 	if err != nil {
 		return "", errors.New("invalid YAML")
 	}
