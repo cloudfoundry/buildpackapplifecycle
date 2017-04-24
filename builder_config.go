@@ -157,24 +157,24 @@ func (s LifecycleBuilderConfig) FinalBuildpack() string {
 	return s.BuildpackOrder()[s.NumBuildpacks()-1]
 }
 
-func (s LifecycleBuilderConfig) DepsSubDirs() []string {
-	var dirs []string
+func (s LifecycleBuilderConfig) DepsIndices() []string {
+	var indices []string
 	padDigits := 1
 
 	if s.NumBuildpacks() > 0 {
 		padDigits = int(math.Log10(float64(s.NumBuildpacks()))) + 1
 	}
 
-	dirFormat := fmt.Sprintf("%%0%dd", padDigits)
+	indexFormat := fmt.Sprintf("%%0%dd", padDigits)
 	for i := 0; i < s.NumBuildpacks(); i++ {
-		dirs = append(dirs, fmt.Sprintf(dirFormat, i))
+		indices = append(indices, fmt.Sprintf(indexFormat, i))
 	}
 
-	return dirs
+	return indices
 }
 
-func (s LifecycleBuilderConfig) FinalDepsSubDir() string {
-	return s.DepsSubDirs()[s.NumBuildpacks()-1]
+func (s LifecycleBuilderConfig) FinalDepsIndex() string {
+	return s.DepsIndices()[s.NumBuildpacks()-1]
 }
 
 func (s LifecycleBuilderConfig) BuildpacksDir() string {

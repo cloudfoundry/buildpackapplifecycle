@@ -191,8 +191,8 @@ func (runner *Runner) makeDirectories() error {
 			}
 		}
 
-		for _, subDir := range runner.config.DepsSubDirs() {
-			if err := os.MkdirAll(path.Join(runner.depsDir, subDir), 0755); err != nil {
+		for _, index := range runner.config.DepsIndices() {
+			if err := os.MkdirAll(path.Join(runner.depsDir, index), 0755); err != nil {
 				return err
 			}
 		}
@@ -324,7 +324,7 @@ func (runner *Runner) runMultiBuildpacks() (string, error) {
 			return "", newDescriptiveError(err, buildpackapplifecycle.SupplyFailMsg)
 		}
 
-		err = runner.run(exec.Command(path.Join(buildpackPath, "bin", "supply"), runner.config.BuildDir(), runner.supplyCachePath(buildpack), runner.depsDir, runner.config.DepsSubDirs()[i]), os.Stdout)
+		err = runner.run(exec.Command(path.Join(buildpackPath, "bin", "supply"), runner.config.BuildDir(), runner.supplyCachePath(buildpack), runner.depsDir, runner.config.DepsIndices()[i]), os.Stdout)
 		if err != nil {
 			return "", newDescriptiveError(err, buildpackapplifecycle.SupplyFailMsg)
 		}
@@ -340,22 +340,22 @@ func (runner *Runner) runFinalBuildpack() (string, error) {
 		return "", newDescriptiveError(err, buildpackapplifecycle.FinalizeFailMsg)
 	}
 
-	depsSubDir := runner.config.FinalDepsSubDir()
+	depsIndex := runner.config.FinalDepsIndex()
 	cacheDir := filepath.Join(runner.config.BuildArtifactsCacheDir(), "primary")
 
 	if hasFinalize(buildpackPath) {
 		if hasSupply(buildpackPath) {
-			if err := runner.run(exec.Command(path.Join(buildpackPath, "bin", "supply"), runner.config.BuildDir(), cacheDir, runner.depsDir, depsSubDir), os.Stdout); err != nil {
+			if err := runner.run(exec.Command(path.Join(buildpackPath, "bin", "supply"), runner.config.BuildDir(), cacheDir, runner.depsDir, depsIndex), os.Stdout); err != nil {
 				return "", newDescriptiveError(err, buildpackapplifecycle.SupplyFailMsg)
 			}
 		}
 
-		if err := runner.run(exec.Command(path.Join(buildpackPath, "bin", "finalize"), runner.config.BuildDir(), cacheDir, runner.depsDir, depsSubDir), os.Stdout); err != nil {
+		if err := runner.run(exec.Command(path.Join(buildpackPath, "bin", "finalize"), runner.config.BuildDir(), cacheDir, runner.depsDir, depsIndex), os.Stdout); err != nil {
 			return "", newDescriptiveError(err, buildpackapplifecycle.FinalizeFailMsg)
 		}
 	} else {
 		// remove unused deps sub dir
-		if err := os.RemoveAll(filepath.Join(runner.depsDir, depsSubDir)); err != nil {
+		if err := os.RemoveAll(filepath.Join(runner.depsDir, depsIndex)); err != nil {
 			return "", newDescriptiveError(err, buildpackapplifecycle.CompileFailMsg)
 		}
 
