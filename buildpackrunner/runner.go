@@ -235,10 +235,8 @@ func (runner *Runner) cleanCacheDir() error {
 	neededCacheDirs := map[string]bool{
 		filepath.Join(runner.config.BuildArtifactsCacheDir(), "primary"): true,
 	}
-	buildpacks := runner.config.BuildpackOrder()
-	supplyBuildpacks := buildpacks[0:(len(buildpacks) - 1)]
 
-	for _, bp := range supplyBuildpacks {
+	for _, bp := range runner.config.SupplyBuildpacks() {
 		neededCacheDirs[runner.supplyCachePath(bp)] = true
 	}
 
@@ -246,12 +244,9 @@ func (runner *Runner) cleanCacheDir() error {
 	if err != nil {
 		return err
 	}
-	var foundCacheDirs []string
-	for _, dirInfo := range dirs {
-		foundCacheDirs = append(foundCacheDirs, filepath.Join(runner.config.BuildArtifactsCacheDir(), dirInfo.Name()))
-	}
 
-	for _, dir := range foundCacheDirs {
+	for _, dirInfo := range dirs {
+		dir := filepath.Join(runner.config.BuildArtifactsCacheDir(), dirInfo.Name())
 		if !neededCacheDirs[dir] {
 			err = os.RemoveAll(dir)
 			if err != nil {
