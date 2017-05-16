@@ -12,7 +12,7 @@ import (
 	"code.cloudfoundry.org/archiver/extractor"
 	"code.cloudfoundry.org/cacheddownloader"
 	"code.cloudfoundry.org/lager"
-	"github.com/cloudfoundry/systemcerts"
+	"code.cloudfoundry.org/systemcerts"
 )
 
 type ZipDownloader struct {
