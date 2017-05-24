@@ -75,27 +75,27 @@ func (runner *Runner) Run() (string, error) {
 	var detectedBuildpack, detectOutput, detectedBuildpackDir string
 	var ok bool
 
-	if runner.config.IsMultiBuildpack() {
-		err = runner.cleanCacheDir()
+	err = runner.cleanCacheDir()
+	if err != nil {
+		return "", err
+	}
+
+	if runner.config.SkipDetect() {
+		detectedBuildpackDir, err = runner.runSupplyBuildpacks()
 		if err != nil {
 			return "", err
 		}
 
-		detectedBuildpackDir, err = runner.runMultiBuildpacks()
-		if err != nil {
-			return "", err
-		}
 	} else {
 		detectedBuildpack, detectedBuildpackDir, detectOutput, ok = runner.detect()
 		if !ok {
 			return "", newDescriptiveError(nil, buildpackapplifecycle.DetectFailMsg)
 		}
 
-		err = runner.compile(detectedBuildpackDir, runner.config.BuildArtifactsCacheDir())
+	}
 
-		if err != nil {
-			return "", newDescriptiveError(nil, buildpackapplifecycle.CompileFailMsg)
-		}
+	if err := runner.runFinalize(detectedBuildpackDir); err != nil {
+		return "", newDescriptiveError(nil, buildpackapplifecycle.CompileFailMsg)
 	}
 
 	startCommands, err := runner.readProcfile()
@@ -165,8 +165,14 @@ func (runner *Runner) makeDirectories() error {
 		return err
 	}
 
-	if err := os.MkdirAll(runner.config.BuildArtifactsCacheDir(), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Join(runner.config.BuildArtifactsCacheDir(), "primary"), 0755); err != nil {
 		return err
+	}
+
+	for _, buildpack := range runner.config.SupplyBuildpacks() {
+		if err := os.MkdirAll(runner.supplyCachePath(buildpack), 0755); err != nil {
+			return err
+		}
 	}
 
 	var err error
@@ -176,25 +182,10 @@ func (runner *Runner) makeDirectories() error {
 	}
 
 	runner.depsDir = filepath.Join(runner.contentsDir, "deps")
-	if err := os.MkdirAll(runner.depsDir, 0755); err != nil {
-		return err
-	}
 
-	if runner.config.IsMultiBuildpack() {
-		if err := os.MkdirAll(filepath.Join(runner.config.BuildArtifactsCacheDir(), "primary"), 0755); err != nil {
+	for i := 0; i <= len(runner.config.SupplyBuildpacks()); i++ {
+		if err := os.MkdirAll(path.Join(runner.depsDir, runner.config.DepsIndex(i)), 0755); err != nil {
 			return err
-		}
-
-		for _, buildpack := range runner.config.SupplyBuildpacks() {
-			if err := os.MkdirAll(runner.supplyCachePath(buildpack), 0755); err != nil {
-				return err
-			}
-		}
-
-		for _, index := range runner.config.DepsIndices() {
-			if err := os.MkdirAll(path.Join(runner.depsDir, index), 0755); err != nil {
-				return err
-			}
 		}
 	}
 
@@ -312,7 +303,7 @@ func hasSupply(buildpackPath string) (bool, error) {
 }
 
 // returns buildpack path, ok
-func (runner *Runner) runMultiBuildpacks() (string, error) {
+func (runner *Runner) runSupplyBuildpacks() (string, error) {
 	for i, buildpack := range runner.config.SupplyBuildpacks() {
 		buildpackPath, err := runner.buildpackPath(buildpack)
 		if err != nil {
@@ -320,57 +311,52 @@ func (runner *Runner) runMultiBuildpacks() (string, error) {
 			return "", newDescriptiveError(err, buildpackapplifecycle.SupplyFailMsg)
 		}
 
-		err = runner.run(exec.Command(path.Join(buildpackPath, "bin", "supply"), runner.config.BuildDir(), runner.supplyCachePath(buildpack), runner.depsDir, runner.config.DepsIndices()[i]), os.Stdout)
+		err = runner.run(exec.Command(path.Join(buildpackPath, "bin", "supply"), runner.config.BuildDir(), runner.supplyCachePath(buildpack), runner.depsDir, runner.config.DepsIndex(i)), os.Stdout)
 		if err != nil {
 			return "", newDescriptiveError(err, buildpackapplifecycle.SupplyFailMsg)
 		}
 	}
 
-	return runner.runFinalBuildpack()
+	finalBuildpack := runner.config.BuildpackOrder()[len(runner.config.SupplyBuildpacks())]
+	return runner.buildpackPath(finalBuildpack)
 }
 
-func (runner *Runner) runFinalBuildpack() (string, error) {
-	buildpackPath, err := runner.buildpackPath(runner.config.FinalBuildpack())
-	if err != nil {
-		printError(err.Error())
-		return "", newDescriptiveError(err, buildpackapplifecycle.FinalizeFailMsg)
-	}
-
-	depsIndex := runner.config.FinalDepsIndex()
+func (runner *Runner) runFinalize(buildpackPath string) error {
+	depsIdx := runner.config.DepsIndex(len(runner.config.SupplyBuildpacks()))
 	cacheDir := filepath.Join(runner.config.BuildArtifactsCacheDir(), "primary")
 
 	hasFinalize, err := hasFinalize(buildpackPath)
 	if err != nil {
-		return "", newDescriptiveError(err, buildpackapplifecycle.FinalizeFailMsg)
+		return newDescriptiveError(err, buildpackapplifecycle.FinalizeFailMsg)
 	}
 
 	if hasFinalize {
 		hasSupply, err := hasSupply(buildpackPath)
 		if err != nil {
-			return "", newDescriptiveError(err, buildpackapplifecycle.SupplyFailMsg)
+			return newDescriptiveError(err, buildpackapplifecycle.SupplyFailMsg)
 		}
 
 		if hasSupply {
-			if err := runner.run(exec.Command(path.Join(buildpackPath, "bin", "supply"), runner.config.BuildDir(), cacheDir, runner.depsDir, depsIndex), os.Stdout); err != nil {
-				return "", newDescriptiveError(err, buildpackapplifecycle.SupplyFailMsg)
+			if err := runner.run(exec.Command(path.Join(buildpackPath, "bin", "supply"), runner.config.BuildDir(), cacheDir, runner.depsDir, depsIdx), os.Stdout); err != nil {
+				return newDescriptiveError(err, buildpackapplifecycle.SupplyFailMsg)
 			}
 		}
 
-		if err := runner.run(exec.Command(path.Join(buildpackPath, "bin", "finalize"), runner.config.BuildDir(), cacheDir, runner.depsDir, depsIndex), os.Stdout); err != nil {
-			return "", newDescriptiveError(err, buildpackapplifecycle.FinalizeFailMsg)
+		if err := runner.run(exec.Command(path.Join(buildpackPath, "bin", "finalize"), runner.config.BuildDir(), cacheDir, runner.depsDir, depsIdx), os.Stdout); err != nil {
+			return newDescriptiveError(err, buildpackapplifecycle.FinalizeFailMsg)
 		}
 	} else {
 		// remove unused deps sub dir
-		if err := os.RemoveAll(filepath.Join(runner.depsDir, depsIndex)); err != nil {
-			return "", newDescriptiveError(err, buildpackapplifecycle.CompileFailMsg)
+		if err := os.RemoveAll(filepath.Join(runner.depsDir, depsIdx)); err != nil {
+			return newDescriptiveError(err, buildpackapplifecycle.CompileFailMsg)
 		}
 
-		if err := runner.compile(buildpackPath, cacheDir); err != nil {
-			return "", newDescriptiveError(err, buildpackapplifecycle.CompileFailMsg)
+		if err := runner.run(exec.Command(path.Join(buildpackPath, "bin", "compile"), runner.config.BuildDir(), cacheDir), os.Stdout); err != nil {
+			return newDescriptiveError(err, buildpackapplifecycle.CompileFailMsg)
 		}
 	}
 
-	return buildpackPath, nil
+	return nil
 }
 
 // returns buildpack name,  buildpack path, buildpack detect output, ok
@@ -419,10 +405,6 @@ func (runner *Runner) readProcfile() (map[string]string, error) {
 	}
 
 	return processes, nil
-}
-
-func (runner *Runner) compile(buildpackDir, cacheDir string) error {
-	return runner.run(exec.Command(path.Join(buildpackDir, "bin", "compile"), runner.config.BuildDir(), cacheDir), os.Stdout)
 }
 
 func (runner *Runner) release(buildpackDir string, startCommands map[string]string) (Release, error) {

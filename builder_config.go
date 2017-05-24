@@ -145,36 +145,19 @@ func (s LifecycleBuilderConfig) BuildpackOrder() []string {
 	return strings.Split(buildpackOrder, ",")
 }
 
-func (s LifecycleBuilderConfig) NumBuildpacks() int {
-	return len(s.BuildpackOrder())
-}
-
 func (s LifecycleBuilderConfig) SupplyBuildpacks() []string {
-	return s.BuildpackOrder()[0 : s.NumBuildpacks()-1]
-}
-
-func (s LifecycleBuilderConfig) FinalBuildpack() string {
-	return s.BuildpackOrder()[s.NumBuildpacks()-1]
-}
-
-func (s LifecycleBuilderConfig) DepsIndices() []string {
-	var indices []string
-	padDigits := 1
-
-	if s.NumBuildpacks() > 0 {
-		padDigits = int(math.Log10(float64(s.NumBuildpacks()))) + 1
+	numBuildpacks := len(s.BuildpackOrder())
+	if !s.SkipDetect() || numBuildpacks == 0 {
+		return []string{}
 	}
+	return s.BuildpackOrder()[0 : numBuildpacks-1]
+}
 
+func (s LifecycleBuilderConfig) DepsIndex(i int) string {
+	numBuildpacks := len(s.SupplyBuildpacks()) + 1
+	padDigits := int(math.Log10(float64(numBuildpacks))) + 1
 	indexFormat := fmt.Sprintf("%%0%dd", padDigits)
-	for i := 0; i < s.NumBuildpacks(); i++ {
-		indices = append(indices, fmt.Sprintf(indexFormat, i))
-	}
-
-	return indices
-}
-
-func (s LifecycleBuilderConfig) FinalDepsIndex() string {
-	return s.DepsIndices()[s.NumBuildpacks()-1]
+	return fmt.Sprintf(indexFormat, i)
 }
 
 func (s LifecycleBuilderConfig) BuildpacksDir() string {
@@ -203,10 +186,6 @@ func (s LifecycleBuilderConfig) SkipCertVerify() bool {
 
 func (s LifecycleBuilderConfig) SkipDetect() bool {
 	return s.Lookup(lifecycleBuilderSkipDetect).Value.String() == "true"
-}
-
-func (s LifecycleBuilderConfig) IsMultiBuildpack() bool {
-	return s.SkipDetect() && len(s.BuildpackOrder()) > 1
 }
 
 type ValidationError []error
