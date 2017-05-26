@@ -487,6 +487,9 @@ var _ = Describe("Building", func() {
 					Expect(err).To(BeNil())
 					err = ioutil.WriteFile(filepath.Join(buildArtifactsCacheDir, "final", "old-compile"), []byte(cachedCompile), 0644)
 					Expect(err).To(BeNil())
+
+					err = ioutil.WriteFile(filepath.Join(buildArtifactsCacheDir, "pre-multi-file"), []byte("Some Content"), 0644)
+					Expect(err).To(BeNil())
 				})
 
 				It("does not remove the cached contents of $CACHE_DIR/final", func() {
@@ -507,6 +510,10 @@ var _ = Describe("Building", func() {
 
 				It("removes the cached contents of buildpacks not in buildpack order", func() {
 					Expect(files).NotTo(ContainElement("./" + notInBuildpackOrderMD5 + "/"))
+				})
+
+				It("removes any files from pre multi buildpack days", func() {
+					Expect(files).NotTo(ContainElement("./pre-multi-file"))
 				})
 			})
 		})
