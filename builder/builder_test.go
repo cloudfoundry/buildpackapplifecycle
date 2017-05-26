@@ -84,7 +84,7 @@ var _ = Describe("Building", func() {
 	})
 
 	AfterEach(func() {
-		Expect(os.RemoveAll(tmpDir)).To(Succeed())
+		os.RemoveAll(tmpDir)
 	})
 
 	JustBeforeEach(func() {
@@ -110,7 +110,7 @@ var _ = Describe("Building", func() {
 		return resultInfo
 	}
 
-	Context("run detect", func() {
+	Context("with a normal buildpack", func() {
 		BeforeEach(func() {
 			buildpackOrder = "always-detects,also-always-detects"
 
@@ -156,18 +156,6 @@ var _ = Describe("Building", func() {
 				expectedYAML := `{"detected_buildpack":"Always Matching","start_command":"the start command"}`
 				Expect(string(stagingInfo)).To(MatchJSON(expectedYAML))
 			})
-
-			Context("buildpack with supply/finalize", func() {
-				BeforeEach(func() {
-					buildpackOrder = "has-finalize,always-detects,also-always-detects"
-					cpBuildpack("has-finalize")
-				})
-
-				It("runs supply/finalize and not compile", func() {
-					Expect(files).To(ContainElement("./app/finalized"))
-					Expect(files).ToNot(ContainElement("./app/compiled"))
-				})
-			})
 		})
 
 		Describe("the build artifacts cache output tgz", func() {
@@ -181,7 +169,7 @@ var _ = Describe("Building", func() {
 				result, err := exec.Command("tar", "-tzf", outputBuildArtifactsCache).Output()
 				Expect(err).NotTo(HaveOccurred())
 
-				Expect(strings.Split(string(result), "\n")).To(ContainElement("./primary/build-artifact"))
+				Expect(strings.Split(string(result), "\n")).To(ContainElement("./build-artifact"))
 			})
 		})
 
@@ -236,11 +224,7 @@ var _ = Describe("Building", func() {
 		})
 	})
 
-	Context("skip detect", func() {
-		BeforeEach(func() {
-			skipDetect = true
-		})
-
+	Context("with multi-buildpack support", func() {
 		JustBeforeEach(func() {
 			Eventually(builder(), 5*time.Second).Should(gexec.Exit(0))
 		})
@@ -258,6 +242,7 @@ var _ = Describe("Building", func() {
 			Context("final buildpack does not contain a finalize script", func() {
 				BeforeEach(func() {
 					buildpackOrder = "always-detects-creates-build-artifacts,always-detects,also-always-detects"
+					skipDetect = true
 
 					cpBuildpack("always-detects-creates-build-artifacts")
 					cpBuildpack("always-detects")
@@ -297,6 +282,7 @@ var _ = Describe("Building", func() {
 			Context("final buildpack contains finalize + supply scripts", func() {
 				BeforeEach(func() {
 					buildpackOrder = "always-detects-creates-build-artifacts,always-detects,has-finalize"
+					skipDetect = true
 
 					cpBuildpack("always-detects-creates-build-artifacts")
 					cpBuildpack("always-detects")
@@ -332,6 +318,7 @@ var _ = Describe("Building", func() {
 			Context("final buildpack only contains finalize ", func() {
 				BeforeEach(func() {
 					buildpackOrder = "always-detects-creates-build-artifacts,always-detects,has-finalize-no-supply"
+					skipDetect = true
 
 					cpBuildpack("always-detects-creates-build-artifacts")
 					cpBuildpack("always-detects")
@@ -361,19 +348,6 @@ var _ = Describe("Building", func() {
 					Expect(string(content)).To(Equal("has-finalize-no-supply-buildpack\n"))
 				})
 			})
-
-			Context("buildpack that fails detect", func() {
-				BeforeEach(func() {
-					buildpackOrder = "always-fails-detect"
-
-					cp(path.Join(appFixtures, "bash-app", "app.sh"), buildDir)
-					cpBuildpack("always-fails-detect")
-				})
-
-				It("should run successfully", func() {
-					Expect(files).To(ContainElement("./app/compiled"))
-				})
-			})
 		})
 
 		Describe("the contents of the cache tgz", func() {
@@ -381,6 +355,7 @@ var _ = Describe("Building", func() {
 
 			BeforeEach(func() {
 				buildpackOrder = "always-detects-creates-build-artifacts,always-detects,also-always-detects"
+				skipDetect = true
 
 				cpBuildpack("always-detects-creates-build-artifacts")
 				cpBuildpack("always-detects")
@@ -422,6 +397,7 @@ var _ = Describe("Building", func() {
 			Context("final buildpack contains finalize", func() {
 				BeforeEach(func() {
 					buildpackOrder = "always-detects-creates-build-artifacts,always-detects,has-finalize"
+					skipDetect = true
 
 					cpBuildpack("always-detects-creates-build-artifacts")
 					cpBuildpack("always-detects")
@@ -598,10 +574,10 @@ var _ = Describe("Building", func() {
 
 	Context("when no buildpacks match", func() {
 		BeforeEach(func() {
-			buildpackOrder = "always-fails-detect"
+			buildpackOrder = "always-fails"
 
 			cp(path.Join(appFixtures, "bash-app", "app.sh"), buildDir)
-			cpBuildpack("always-fails-detect")
+			cpBuildpack("always-fails")
 		})
 
 		It("should exit with an error", func() {
@@ -693,6 +669,20 @@ var _ = Describe("Building", func() {
 		})
 	})
 
+	Context("skipping detect", func() {
+		BeforeEach(func() {
+			buildpackOrder = "always-fails"
+			skipDetect = true
+
+			cp(path.Join(appFixtures, "bash-app", "app.sh"), buildDir)
+			cpBuildpack("always-fails")
+		})
+
+		It("should exit with an error", func() {
+			session := builder()
+			Eventually(session).Should(gexec.Exit(0))
+		})
+	})
 })
 
 func cp(src string, dst string) {
