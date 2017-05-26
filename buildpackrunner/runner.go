@@ -165,7 +165,7 @@ func (runner *Runner) makeDirectories() error {
 		return err
 	}
 
-	if err := os.MkdirAll(filepath.Join(runner.config.BuildArtifactsCacheDir(), "primary"), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Join(runner.config.BuildArtifactsCacheDir(), "final"), 0755); err != nil {
 		return err
 	}
 
@@ -224,7 +224,7 @@ func (runner *Runner) downloadBuildpacks() error {
 
 func (runner *Runner) cleanCacheDir() error {
 	neededCacheDirs := map[string]bool{
-		filepath.Join(runner.config.BuildArtifactsCacheDir(), "primary"): true,
+		filepath.Join(runner.config.BuildArtifactsCacheDir(), "final"): true,
 	}
 
 	for _, bp := range runner.config.SupplyBuildpacks() {
@@ -323,7 +323,7 @@ func (runner *Runner) runSupplyBuildpacks() (string, error) {
 
 func (runner *Runner) runFinalize(buildpackPath string) error {
 	depsIdx := runner.config.DepsIndex(len(runner.config.SupplyBuildpacks()))
-	cacheDir := filepath.Join(runner.config.BuildArtifactsCacheDir(), "primary")
+	cacheDir := filepath.Join(runner.config.BuildArtifactsCacheDir(), "final")
 
 	hasFinalize, err := hasFinalize(buildpackPath)
 	if err != nil {

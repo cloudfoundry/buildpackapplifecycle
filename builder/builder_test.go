@@ -181,7 +181,7 @@ var _ = Describe("Building", func() {
 				result, err := exec.Command("tar", "-tzf", outputBuildArtifactsCache).Output()
 				Expect(err).NotTo(HaveOccurred())
 
-				Expect(strings.Split(string(result), "\n")).To(ContainElement("./primary/build-artifact"))
+				Expect(strings.Split(string(result), "\n")).To(ContainElement("./final/build-artifact"))
 			})
 		})
 
@@ -287,7 +287,7 @@ var _ = Describe("Building", func() {
 					Expect(string(content)).To(Equal("also-always-detects-buildpack\n"))
 				})
 
-				It("the /deps dir is not passed to the primary compile command", func() {
+				It("the /deps dir is not passed to the final compile command", func() {
 					content, err := exec.Command("tar", "--wildcards", "--list", "--verbose", "-f", outputDroplet).Output()
 					Expect(err).To(BeNil())
 					Expect(string(content)).ToNot(ContainSubstring("./deps/compiled"))
@@ -397,10 +397,10 @@ var _ = Describe("Building", func() {
 
 			Context("final buildpack does not contain finalize", func() {
 				Describe("the buildArtifactsCacheDir is empty", func() {
-					It("the final buildpack caches compile output in $CACHE_DIR/primary", func() {
-						Expect(files).To(ContainElement("./primary/compiled"))
+					It("the final buildpack caches compile output in $CACHE_DIR/final", func() {
+						Expect(files).To(ContainElement("./final/compiled"))
 
-						content, err := exec.Command("tar", "-xzf", outputBuildArtifactsCache, "./primary/compiled", "-O").Output()
+						content, err := exec.Command("tar", "-xzf", outputBuildArtifactsCache, "./final/compiled", "-O").Output()
 						Expect(err).To(BeNil())
 						Expect(string(content)).To(Equal("also-always-detects-buildpack\n"))
 					})
@@ -430,18 +430,18 @@ var _ = Describe("Building", func() {
 				})
 
 				Describe("the buildArtifactsCacheDir is empty", func() {
-					It("the final buildpack caches finalize output in $CACHE_DIR/primary", func() {
-						Expect(files).To(ContainElement("./primary/finalized"))
+					It("the final buildpack caches finalize output in $CACHE_DIR/final", func() {
+						Expect(files).To(ContainElement("./final/finalized"))
 
-						content, err := exec.Command("tar", "-xzf", outputBuildArtifactsCache, "./primary/finalized", "-O").Output()
+						content, err := exec.Command("tar", "-xzf", outputBuildArtifactsCache, "./final/finalized", "-O").Output()
 						Expect(err).To(BeNil())
 						Expect(string(content)).To(Equal("has-finalize-buildpack\n"))
 					})
 
-					It("the final buildpack caches supply output in $CACHE_DIR/primary", func() {
-						Expect(files).To(ContainElement("./primary/supplied"))
+					It("the final buildpack caches supply output in $CACHE_DIR/final", func() {
+						Expect(files).To(ContainElement("./final/supplied"))
 
-						content, err := exec.Command("tar", "-xzf", outputBuildArtifactsCache, "./primary/supplied", "-O").Output()
+						content, err := exec.Command("tar", "-xzf", outputBuildArtifactsCache, "./final/supplied", "-O").Output()
 						Expect(err).To(BeNil())
 						Expect(string(content)).To(Equal("has-finalize-buildpack\n"))
 					})
@@ -483,16 +483,16 @@ var _ = Describe("Building", func() {
 					Expect(err).To(BeNil())
 
 					cachedCompile = fmt.Sprintf("%d", rand.Int())
-					err = os.MkdirAll(filepath.Join(buildArtifactsCacheDir, "primary"), 0755)
+					err = os.MkdirAll(filepath.Join(buildArtifactsCacheDir, "final"), 0755)
 					Expect(err).To(BeNil())
-					err = ioutil.WriteFile(filepath.Join(buildArtifactsCacheDir, "primary", "old-compile"), []byte(cachedCompile), 0644)
+					err = ioutil.WriteFile(filepath.Join(buildArtifactsCacheDir, "final", "old-compile"), []byte(cachedCompile), 0644)
 					Expect(err).To(BeNil())
 				})
 
-				It("does not remove the cached contents of $CACHE_DIR/primary", func() {
-					Expect(files).To(ContainElement("./primary/compiled"))
+				It("does not remove the cached contents of $CACHE_DIR/final", func() {
+					Expect(files).To(ContainElement("./final/compiled"))
 
-					content, err := exec.Command("tar", "-xzf", outputBuildArtifactsCache, "./primary/compiled", "-O").Output()
+					content, err := exec.Command("tar", "-xzf", outputBuildArtifactsCache, "./final/compiled", "-O").Output()
 					Expect(err).To(BeNil())
 					Expect(string(content)).To(Equal(cachedCompile + "\n"))
 				})
