@@ -81,7 +81,7 @@ func (runner *Runner) Run() (string, error) {
 	}
 
 	if runner.config.SkipDetect() {
-		detectedBuildpackDir, err = runner.runSupplyBuildpacks()
+		detectedBuildpack, detectedBuildpackDir, err = runner.runSupplyBuildpacks()
 		if err != nil {
 			return "", err
 		}
@@ -303,22 +303,27 @@ func hasSupply(buildpackPath string) (bool, error) {
 }
 
 // returns buildpack path, ok
-func (runner *Runner) runSupplyBuildpacks() (string, error) {
+func (runner *Runner) runSupplyBuildpacks() (string, string, error) {
 	for i, buildpack := range runner.config.SupplyBuildpacks() {
 		buildpackPath, err := runner.buildpackPath(buildpack)
 		if err != nil {
 			printError(err.Error())
-			return "", newDescriptiveError(err, buildpackapplifecycle.SupplyFailMsg)
+			return "", "", newDescriptiveError(err, buildpackapplifecycle.SupplyFailMsg)
 		}
 
 		err = runner.run(exec.Command(path.Join(buildpackPath, "bin", "supply"), runner.config.BuildDir(), runner.supplyCachePath(buildpack), runner.depsDir, runner.config.DepsIndex(i)), os.Stdout)
 		if err != nil {
-			return "", newDescriptiveError(err, buildpackapplifecycle.SupplyFailMsg)
+			return "", "", newDescriptiveError(err, buildpackapplifecycle.SupplyFailMsg)
 		}
 	}
 
 	finalBuildpack := runner.config.BuildpackOrder()[len(runner.config.SupplyBuildpacks())]
-	return runner.buildpackPath(finalBuildpack)
+	finalPath, err := runner.buildpackPath(finalBuildpack)
+	if err != nil {
+		return "", "", newDescriptiveError(err, buildpackapplifecycle.SupplyFailMsg)
+	}
+
+	return finalBuildpack, finalPath, nil
 }
 
 func (runner *Runner) runFinalize(buildpackPath string) error {

@@ -255,6 +255,25 @@ var _ = Describe("Building", func() {
 				files = strings.Split(string(result), "\n")
 			})
 
+			Describe("the result.json, which is used to communicate back to the stager", func() {
+				BeforeEach(func() {
+					buildpackOrder = "always-detects"
+					cpBuildpack("always-detects")
+					cp(filepath.Join(appFixtures, "bash-app", "app.sh"), buildDir)
+				})
+				It("exists, and contains the final buildpack key", func() {
+					Expect(resultJSON()).To(MatchJSON(`{
+						"process_types":{"web":"the start command"},
+						"lifecycle_type": "buildpack",
+						"lifecycle_metadata":{
+							"detected_buildpack": "",
+							"buildpack_key": "always-detects"
+						},
+						"execution_metadata": ""
+				}`))
+				})
+			})
+
 			Context("final buildpack does not contain a finalize script", func() {
 				BeforeEach(func() {
 					buildpackOrder = "always-detects-creates-build-artifacts,always-detects,also-always-detects"
