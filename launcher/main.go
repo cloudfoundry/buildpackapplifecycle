@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"syscall"
 
@@ -92,6 +93,7 @@ func main() {
 		exitWithUsage()
 	}
 
+	runtime.GOMAXPROCS(1)
 	syscall.Exec("/bin/bash", []string{
 		"bash",
 		"-c",
