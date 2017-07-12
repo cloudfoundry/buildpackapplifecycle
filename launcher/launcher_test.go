@@ -37,6 +37,7 @@ var _ = Describe("Launcher", func() {
 			Dir:  extractDir,
 			Env: append(
 				os.Environ(),
+				"TEST_CREDENTIAL_FILTER_WHITELIST=CALLERENV,DEPS_DIR,VCAP_APPLICATION,A,B,C,INSTANCE_GUID,INSTANCE_INDEX,PORT",
 				"PORT=8080",
 				"INSTANCE_GUID=some-instance-guid",
 				"INSTANCE_INDEX=123",
