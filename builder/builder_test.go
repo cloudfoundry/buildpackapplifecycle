@@ -20,8 +20,6 @@ import (
 )
 
 var _ = Describe("Building", func() {
-	buildpackFixtures := "fixtures/buildpacks"
-	appFixtures := "fixtures/apps"
 
 	var (
 		builderCmd *exec.Cmd
@@ -50,7 +48,7 @@ var _ = Describe("Building", func() {
 
 	cpBuildpack := func(buildpack string) {
 		hash := fmt.Sprintf("%x", md5.Sum([]byte(buildpack)))
-		cp(path.Join(buildpackFixtures, buildpack), path.Join(buildpacksDir, hash))
+		cp(filepath.Join(buildpackFixtures, buildpack), filepath.Join(buildpacksDir, hash))
 	}
 
 	BeforeEach(func() {
@@ -66,6 +64,7 @@ var _ = Describe("Building", func() {
 		outputDropletFile, err := ioutil.TempFile(tmpDir, "building-droplet")
 		Expect(err).NotTo(HaveOccurred())
 		outputDroplet = outputDropletFile.Name()
+		Expect(outputDropletFile.Close()).To(Succeed())
 
 		outputBuildArtifactsCacheDir, err := ioutil.TempDir(tmpDir, "building-cache-output")
 		Expect(err).NotTo(HaveOccurred())
@@ -77,6 +76,7 @@ var _ = Describe("Building", func() {
 		outputMetadataFile, err := ioutil.TempFile(tmpDir, "building-result")
 		Expect(err).NotTo(HaveOccurred())
 		outputMetadata = outputMetadataFile.Name()
+		Expect(outputMetadataFile.Close()).To(Succeed())
 
 		buildpackOrder = ""
 
@@ -130,7 +130,7 @@ var _ = Describe("Building", func() {
 				result, err := exec.Command("tar", "-tzf", outputDroplet).Output()
 				Expect(err).NotTo(HaveOccurred())
 
-				files = strings.Split(string(result), "\n")
+				files = removeTrailingSpace(strings.Split(string(result), "\n"))
 			})
 
 			It("should contain an /app dir with the contents of the compilation", func() {
@@ -181,7 +181,7 @@ var _ = Describe("Building", func() {
 				result, err := exec.Command("tar", "-tzf", outputBuildArtifactsCache).Output()
 				Expect(err).NotTo(HaveOccurred())
 
-				Expect(strings.Split(string(result), "\n")).To(ContainElement("./final/build-artifact"))
+				Expect(removeTrailingSpace(strings.Split(string(result), "\n"))).To(ContainElement("./final/build-artifact"))
 			})
 		})
 
@@ -200,7 +200,7 @@ var _ = Describe("Building", func() {
 
 			Context("when the app has a Procfile", func() {
 				BeforeEach(func() {
-					cp(path.Join(appFixtures, "with-procfile-with-web", "Procfile"), buildDir)
+					cp(filepath.Join(appFixtures, "with-procfile-with-web", "Procfile"), buildDir)
 				})
 
 				It("uses the Procfile processes in the execution metadata", func() {
@@ -218,7 +218,7 @@ var _ = Describe("Building", func() {
 
 			Context("when the app does not have a Procfile", func() {
 				BeforeEach(func() {
-					cp(path.Join(appFixtures, "bash-app", "app.sh"), buildDir)
+					cp(filepath.Join(appFixtures, "bash-app", "app.sh"), buildDir)
 				})
 
 				It("uses the default_process_types specified by the buildpack", func() {
@@ -252,7 +252,7 @@ var _ = Describe("Building", func() {
 				result, err := exec.Command("tar", "-tzf", outputDroplet).Output()
 				Expect(err).NotTo(HaveOccurred())
 
-				files = strings.Split(string(result), "\n")
+				files = removeTrailingSpace(strings.Split(string(result), "\n"))
 			})
 
 			Describe("the result.json, which is used to communicate back to the stager", func() {
@@ -281,17 +281,17 @@ var _ = Describe("Building", func() {
 					cpBuildpack("always-detects-creates-build-artifacts")
 					cpBuildpack("always-detects")
 					cpBuildpack("also-always-detects")
-					cp(path.Join(appFixtures, "bash-app", "app.sh"), buildDir)
+					cp(filepath.Join(appFixtures, "bash-app", "app.sh"), buildDir)
 				})
 
 				It("contains an /deps/xxxxx dir with the contents of the supply commands", func() {
-					content, err := exec.Command("tar", "-xzf", outputDroplet, "./deps/0/supplied", "-O").Output()
+					content, err := exec.Command("tar", "-xzOf", outputDroplet, "./deps/0/supplied").CombinedOutput()
 					Expect(err).To(BeNil())
-					Expect(string(content)).To(Equal("always-detects-creates-buildpack-artifacts\n"))
+					Expect(strings.TrimRight(string(content), " \r\n")).To(Equal("always-detects-creates-buildpack-artifacts"))
 
-					content, err = exec.Command("tar", "-xzf", outputDroplet, "./deps/1/supplied", "-O").Output()
+					content, err = exec.Command("tar", "-xzOf", outputDroplet, "./deps/1/supplied").Output()
 					Expect(err).To(BeNil())
-					Expect(string(content)).To(Equal("always-detects-buildpack\n"))
+					Expect(strings.TrimRight(string(content), " \r\n")).To(Equal("always-detects-buildpack"))
 
 					Expect(files).ToNot(ContainElement("./deps/2/supplied"))
 				})
@@ -301,15 +301,13 @@ var _ = Describe("Building", func() {
 					Expect(files).To(ContainElement("./app/app.sh"))
 					Expect(files).To(ContainElement("./app/compiled"))
 
-					content, err := exec.Command("tar", "-xzf", outputDroplet, "./app/compiled", "-O").Output()
+					content, err := exec.Command("tar", "-xzOf", outputDroplet, "./app/compiled").Output()
 					Expect(err).To(BeNil())
-					Expect(string(content)).To(Equal("also-always-detects-buildpack\n"))
+					Expect(strings.TrimRight(string(content), " \r\n")).To(Equal("also-always-detects-buildpack"))
 				})
 
 				It("the /deps dir is not passed to the final compile command", func() {
-					content, err := exec.Command("tar", "--wildcards", "--list", "--verbose", "-f", outputDroplet).Output()
-					Expect(err).To(BeNil())
-					Expect(string(content)).ToNot(ContainSubstring("./deps/compiled"))
+					Expect(files).ToNot(ContainElement("./deps/compiled"))
 				})
 			})
 
@@ -320,21 +318,21 @@ var _ = Describe("Building", func() {
 					cpBuildpack("always-detects-creates-build-artifacts")
 					cpBuildpack("always-detects")
 					cpBuildpack("has-finalize")
-					cp(path.Join(appFixtures, "bash-app", "app.sh"), buildDir)
+					cp(filepath.Join(appFixtures, "bash-app", "app.sh"), buildDir)
 				})
 
 				It("contains an /deps/xxxxx dir with the contents of the supply commands", func() {
-					content, err := exec.Command("tar", "-xzf", outputDroplet, "./deps/0/supplied", "-O").Output()
+					content, err := exec.Command("tar", "-xzOf", outputDroplet, "./deps/0/supplied").Output()
 					Expect(err).To(BeNil())
-					Expect(string(content)).To(Equal("always-detects-creates-buildpack-artifacts\n"))
+					Expect(strings.TrimRight(string(content), " \r\n")).To(Equal("always-detects-creates-buildpack-artifacts"))
 
-					content, err = exec.Command("tar", "-xzf", outputDroplet, "./deps/1/supplied", "-O").Output()
+					content, err = exec.Command("tar", "-xzOf", outputDroplet, "./deps/1/supplied").Output()
 					Expect(err).To(BeNil())
-					Expect(string(content)).To(Equal("always-detects-buildpack\n"))
+					Expect(strings.TrimRight(string(content), " \r\n")).To(Equal("always-detects-buildpack"))
 
-					content, err = exec.Command("tar", "-xzf", outputDroplet, "./deps/2/supplied", "-O").Output()
+					content, err = exec.Command("tar", "-xzOf", outputDroplet, "./deps/2/supplied").Output()
 					Expect(err).To(BeNil())
-					Expect(string(content)).To(Equal("has-finalize-buildpack\n"))
+					Expect(strings.TrimRight(string(content), " \r\n")).To(Equal("has-finalize-buildpack"))
 				})
 
 				It("contains an /app dir with the contents of the compilation", func() {
@@ -342,9 +340,9 @@ var _ = Describe("Building", func() {
 					Expect(files).To(ContainElement("./app/app.sh"))
 					Expect(files).To(ContainElement("./app/finalized"))
 
-					content, err := exec.Command("tar", "-xzf", outputDroplet, "./app/finalized", "-O").Output()
+					content, err := exec.Command("tar", "-xzOf", outputDroplet, "./app/finalized").Output()
 					Expect(err).To(BeNil())
-					Expect(string(content)).To(Equal("has-finalize-buildpack\n"))
+					Expect(strings.TrimRight(string(content), " \r\n")).To(Equal("has-finalize-buildpack"))
 				})
 			})
 
@@ -355,17 +353,17 @@ var _ = Describe("Building", func() {
 					cpBuildpack("always-detects-creates-build-artifacts")
 					cpBuildpack("always-detects")
 					cpBuildpack("has-finalize-no-supply")
-					cp(path.Join(appFixtures, "bash-app", "app.sh"), buildDir)
+					cp(filepath.Join(appFixtures, "bash-app", "app.sh"), buildDir)
 				})
 
 				It("contains an /deps/xxxxx dir with the contents of the supply commands", func() {
-					content, err := exec.Command("tar", "-xzf", outputDroplet, "./deps/0/supplied", "-O").Output()
+					content, err := exec.Command("tar", "-xzOf", outputDroplet, "./deps/0/supplied").Output()
 					Expect(err).To(BeNil())
-					Expect(string(content)).To(Equal("always-detects-creates-buildpack-artifacts\n"))
+					Expect(strings.TrimRight(string(content), " \r\n")).To(Equal("always-detects-creates-buildpack-artifacts"))
 
-					content, err = exec.Command("tar", "-xzf", outputDroplet, "./deps/1/supplied", "-O").Output()
+					content, err = exec.Command("tar", "-xzOf", outputDroplet, "./deps/1/supplied").Output()
 					Expect(err).To(BeNil())
-					Expect(string(content)).To(Equal("always-detects-buildpack\n"))
+					Expect(strings.TrimRight(string(content), " \r\n")).To(Equal("always-detects-buildpack"))
 
 					Expect(files).ToNot(ContainElement("./deps/2/supplied"))
 				})
@@ -375,9 +373,9 @@ var _ = Describe("Building", func() {
 					Expect(files).To(ContainElement("./app/app.sh"))
 					Expect(files).To(ContainElement("./app/finalized"))
 
-					content, err := exec.Command("tar", "-xzf", outputDroplet, "./app/finalized", "-O").Output()
+					content, err := exec.Command("tar", "-xzOf", outputDroplet, "./app/finalized").Output()
 					Expect(err).To(BeNil())
-					Expect(string(content)).To(Equal("has-finalize-no-supply-buildpack\n"))
+					Expect(strings.TrimRight(string(content), " \r\n")).To(Equal("has-finalize-no-supply-buildpack"))
 				})
 			})
 
@@ -385,7 +383,7 @@ var _ = Describe("Building", func() {
 				BeforeEach(func() {
 					buildpackOrder = "always-fails-detect"
 
-					cp(path.Join(appFixtures, "bash-app", "app.sh"), buildDir)
+					cp(filepath.Join(appFixtures, "bash-app", "app.sh"), buildDir)
 					cpBuildpack("always-fails-detect")
 				})
 
@@ -404,14 +402,14 @@ var _ = Describe("Building", func() {
 				cpBuildpack("always-detects-creates-build-artifacts")
 				cpBuildpack("always-detects")
 				cpBuildpack("also-always-detects")
-				cp(path.Join(appFixtures, "bash-app", "app.sh"), buildDir)
+				cp(filepath.Join(appFixtures, "bash-app", "app.sh"), buildDir)
 			})
 
 			JustBeforeEach(func() {
 				result, err := exec.Command("tar", "-tzf", outputBuildArtifactsCache).Output()
 				Expect(err).NotTo(HaveOccurred())
 
-				files = strings.Split(string(result), "\n")
+				files = removeTrailingSpace(strings.Split(string(result), "\n"))
 			})
 
 			Context("final buildpack does not contain finalize", func() {
@@ -419,9 +417,9 @@ var _ = Describe("Building", func() {
 					It("the final buildpack caches compile output in $CACHE_DIR/final", func() {
 						Expect(files).To(ContainElement("./final/compiled"))
 
-						content, err := exec.Command("tar", "-xzf", outputBuildArtifactsCache, "./final/compiled", "-O").Output()
+						content, err := exec.Command("tar", "-xzOf", outputBuildArtifactsCache, "./final/compiled").Output()
 						Expect(err).To(BeNil())
-						Expect(string(content)).To(Equal("also-always-detects-buildpack\n"))
+						Expect(strings.TrimRight(string(content), " \r\n")).To(Equal("also-always-detects-buildpack"))
 					})
 
 					It("the supply buildpacks caches supply output as $CACHE_DIR/<md5sum of buildpack URL>", func() {
@@ -431,9 +429,9 @@ var _ = Describe("Building", func() {
 						supplyCacheDir = fmt.Sprintf("%x", md5.Sum([]byte("always-detects")))
 						Expect(files).To(ContainElement("./" + supplyCacheDir + "/supplied"))
 
-						content, err := exec.Command("tar", "-xzf", outputBuildArtifactsCache, "./"+supplyCacheDir+"/supplied", "-O").Output()
+						content, err := exec.Command("tar", "-xzOf", outputBuildArtifactsCache, "./"+supplyCacheDir+"/supplied").Output()
 						Expect(err).To(BeNil())
-						Expect(string(content)).To(Equal("always-detects-buildpack\n"))
+						Expect(strings.TrimRight(string(content), " \r\n")).To(Equal("always-detects-buildpack"))
 					})
 				})
 			})
@@ -445,24 +443,24 @@ var _ = Describe("Building", func() {
 					cpBuildpack("always-detects-creates-build-artifacts")
 					cpBuildpack("always-detects")
 					cpBuildpack("has-finalize")
-					cp(path.Join(appFixtures, "bash-app", "app.sh"), buildDir)
+					cp(filepath.Join(appFixtures, "bash-app", "app.sh"), buildDir)
 				})
 
 				Describe("the buildArtifactsCacheDir is empty", func() {
 					It("the final buildpack caches finalize output in $CACHE_DIR/final", func() {
 						Expect(files).To(ContainElement("./final/finalized"))
 
-						content, err := exec.Command("tar", "-xzf", outputBuildArtifactsCache, "./final/finalized", "-O").Output()
+						content, err := exec.Command("tar", "-xzOf", outputBuildArtifactsCache, "./final/finalized").Output()
 						Expect(err).To(BeNil())
-						Expect(string(content)).To(Equal("has-finalize-buildpack\n"))
+						Expect(strings.TrimRight(string(content), " \r\n")).To(Equal("has-finalize-buildpack"))
 					})
 
 					It("the final buildpack caches supply output in $CACHE_DIR/final", func() {
 						Expect(files).To(ContainElement("./final/supplied"))
 
-						content, err := exec.Command("tar", "-xzf", outputBuildArtifactsCache, "./final/supplied", "-O").Output()
+						content, err := exec.Command("tar", "-xzOf", outputBuildArtifactsCache, "./final/supplied").Output()
 						Expect(err).To(BeNil())
-						Expect(string(content)).To(Equal("has-finalize-buildpack\n"))
+						Expect(strings.TrimRight(string(content), " \r\n")).To(Equal("has-finalize-buildpack"))
 					})
 
 					It("the supply buildpacks caches supply output as $CACHE_DIR/<md5sum of buildpack URL>", func() {
@@ -472,9 +470,9 @@ var _ = Describe("Building", func() {
 						supplyCacheDir = fmt.Sprintf("%x", md5.Sum([]byte("always-detects")))
 						Expect(files).To(ContainElement("./" + supplyCacheDir + "/supplied"))
 
-						content, err := exec.Command("tar", "-xzf", outputBuildArtifactsCache, "./"+supplyCacheDir+"/supplied", "-O").Output()
+						content, err := exec.Command("tar", "-xzOf", outputBuildArtifactsCache, "./"+supplyCacheDir+"/supplied").Output()
 						Expect(err).To(BeNil())
-						Expect(string(content)).To(Equal("always-detects-buildpack\n"))
+						Expect(strings.TrimRight(string(content), " \r\n")).To(Equal("always-detects-buildpack"))
 					})
 				})
 			})
@@ -514,17 +512,17 @@ var _ = Describe("Building", func() {
 				It("does not remove the cached contents of $CACHE_DIR/final", func() {
 					Expect(files).To(ContainElement("./final/compiled"))
 
-					content, err := exec.Command("tar", "-xzf", outputBuildArtifactsCache, "./final/compiled", "-O").Output()
+					content, err := exec.Command("tar", "-xzOf", outputBuildArtifactsCache, "./final/compiled").Output()
 					Expect(err).To(BeNil())
-					Expect(string(content)).To(Equal(cachedCompile + "\n"))
+					Expect(strings.TrimRight(string(content), " \r\n")).To(Equal(cachedCompile))
 				})
 
 				It("does not remove the cached contents of buildpacks in buildpack order", func() {
 					Expect(files).To(ContainElement("./" + alwaysDetectsMD5 + "/supplied"))
 
-					content, err := exec.Command("tar", "-xzf", outputBuildArtifactsCache, "./"+alwaysDetectsMD5+"/supplied", "-O").Output()
+					content, err := exec.Command("tar", "-xzOf", outputBuildArtifactsCache, "./"+alwaysDetectsMD5+"/supplied").Output()
 					Expect(err).To(BeNil())
-					Expect(string(content)).To(Equal(cachedSupply + "\n"))
+					Expect(strings.TrimRight(string(content), " \r\n")).To(Equal(cachedSupply))
 				})
 
 				It("removes the cached contents of buildpacks not in buildpack order", func() {
@@ -551,7 +549,7 @@ var _ = Describe("Building", func() {
 				})
 
 				BeforeEach(func() {
-					cp(path.Join(appFixtures, "with-procfile-with-web", "Procfile"), buildDir)
+					cp(filepath.Join(appFixtures, "with-procfile-with-web", "Procfile"), buildDir)
 				})
 
 				It("uses the Procfile for execution_metadata", func() {
@@ -569,7 +567,7 @@ var _ = Describe("Building", func() {
 
 			Context("without web", func() {
 				BeforeEach(func() {
-					cp(path.Join(appFixtures, "with-procfile", "Procfile"), buildDir)
+					cp(filepath.Join(appFixtures, "with-procfile", "Procfile"), buildDir)
 				})
 
 				It("displays an error and returns the Procfile data without web", func() {
@@ -593,7 +591,7 @@ var _ = Describe("Building", func() {
 
 		Context("and the app has no Procfile", func() {
 			BeforeEach(func() {
-				cp(path.Join(appFixtures, "bash-app", "app.sh"), buildDir)
+				cp(filepath.Join(appFixtures, "bash-app", "app.sh"), buildDir)
 			})
 
 			It("fails", func() {
@@ -612,7 +610,7 @@ var _ = Describe("Building", func() {
 			cpBuildpack("always-detects")
 			cpBuildpack("also-always-detects")
 
-			cp(path.Join(appFixtures, "bogus-procfile", "Procfile"), buildDir)
+			cp(filepath.Join(appFixtures, "bogus-procfile", "Procfile"), buildDir)
 		})
 
 		It("fails", func() {
@@ -626,7 +624,7 @@ var _ = Describe("Building", func() {
 		BeforeEach(func() {
 			buildpackOrder = "always-fails-detect"
 
-			cp(path.Join(appFixtures, "bash-app", "app.sh"), buildDir)
+			cp(filepath.Join(appFixtures, "bash-app", "app.sh"), buildDir)
 			cpBuildpack("always-fails-detect")
 		})
 
@@ -642,7 +640,7 @@ var _ = Describe("Building", func() {
 			buildpackOrder = "fails-to-compile"
 
 			cpBuildpack("fails-to-compile")
-			cp(path.Join(appFixtures, "bash-app", "app.sh"), buildDir)
+			cp(filepath.Join(appFixtures, "bash-app", "app.sh"), buildDir)
 		})
 
 		It("should exit with an error", func() {
@@ -659,7 +657,7 @@ var _ = Describe("Building", func() {
 
 			cpBuildpack("fails-to-supply")
 			cpBuildpack("always-detects")
-			cp(path.Join(appFixtures, "bash-app", "app.sh"), buildDir)
+			cp(filepath.Join(appFixtures, "bash-app", "app.sh"), buildDir)
 		})
 
 		It("should exit with an error", func() {
@@ -674,7 +672,7 @@ var _ = Describe("Building", func() {
 			buildpackOrder = "release-generates-bad-yaml"
 
 			cpBuildpack("release-generates-bad-yaml")
-			cp(path.Join(appFixtures, "bash-app", "app.sh"), buildDir)
+			cp(filepath.Join(appFixtures, "bash-app", "app.sh"), buildDir)
 		})
 
 		It("should exit with an error", func() {
@@ -689,7 +687,7 @@ var _ = Describe("Building", func() {
 			buildpackOrder = "fails-to-release"
 
 			cpBuildpack("fails-to-release")
-			cp(path.Join(appFixtures, "bash-app", "app.sh"), buildDir)
+			cp(filepath.Join(appFixtures, "bash-app", "app.sh"), buildDir)
 		})
 
 		It("should exit with an error", func() {
@@ -706,27 +704,25 @@ var _ = Describe("Building", func() {
 
 			nestedBuildpackHash := "70d137ae4ee01fbe39058ccdebf48460"
 
-			nestedBuildpackDir := path.Join(buildpacksDir, nestedBuildpackHash)
+			nestedBuildpackDir := filepath.Join(buildpacksDir, nestedBuildpackHash)
 			err := os.MkdirAll(nestedBuildpackDir, 0777)
 			Expect(err).NotTo(HaveOccurred())
 
-			cp(path.Join(buildpackFixtures, "always-detects"), nestedBuildpackDir)
-			cp(path.Join(appFixtures, "bash-app", "app.sh"), buildDir)
+			cp(filepath.Join(buildpackFixtures, "always-detects"), nestedBuildpackDir)
+			cp(filepath.Join(appFixtures, "bash-app", "app.sh"), buildDir)
 		})
 
 		It("should detect the nested buildpack", func() {
 			Eventually(builder()).Should(gexec.Exit(0))
 		})
 	})
-
 })
 
-func cp(src string, dst string) {
-	session, err := gexec.Start(
-		exec.Command("cp", "-a", src, dst),
-		GinkgoWriter,
-		GinkgoWriter,
-	)
-	Expect(err).NotTo(HaveOccurred())
-	Eventually(session).Should(gexec.Exit(0))
+func removeTrailingSpace(dirty []string) []string {
+	clean := []string{}
+	for _, s := range dirty {
+		clean = append(clean, strings.TrimRight(s, "\r\n"))
+	}
+
+	return clean
 }

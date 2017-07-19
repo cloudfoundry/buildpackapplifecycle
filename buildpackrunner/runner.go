@@ -11,7 +11,6 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -119,19 +118,19 @@ func (runner *Runner) Run() (string, error) {
 	}
 
 	//generate staging_info.yml and result json file
-	infoFilePath := path.Join(runner.contentsDir, "staging_info.yml")
+	infoFilePath := filepath.Join(runner.contentsDir, "staging_info.yml")
 	err = runner.saveInfo(infoFilePath, detectedBuildpack, detectOutput, releaseInfo)
 	if err != nil {
 		return "", newDescriptiveError(err, "Failed to encode generated metadata")
 	}
 
 	for _, name := range []string{"tmp", "logs"} {
-		if err := os.MkdirAll(path.Join(runner.contentsDir, name), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Join(runner.contentsDir, name), 0755); err != nil {
 			return "", newDescriptiveError(err, "Failed to set up droplet filesystem")
 		}
 	}
 
-	appDir := path.Join(runner.contentsDir, "app")
+	appDir := filepath.Join(runner.contentsDir, "app")
 	err = runner.copyApp(runner.config.BuildDir(), appDir)
 	if err != nil {
 		return "", newDescriptiveError(err, "Failed to copy compiled droplet")
@@ -184,7 +183,7 @@ func (runner *Runner) makeDirectories() error {
 	runner.depsDir = filepath.Join(runner.contentsDir, "deps")
 
 	for i := 0; i <= len(runner.config.SupplyBuildpacks()); i++ {
-		if err := os.MkdirAll(path.Join(runner.depsDir, runner.config.DepsIndex(i)), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Join(runner.depsDir, runner.config.DepsIndex(i)), 0755); err != nil {
 			return err
 		}
 	}
@@ -261,7 +260,7 @@ func (runner *Runner) buildpackPath(buildpack string) (string, error) {
 	}
 
 	if len(files) == 1 {
-		nestedPath := path.Join(buildpackPath, files[0].Name())
+		nestedPath := filepath.Join(buildpackPath, files[0].Name())
 
 		if runner.pathHasBinDirectory(nestedPath) {
 			return nestedPath, nil
@@ -272,7 +271,7 @@ func (runner *Runner) buildpackPath(buildpack string) (string, error) {
 }
 
 func (runner *Runner) pathHasBinDirectory(pathToTest string) bool {
-	_, err := os.Stat(path.Join(pathToTest, "bin"))
+	_, err := os.Stat(filepath.Join(pathToTest, "bin"))
 	return err == nil
 }
 
@@ -280,19 +279,8 @@ func (runner *Runner) supplyCachePath(buildpack string) string {
 	return filepath.Join(runner.config.BuildArtifactsCacheDir(), fmt.Sprintf("%x", md5.Sum([]byte(buildpack))))
 }
 
-func hasFinalize(buildpackPath string) (bool, error) {
-	_, err := os.Stat(filepath.Join(buildpackPath, "bin", "finalize"))
-	if err != nil {
-		if os.IsNotExist(err) {
-			return false, nil
-		}
-		return false, err
-	}
-	return true, nil
-}
-
-func hasSupply(buildpackPath string) (bool, error) {
-	_, err := os.Stat(filepath.Join(buildpackPath, "bin", "supply"))
+func fileExists(file string) (bool, error) {
+	_, err := os.Stat(file)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return false, nil
@@ -311,7 +299,7 @@ func (runner *Runner) runSupplyBuildpacks() (string, string, error) {
 			return "", "", newDescriptiveError(err, buildpackapplifecycle.SupplyFailMsg)
 		}
 
-		err = runner.run(exec.Command(path.Join(buildpackPath, "bin", "supply"), runner.config.BuildDir(), runner.supplyCachePath(buildpack), runner.depsDir, runner.config.DepsIndex(i)), os.Stdout)
+		err = runner.run(exec.Command(filepath.Join(buildpackPath, "bin", "supply"), runner.config.BuildDir(), runner.supplyCachePath(buildpack), runner.depsDir, runner.config.DepsIndex(i)), os.Stdout)
 		if err != nil {
 			return "", "", newDescriptiveError(err, buildpackapplifecycle.SupplyFailMsg)
 		}
@@ -342,12 +330,12 @@ func (runner *Runner) runFinalize(buildpackPath string) error {
 		}
 
 		if hasSupply {
-			if err := runner.run(exec.Command(path.Join(buildpackPath, "bin", "supply"), runner.config.BuildDir(), cacheDir, runner.depsDir, depsIdx), os.Stdout); err != nil {
+			if err := runner.run(exec.Command(filepath.Join(buildpackPath, "bin", "supply"), runner.config.BuildDir(), cacheDir, runner.depsDir, depsIdx), os.Stdout); err != nil {
 				return newDescriptiveError(err, buildpackapplifecycle.SupplyFailMsg)
 			}
 		}
 
-		if err := runner.run(exec.Command(path.Join(buildpackPath, "bin", "finalize"), runner.config.BuildDir(), cacheDir, runner.depsDir, depsIdx), os.Stdout); err != nil {
+		if err := runner.run(exec.Command(filepath.Join(buildpackPath, "bin", "finalize"), runner.config.BuildDir(), cacheDir, runner.depsDir, depsIdx), os.Stdout); err != nil {
 			return newDescriptiveError(err, buildpackapplifecycle.FinalizeFailMsg)
 		}
 	} else {
@@ -356,7 +344,7 @@ func (runner *Runner) runFinalize(buildpackPath string) error {
 			return newDescriptiveError(err, buildpackapplifecycle.CompileFailMsg)
 		}
 
-		if err := runner.run(exec.Command(path.Join(buildpackPath, "bin", "compile"), runner.config.BuildDir(), cacheDir), os.Stdout); err != nil {
+		if err := runner.run(exec.Command(filepath.Join(buildpackPath, "bin", "compile"), runner.config.BuildDir(), cacheDir), os.Stdout); err != nil {
 			return newDescriptiveError(err, buildpackapplifecycle.CompileFailMsg)
 		}
 	}
@@ -379,10 +367,10 @@ func (runner *Runner) detect() (string, string, string, bool) {
 		}
 
 		output := new(bytes.Buffer)
-		err = runner.run(exec.Command(path.Join(buildpackPath, "bin", "detect"), runner.config.BuildDir()), output)
+		err = runner.run(exec.Command(filepath.Join(buildpackPath, "bin", "detect"), runner.config.BuildDir()), output)
 
 		if err == nil {
-			return buildpack, buildpackPath, strings.TrimRight(output.String(), "\n"), true
+			return buildpack, buildpackPath, strings.TrimRight(output.String(), "\r\n"), true
 		}
 	}
 
@@ -414,7 +402,7 @@ func (runner *Runner) readProcfile() (map[string]string, error) {
 func (runner *Runner) release(buildpackDir string, startCommands map[string]string) (Release, error) {
 	output := new(bytes.Buffer)
 
-	err := runner.run(exec.Command(path.Join(buildpackDir, "bin", "release"), runner.config.BuildDir()), output)
+	err := runner.run(exec.Command(filepath.Join(buildpackDir, "bin", "release"), runner.config.BuildDir()), output)
 	if err != nil {
 		return Release{}, err
 	}
@@ -470,7 +458,57 @@ func (runner *Runner) saveInfo(infoFilePath, buildpack, detectOutput string, rel
 }
 
 func (runner *Runner) copyApp(buildDir, stageDir string) error {
-	return runner.run(exec.Command("cp", "-a", buildDir, stageDir), os.Stdout)
+	if err := os.MkdirAll(stageDir, 0755); err != nil {
+		return err
+	}
+	return copyDirectory(buildDir, stageDir)
+}
+
+func copyDirectory(srcDir, destDir string) error {
+	destExists, err := fileExists(destDir)
+	if err != nil {
+		return err
+	} else if !destExists {
+		return errors.New("destination dir must exist")
+	}
+
+	files, err := ioutil.ReadDir(srcDir)
+	if err != nil {
+		return err
+	}
+
+	for _, f := range files {
+		src := filepath.Join(srcDir, f.Name())
+		dest := filepath.Join(destDir, f.Name())
+
+		if f.IsDir() {
+			if err := os.MkdirAll(dest, f.Mode()); err != nil {
+				return err
+			}
+			err = copyDirectory(src, dest)
+		} else {
+			srcHandle, err := os.Open(src)
+			if err != nil {
+				return err
+			}
+
+			destHandle, err := os.OpenFile(dest, os.O_RDWR|os.O_CREATE|os.O_TRUNC, f.Mode())
+			if err != nil {
+				srcHandle.Close()
+				return err
+			}
+
+			_, err = io.Copy(destHandle, srcHandle)
+			srcHandle.Close()
+			destHandle.Close()
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+
 }
 
 func (runner *Runner) run(cmd *exec.Cmd, output io.Writer) error {

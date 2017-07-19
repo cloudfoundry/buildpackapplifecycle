@@ -40,13 +40,13 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	err = os.MkdirAll(submoduleDir, os.ModePerm)
 	Expect(err).NotTo(HaveOccurred())
 
-	execute(buildpackDir, "rm", "-rf", ".git")
+	Expect(os.RemoveAll(filepath.Join(buildpackDir, ".git"))).To(Succeed())
 	execute(buildpackDir, gitPath, "init")
 	execute(buildpackDir, gitPath, "config", "user.email", "you@example.com")
 	execute(buildpackDir, gitPath, "config", "user.name", "your name")
 	writeFile(filepath.Join(buildpackDir, "content"), "some content")
 
-	execute(submoduleDir, "rm", "-rf", ".git")
+	Expect(os.RemoveAll(filepath.Join(submoduleDir, ".git"))).To(Succeed())
 	execute(submoduleDir, gitPath, "init")
 	execute(submoduleDir, gitPath, "config", "user.email", "you@example.com")
 	execute(submoduleDir, gitPath, "config", "user.name", "your name")
@@ -90,7 +90,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 var _ = SynchronizedAfterSuite(func() {
 }, func() {
 	httpServer.Close()
-	os.RemoveAll(tmpDir)
+	Expect(os.RemoveAll(tmpDir)).To(Succeed())
 })
 
 func execute(dir string, execCmd string, args ...string) {
