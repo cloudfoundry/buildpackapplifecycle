@@ -9,28 +9,9 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
-	"syscall"
 
 	yaml "gopkg.in/yaml.v2"
 )
-
-const launcher = `
-cd "$1"
-
-if [ -d .profile.d ]; then
-  for env_file in .profile.d/*; do
-    source $env_file
-  done
-fi
-
-if [ -f .profile ]; then
-  source .profile
-fi
-
-shift
-
-exec bash -c "$@"
-`
 
 func main() {
 	if len(os.Args) < 4 {
@@ -95,14 +76,7 @@ func main() {
 	}
 
 	runtime.GOMAXPROCS(1)
-	syscall.Exec("/bin/bash", []string{
-		"bash",
-		"-c",
-		launcher,
-		os.Args[0],
-		dir,
-		command,
-	}, os.Environ())
+	runProcess(dir, command)
 }
 
 func exitWithUsage() {
