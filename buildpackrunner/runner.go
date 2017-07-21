@@ -95,7 +95,7 @@ func (runner *Runner) Run() (string, error) {
 	}
 
 	if err := runner.runFinalize(detectedBuildpackDir); err != nil {
-		return "", newDescriptiveError(nil, buildpackapplifecycle.CompileFailMsg)
+		return "", newDescriptiveError(err, buildpackapplifecycle.CompileFailMsg)
 	}
 
 	startCommands, err := runner.readProcfile()
