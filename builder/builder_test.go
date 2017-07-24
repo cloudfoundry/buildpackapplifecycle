@@ -285,11 +285,11 @@ var _ = Describe("Building", func() {
 				})
 
 				It("contains an /deps/xxxxx dir with the contents of the supply commands", func() {
-					content, err := exec.Command("tar", "-xzf", outputDroplet, "./deps/0/supplied", "-O").Output()
+					content, err := exec.Command("tar", "-xzf", outputDroplet, "-O", "./deps/0/supplied").Output()
 					Expect(err).To(BeNil())
 					Expect(string(content)).To(Equal("always-detects-creates-buildpack-artifacts\n"))
 
-					content, err = exec.Command("tar", "-xzf", outputDroplet, "./deps/1/supplied", "-O").Output()
+					content, err = exec.Command("tar", "-xzf", outputDroplet, "-O", "./deps/1/supplied").Output()
 					Expect(err).To(BeNil())
 					Expect(string(content)).To(Equal("always-detects-buildpack\n"))
 
@@ -301,13 +301,13 @@ var _ = Describe("Building", func() {
 					Expect(files).To(ContainElement("./app/app.sh"))
 					Expect(files).To(ContainElement("./app/compiled"))
 
-					content, err := exec.Command("tar", "-xzf", outputDroplet, "./app/compiled", "-O").Output()
+					content, err := exec.Command("tar", "-xzf", outputDroplet, "-O", "./app/compiled").Output()
 					Expect(err).To(BeNil())
 					Expect(string(content)).To(Equal("also-always-detects-buildpack\n"))
 				})
 
 				It("the /deps dir is not passed to the final compile command", func() {
-					content, err := exec.Command("tar", "--wildcards", "--list", "--verbose", "-f", outputDroplet).Output()
+					content, err := exec.Command("tar", "--list", "--verbose", "-f", outputDroplet).Output()
 					Expect(err).To(BeNil())
 					Expect(string(content)).ToNot(ContainSubstring("./deps/compiled"))
 				})
@@ -324,15 +324,15 @@ var _ = Describe("Building", func() {
 				})
 
 				It("contains an /deps/xxxxx dir with the contents of the supply commands", func() {
-					content, err := exec.Command("tar", "-xzf", outputDroplet, "./deps/0/supplied", "-O").Output()
+					content, err := exec.Command("tar", "-xzf", outputDroplet, "-O", "./deps/0/supplied").Output()
 					Expect(err).To(BeNil())
 					Expect(string(content)).To(Equal("always-detects-creates-buildpack-artifacts\n"))
 
-					content, err = exec.Command("tar", "-xzf", outputDroplet, "./deps/1/supplied", "-O").Output()
+					content, err = exec.Command("tar", "-xzf", outputDroplet, "-O", "./deps/1/supplied").Output()
 					Expect(err).To(BeNil())
 					Expect(string(content)).To(Equal("always-detects-buildpack\n"))
 
-					content, err = exec.Command("tar", "-xzf", outputDroplet, "./deps/2/supplied", "-O").Output()
+					content, err = exec.Command("tar", "-xzf", outputDroplet, "-O", "./deps/2/supplied").Output()
 					Expect(err).To(BeNil())
 					Expect(string(content)).To(Equal("has-finalize-buildpack\n"))
 				})
@@ -342,7 +342,7 @@ var _ = Describe("Building", func() {
 					Expect(files).To(ContainElement("./app/app.sh"))
 					Expect(files).To(ContainElement("./app/finalized"))
 
-					content, err := exec.Command("tar", "-xzf", outputDroplet, "./app/finalized", "-O").Output()
+					content, err := exec.Command("tar", "-xzf", outputDroplet, "-O", "./app/finalized").Output()
 					Expect(err).To(BeNil())
 					Expect(string(content)).To(Equal("has-finalize-buildpack\n"))
 				})
@@ -359,11 +359,11 @@ var _ = Describe("Building", func() {
 				})
 
 				It("contains an /deps/xxxxx dir with the contents of the supply commands", func() {
-					content, err := exec.Command("tar", "-xzf", outputDroplet, "./deps/0/supplied", "-O").Output()
+					content, err := exec.Command("tar", "-xzf", outputDroplet, "-O", "./deps/0/supplied").Output()
 					Expect(err).To(BeNil())
 					Expect(string(content)).To(Equal("always-detects-creates-buildpack-artifacts\n"))
 
-					content, err = exec.Command("tar", "-xzf", outputDroplet, "./deps/1/supplied", "-O").Output()
+					content, err = exec.Command("tar", "-xzf", outputDroplet, "-O", "./deps/1/supplied").Output()
 					Expect(err).To(BeNil())
 					Expect(string(content)).To(Equal("always-detects-buildpack\n"))
 
@@ -375,7 +375,7 @@ var _ = Describe("Building", func() {
 					Expect(files).To(ContainElement("./app/app.sh"))
 					Expect(files).To(ContainElement("./app/finalized"))
 
-					content, err := exec.Command("tar", "-xzf", outputDroplet, "./app/finalized", "-O").Output()
+					content, err := exec.Command("tar", "-xzf", outputDroplet, "-O", "./app/finalized").Output()
 					Expect(err).To(BeNil())
 					Expect(string(content)).To(Equal("has-finalize-no-supply-buildpack\n"))
 				})
@@ -419,7 +419,7 @@ var _ = Describe("Building", func() {
 					It("the final buildpack caches compile output in $CACHE_DIR/final", func() {
 						Expect(files).To(ContainElement("./final/compiled"))
 
-						content, err := exec.Command("tar", "-xzf", outputBuildArtifactsCache, "./final/compiled", "-O").Output()
+						content, err := exec.Command("tar", "-xzf", outputBuildArtifactsCache, "-O", "./final/compiled").Output()
 						Expect(err).To(BeNil())
 						Expect(string(content)).To(Equal("also-always-detects-buildpack\n"))
 					})
@@ -431,7 +431,7 @@ var _ = Describe("Building", func() {
 						supplyCacheDir = fmt.Sprintf("%x", md5.Sum([]byte("always-detects")))
 						Expect(files).To(ContainElement("./" + supplyCacheDir + "/supplied"))
 
-						content, err := exec.Command("tar", "-xzf", outputBuildArtifactsCache, "./"+supplyCacheDir+"/supplied", "-O").Output()
+						content, err := exec.Command("tar", "-xzf", outputBuildArtifactsCache, "-O", "./"+supplyCacheDir+"/supplied").Output()
 						Expect(err).To(BeNil())
 						Expect(string(content)).To(Equal("always-detects-buildpack\n"))
 					})
@@ -452,7 +452,7 @@ var _ = Describe("Building", func() {
 					It("the final buildpack caches finalize output in $CACHE_DIR/final", func() {
 						Expect(files).To(ContainElement("./final/finalized"))
 
-						content, err := exec.Command("tar", "-xzf", outputBuildArtifactsCache, "./final/finalized", "-O").Output()
+						content, err := exec.Command("tar", "-xzf", outputBuildArtifactsCache, "-O", "./final/finalized").Output()
 						Expect(err).To(BeNil())
 						Expect(string(content)).To(Equal("has-finalize-buildpack\n"))
 					})
@@ -460,7 +460,7 @@ var _ = Describe("Building", func() {
 					It("the final buildpack caches supply output in $CACHE_DIR/final", func() {
 						Expect(files).To(ContainElement("./final/supplied"))
 
-						content, err := exec.Command("tar", "-xzf", outputBuildArtifactsCache, "./final/supplied", "-O").Output()
+						content, err := exec.Command("tar", "-xzf", outputBuildArtifactsCache, "-O", "./final/supplied").Output()
 						Expect(err).To(BeNil())
 						Expect(string(content)).To(Equal("has-finalize-buildpack\n"))
 					})
@@ -472,7 +472,7 @@ var _ = Describe("Building", func() {
 						supplyCacheDir = fmt.Sprintf("%x", md5.Sum([]byte("always-detects")))
 						Expect(files).To(ContainElement("./" + supplyCacheDir + "/supplied"))
 
-						content, err := exec.Command("tar", "-xzf", outputBuildArtifactsCache, "./"+supplyCacheDir+"/supplied", "-O").Output()
+						content, err := exec.Command("tar", "-xzf", outputBuildArtifactsCache, "-O", "./"+supplyCacheDir+"/supplied").Output()
 						Expect(err).To(BeNil())
 						Expect(string(content)).To(Equal("always-detects-buildpack\n"))
 					})
@@ -514,7 +514,7 @@ var _ = Describe("Building", func() {
 				It("does not remove the cached contents of $CACHE_DIR/final", func() {
 					Expect(files).To(ContainElement("./final/compiled"))
 
-					content, err := exec.Command("tar", "-xzf", outputBuildArtifactsCache, "./final/compiled", "-O").Output()
+					content, err := exec.Command("tar", "-xzf", outputBuildArtifactsCache, "-O", "./final/compiled").Output()
 					Expect(err).To(BeNil())
 					Expect(string(content)).To(Equal(cachedCompile + "\n"))
 				})
@@ -522,7 +522,7 @@ var _ = Describe("Building", func() {
 				It("does not remove the cached contents of buildpacks in buildpack order", func() {
 					Expect(files).To(ContainElement("./" + alwaysDetectsMD5 + "/supplied"))
 
-					content, err := exec.Command("tar", "-xzf", outputBuildArtifactsCache, "./"+alwaysDetectsMD5+"/supplied", "-O").Output()
+					content, err := exec.Command("tar", "-xzf", outputBuildArtifactsCache, "-O", "./"+alwaysDetectsMD5+"/supplied").Output()
 					Expect(err).To(BeNil())
 					Expect(string(content)).To(Equal(cachedSupply + "\n"))
 				})
