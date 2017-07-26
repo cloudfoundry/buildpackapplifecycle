@@ -24,6 +24,7 @@ var _ = Describe("LifecycleBuilderConfig", func() {
 				"-buildDir=/tmp/app",
 				"-buildpackOrder=ocaml-buildpack,haskell-buildpack,bash-buildpack",
 				"-buildpacksDir=/tmp/buildpacks",
+				"-buildpacksDownloadDir=/tmp/buildpackdownloads",
 				"-buildArtifactsCacheDir=/tmp/cache",
 				"-outputDroplet=/tmp/droplet",
 				"-outputMetadata=/tmp/result.json",
@@ -52,6 +53,7 @@ var _ = Describe("LifecycleBuilderConfig", func() {
 			builderConfig.Set("outputDroplet", "/some/droplet")
 			builderConfig.Set("outputMetadata", "/some/result/dir")
 			builderConfig.Set("buildpacksDir", "/some/buildpacks/dir")
+			builderConfig.Set("buildpacksDownloadDir", "/some/downloads/dir")
 			builderConfig.Set("buildArtifactsCacheDir", "/some/cache/dir")
 			builderConfig.Set("outputBuildArtifactsCache", "/some/cache-file")
 			builderConfig.Set("skipCertVerify", "true")
@@ -63,6 +65,7 @@ var _ = Describe("LifecycleBuilderConfig", func() {
 				"-buildDir=/some/build/dir",
 				"-buildpackOrder=ocaml-buildpack,haskell-buildpack,bash-buildpack",
 				"-buildpacksDir=/some/buildpacks/dir",
+				"-buildpacksDownloadDir=/some/downloads/dir",
 				"-buildArtifactsCacheDir=/some/cache/dir",
 				"-outputDroplet=/some/droplet",
 				"-outputMetadata=/some/result/dir",
@@ -80,9 +83,14 @@ var _ = Describe("LifecycleBuilderConfig", func() {
 		})
 	})
 
-	It("returns the path to a given buildpack", func() {
+	It("returns the path to a given system buildpack", func() {
 		key := "my-buildpack/key/::"
 		Expect(builderConfig.BuildpackPath(key)).To(Equal("/tmp/buildpacks/8b2f72a0702aed614f8b5d8f7f5b431b"))
+	})
+
+	It("returns the path to a given downloaded buildpack", func() {
+		key := "https://github.com/cloudfoundry/ruby-buildpack"
+		Expect(builderConfig.BuildpackPath(key)).To(Equal("/tmp/buildpackdownloads/21de62d118ecb1f46d868d24f00839ef"))
 	})
 
 	It("returns the path to the staging metadata", func() {
