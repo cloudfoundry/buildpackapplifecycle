@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"math"
+	"net/url"
 	"path"
 	"strings"
 )
@@ -22,6 +23,7 @@ const (
 	lifecycleBuilderOutputMetadataFlag            = "outputMetadata"
 	lifecycleBuilderOutputBuildArtifactsCacheFlag = "outputBuildArtifactsCache"
 	lifecycleBuilderBuildpacksDirFlag             = "buildpacksDir"
+	lifecycleBuilderBuildpacksDownloadDirFlag     = "buildpacksDownloadDir"
 	lifecycleBuilderBuildArtifactsCacheDirFlag    = "buildArtifactsCacheDir"
 	lifecycleBuilderBuildpackOrderFlag            = "buildpackOrder"
 	lifecycleBuilderSkipDetect                    = "skipDetect"
@@ -34,6 +36,7 @@ var lifecycleBuilderDefaults = map[string]string{
 	lifecycleBuilderOutputMetadataFlag:            "/tmp/result.json",
 	lifecycleBuilderOutputBuildArtifactsCacheFlag: "/tmp/output-cache",
 	lifecycleBuilderBuildpacksDirFlag:             "/tmp/buildpacks",
+	lifecycleBuilderBuildpacksDownloadDirFlag:     "/tmp/buildpackdownloads",
 	lifecycleBuilderBuildArtifactsCacheDirFlag:    "/tmp/cache",
 }
 
@@ -68,6 +71,12 @@ func NewLifecycleBuilderConfig(buildpacks []string, skipDetect bool, skipCertVer
 		lifecycleBuilderBuildpacksDirFlag,
 		lifecycleBuilderDefaults[lifecycleBuilderBuildpacksDirFlag],
 		"directory containing the buildpacks to try",
+	)
+
+	flagSet.String(
+		lifecycleBuilderBuildpacksDownloadDirFlag,
+		lifecycleBuilderDefaults[lifecycleBuilderBuildpacksDownloadDirFlag],
+		"directory to download buildpacks to",
 	)
 
 	flagSet.String(
@@ -137,7 +146,12 @@ func (s LifecycleBuilderConfig) BuildDir() string {
 }
 
 func (s LifecycleBuilderConfig) BuildpackPath(buildpackName string) string {
-	return path.Join(s.BuildpacksDir(), fmt.Sprintf("%x", md5.Sum([]byte(buildpackName))))
+	baseDir := s.BuildpacksDir()
+	buildpackURL, err := url.Parse(buildpackName)
+	if err == nil && buildpackURL.IsAbs() {
+		baseDir = s.BuildpacksDownloadDir()
+	}
+	return path.Join(baseDir, fmt.Sprintf("%x", md5.Sum([]byte(buildpackName))))
 }
 
 func (s LifecycleBuilderConfig) BuildpackOrder() []string {
@@ -162,6 +176,10 @@ func (s LifecycleBuilderConfig) DepsIndex(i int) string {
 
 func (s LifecycleBuilderConfig) BuildpacksDir() string {
 	return s.Lookup(lifecycleBuilderBuildpacksDirFlag).Value.String()
+}
+
+func (s LifecycleBuilderConfig) BuildpacksDownloadDir() string {
+	return s.Lookup(lifecycleBuilderBuildpacksDownloadDirFlag).Value.String()
 }
 
 func (s LifecycleBuilderConfig) BuildArtifactsCacheDir() string {

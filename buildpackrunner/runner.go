@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cloudfoundry-incubator/candiedyaml"
+	yaml "gopkg.in/yaml.v2"
 
 	"code.cloudfoundry.org/buildpackapplifecycle"
 	"code.cloudfoundry.org/bytefmt"
@@ -380,7 +380,7 @@ func (runner *Runner) detect() (string, string, string, bool) {
 func (runner *Runner) readProcfile() (map[string]string, error) {
 	processes := map[string]string{}
 
-	procFile, err := os.Open(filepath.Join(runner.config.BuildDir(), "Procfile"))
+	procFile, err := ioutil.ReadFile(filepath.Join(runner.config.BuildDir(), "Procfile"))
 	if err != nil {
 		if os.IsNotExist(err) {
 			// Procfiles are optional
@@ -389,9 +389,8 @@ func (runner *Runner) readProcfile() (map[string]string, error) {
 
 		return processes, err
 	}
-	defer procFile.Close()
 
-	err = candiedyaml.NewDecoder(procFile).Decode(&processes)
+	err = yaml.Unmarshal(procFile, &processes)
 	if err != nil {
 		// clobber yaml parsing  error
 		return processes, errors.New("invalid YAML")
@@ -408,11 +407,9 @@ func (runner *Runner) release(buildpackDir string, startCommands map[string]stri
 		return Release{}, err
 	}
 
-	decoder := candiedyaml.NewDecoder(output)
-
 	parsedRelease := Release{}
 
-	err = decoder.Decode(&parsedRelease)
+	err = yaml.Unmarshal(output.Bytes(), &parsedRelease)
 	if err != nil {
 		return Release{}, newDescriptiveError(err, "buildpack's release output invalid")
 	}
