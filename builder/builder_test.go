@@ -536,7 +536,7 @@ var _ = Describe("Building", func() {
 		})
 	})
 
-	Context("with a buildpack that does not determine a start command", func() {
+	Context("with a buildpack that has no commands", func() {
 		BeforeEach(func() {
 			buildpackOrder = "release-without-command"
 			cpBuildpack("release-without-command")
@@ -599,6 +599,159 @@ var _ = Describe("Building", func() {
 				Eventually(session.Err).Should(gbytes.Say("No start command specified by buildpack or via Procfile."))
 				Eventually(session.Err).Should(gbytes.Say("App will not start unless a command is provided at runtime."))
 				Eventually(session).Should(gexec.Exit(0))
+			})
+		})
+	})
+
+	Context("with a buildpack that determines a start web-command", func() {
+		BeforeEach(func() {
+			buildpackOrder = "always-detects"
+			cpBuildpack("always-detects")
+		})
+
+		Context("when the app has a Procfile", func() {
+			Context("with web defined", func() {
+				JustBeforeEach(func() {
+					Eventually(builder(), 5*time.Second).Should(gexec.Exit(0))
+				})
+
+				BeforeEach(func() {
+					cp(filepath.Join(appFixtures, "with-procfile-with-web", "Procfile"), buildDir)
+				})
+
+				It("merges the Procfile and the buildpack for execution_metadata", func() {
+					Expect(resultJSON()).To(MatchJSON(`{
+						"process_types":{"web":"procfile-provided start-command"},
+						"lifecycle_type": "buildpack",
+						"lifecycle_metadata":{
+							"detected_buildpack": "Always Matching",
+							"buildpack_key": "always-detects"
+						},
+						"execution_metadata": ""
+					}`))
+				})
+			})
+
+			Context("without web", func() {
+				JustBeforeEach(func() {
+					Eventually(builder(), 5*time.Second).Should(gexec.Exit(0))
+				})
+
+				BeforeEach(func() {
+					cp(filepath.Join(appFixtures, "with-procfile", "Procfile"), buildDir)
+				})
+
+				It("merges the Procfile but uses the buildpack for execution_metadata", func() {
+
+					Expect(resultJSON()).To(MatchJSON(`{
+						"process_types":{"spider":"bogus command", "web":"the start command"},
+						"lifecycle_type": "buildpack",
+						"lifecycle_metadata": {
+							"detected_buildpack": "Always Matching",
+							"buildpack_key": "always-detects"
+						},
+						"execution_metadata": ""
+					}`))
+				})
+			})
+		})
+
+		Context("and the app has no Procfile", func() {
+
+			JustBeforeEach(func() {
+				Eventually(builder(), 5*time.Second).Should(gexec.Exit(0))
+			})
+
+			BeforeEach(func() {
+				cp(filepath.Join(appFixtures, "bash-app", "app.sh"), buildDir)
+			})
+
+			It("merges the Procfile and the buildpack for execution_metadata", func() {
+				Expect(resultJSON()).To(MatchJSON(`{
+						"process_types":{"web":"the start command"},
+						"lifecycle_type": "buildpack",
+						"lifecycle_metadata":{
+							"detected_buildpack": "Always Matching",
+							"buildpack_key": "always-detects"
+						},
+						"execution_metadata": ""
+					}`))
+			})
+		})
+	})
+
+	Context("with a buildpack that determines a start non-web-command", func() {
+		BeforeEach(func() {
+			buildpackOrder = "always-detects-non-web"
+			cpBuildpack("always-detects-non-web")
+		})
+
+		Context("when the app has a Procfile", func() {
+			Context("with web defined", func() {
+				JustBeforeEach(func() {
+					Eventually(builder(), 5*time.Second).Should(gexec.Exit(0))
+				})
+
+				BeforeEach(func() {
+					cp(filepath.Join(appFixtures, "with-procfile-with-web", "Procfile"), buildDir)
+				})
+
+				It("merges the Procfile for execution_metadata", func() {
+					Expect(resultJSON()).To(MatchJSON(`{
+						"process_types":{"web":"procfile-provided start-command", "nonweb":"start nonweb buildpack"},
+						"lifecycle_type": "buildpack",
+						"lifecycle_metadata":{
+							"detected_buildpack": "Always Detects Non-Web",
+							"buildpack_key": "always-detects-non-web"
+						},
+						"execution_metadata": ""
+					}`))
+				})
+			})
+
+			Context("without web", func() {
+				BeforeEach(func() {
+					cp(filepath.Join(appFixtures, "with-procfile", "Procfile"), buildDir)
+				})
+
+				It("displays an error and returns the Procfile data without web", func() {
+					session := builder()
+					Eventually(session.Err).Should(gbytes.Say("No start command specified by buildpack or via Procfile."))
+					Eventually(session.Err).Should(gbytes.Say("App will not start unless a command is provided at runtime."))
+					Eventually(session).Should(gexec.Exit(0))
+
+					Expect(resultJSON()).To(MatchJSON(`{
+						"process_types":{"spider":"bogus command", "nonweb":"start nonweb buildpack"},
+						"lifecycle_type": "buildpack",
+						"lifecycle_metadata": {
+							"detected_buildpack": "Always Detects Non-Web",
+							"buildpack_key": "always-detects-non-web"
+						},
+						"execution_metadata": ""
+					}`))
+				})
+			})
+		})
+
+		Context("and the app has no Procfile", func() {
+			BeforeEach(func() {
+				cp(filepath.Join(appFixtures, "bash-app", "app.sh"), buildDir)
+			})
+
+			It("fails", func() {
+				session := builder()
+				Eventually(session.Err).Should(gbytes.Say("No start command specified by buildpack or via Procfile."))
+				Eventually(session.Err).Should(gbytes.Say("App will not start unless a command is provided at runtime."))
+				Eventually(session).Should(gexec.Exit(0))
+				Expect(resultJSON()).To(MatchJSON(`{
+						"process_types":{"nonweb":"start nonweb buildpack"},
+						"lifecycle_type": "buildpack",
+						"lifecycle_metadata": {
+							"detected_buildpack": "Always Detects Non-Web",
+							"buildpack_key": "always-detects-non-web"
+						},
+						"execution_metadata": ""
+					}`))
 			})
 		})
 	})

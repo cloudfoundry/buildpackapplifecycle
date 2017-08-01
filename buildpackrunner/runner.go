@@ -415,7 +415,13 @@ func (runner *Runner) release(buildpackDir string, startCommands map[string]stri
 	}
 
 	if len(startCommands) > 0 {
-		parsedRelease.DefaultProcessTypes = startCommands
+		if len(parsedRelease.DefaultProcessTypes) == 0 {
+			parsedRelease.DefaultProcessTypes = startCommands
+		} else {
+			for k, v := range startCommands {
+				parsedRelease.DefaultProcessTypes[k] = v
+			}
+		}
 	}
 
 	return parsedRelease, nil
