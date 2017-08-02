@@ -59,7 +59,9 @@ func copyDirectory(srcDir, destDir string) error {
 			if err := os.MkdirAll(dest, f.Mode()); err != nil {
 				return err
 			}
-			err = copyDirectory(src, dest)
+			if err := copyDirectory(src, dest); err != nil {
+				return err
+			}
 		} else {
 			srcHandle, err := os.Open(src)
 			if err != nil {
