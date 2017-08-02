@@ -463,60 +463,6 @@ func (runner *Runner) saveInfo(infoFilePath, buildpack, detectOutput string, rel
 	return nil
 }
 
-func (runner *Runner) copyApp(buildDir, stageDir string) error {
-	if err := os.MkdirAll(stageDir, 0755); err != nil {
-		return err
-	}
-	return copyDirectory(buildDir, stageDir)
-}
-
-func copyDirectory(srcDir, destDir string) error {
-	destExists, err := fileExists(destDir)
-	if err != nil {
-		return err
-	} else if !destExists {
-		return errors.New("destination dir must exist")
-	}
-
-	files, err := ioutil.ReadDir(srcDir)
-	if err != nil {
-		return err
-	}
-
-	for _, f := range files {
-		src := filepath.Join(srcDir, f.Name())
-		dest := filepath.Join(destDir, f.Name())
-
-		if f.IsDir() {
-			if err := os.MkdirAll(dest, f.Mode()); err != nil {
-				return err
-			}
-			err = copyDirectory(src, dest)
-		} else {
-			srcHandle, err := os.Open(src)
-			if err != nil {
-				return err
-			}
-
-			destHandle, err := os.OpenFile(dest, os.O_RDWR|os.O_CREATE|os.O_TRUNC, f.Mode())
-			if err != nil {
-				srcHandle.Close()
-				return err
-			}
-
-			_, err = io.Copy(destHandle, srcHandle)
-			srcHandle.Close()
-			destHandle.Close()
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
-
-}
-
 func (runner *Runner) run(cmd *exec.Cmd, output io.Writer) error {
 	cmd.Stdout = output
 	cmd.Stderr = os.Stderr
