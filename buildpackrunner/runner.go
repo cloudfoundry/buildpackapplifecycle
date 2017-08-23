@@ -292,6 +292,9 @@ func fileExists(file string) (bool, error) {
 
 // returns buildpack path, ok
 func (runner *Runner) runSupplyBuildpacks() (string, string, error) {
+	if err := runner.validateSupplyBuildpacks(); err != nil {
+		return "", "", err
+	}
 	for i, buildpack := range runner.config.SupplyBuildpacks() {
 		buildpackPath, err := runner.buildpackPath(buildpack)
 		if err != nil {
@@ -312,6 +315,23 @@ func (runner *Runner) runSupplyBuildpacks() (string, string, error) {
 	}
 
 	return finalBuildpack, finalPath, nil
+}
+
+func (runner *Runner) validateSupplyBuildpacks() error {
+	for _, buildpack := range runner.config.SupplyBuildpacks() {
+		buildpackPath, err := runner.buildpackPath(buildpack)
+		if err != nil {
+			printError(err.Error())
+			return newDescriptiveError(err, buildpackapplifecycle.SupplyFailMsg)
+		}
+
+		if hasSupply, err := hasSupply(buildpackPath); err != nil {
+			return newDescriptiveError(err, buildpackapplifecycle.SupplyFailMsg)
+		} else if !hasSupply {
+			return newDescriptiveError(err, buildpackapplifecycle.NoSupplyScriptFailMsg)
+		}
+	}
+	return nil
 }
 
 func (runner *Runner) runFinalize(buildpackPath string) error {
@@ -339,6 +359,10 @@ func (runner *Runner) runFinalize(buildpackPath string) error {
 			return newDescriptiveError(err, buildpackapplifecycle.FinalizeFailMsg)
 		}
 	} else {
+		if len(runner.config.SupplyBuildpacks()) > 0 {
+			printError(buildpackapplifecycle.MissingFinalizeWarnMsg)
+		}
+
 		// remove unused deps sub dir
 		if err := os.RemoveAll(filepath.Join(runner.depsDir, depsIdx)); err != nil {
 			return newDescriptiveError(err, buildpackapplifecycle.CompileFailMsg)
@@ -471,5 +495,5 @@ func (runner *Runner) run(cmd *exec.Cmd, output io.Writer) error {
 }
 
 func printError(message string) {
-	println(message)
+	fmt.Fprintln(os.Stderr, message)
 }

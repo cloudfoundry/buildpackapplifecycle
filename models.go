@@ -3,16 +3,18 @@ package buildpackapplifecycle
 import "strings"
 
 const (
-	DetectFailMsg      = "None of the buildpacks detected a compatible application"
-	CompileFailMsg     = "Failed to compile droplet"
-	ReleaseFailMsg     = "Failed to build droplet release"
-	SupplyFailMsg      = "Failed to run all supply scripts"
-	FinalizeFailMsg    = "Failed to run finalize script"
-	DETECT_FAIL_CODE   = 222
-	COMPILE_FAIL_CODE  = 223
-	RELEASE_FAIL_CODE  = 224
-	SUPPLY_FAIL_CODE   = 225
-	FINALIZE_FAIL_CODE = 226
+	DetectFailMsg          = "None of the buildpacks detected a compatible application"
+	CompileFailMsg         = "Failed to compile droplet"
+	ReleaseFailMsg         = "Failed to build droplet release"
+	SupplyFailMsg          = "Failed to run all supply scripts"
+	NoSupplyScriptFailMsg  = "Error: one of the buildpacks chosen to supply dependencies does not support multi-buildpack apps"
+	MissingFinalizeWarnMsg = "Warning: the last buildpack is not compatible with multi-buildpack apps and cannot make use of any dependencies supplied by the buildpacks specified before it"
+	FinalizeFailMsg        = "Failed to run finalize script"
+	DETECT_FAIL_CODE       = 222
+	COMPILE_FAIL_CODE      = 223
+	RELEASE_FAIL_CODE      = 224
+	SUPPLY_FAIL_CODE       = 225
+	FINALIZE_FAIL_CODE     = 226
 )
 
 func ExitCodeFromError(err error) int {
@@ -25,6 +27,8 @@ func ExitCodeFromError(err error) int {
 	case strings.Contains(errMsg, ReleaseFailMsg):
 		return RELEASE_FAIL_CODE
 	case strings.Contains(errMsg, SupplyFailMsg):
+		return SUPPLY_FAIL_CODE
+	case strings.Contains(errMsg, NoSupplyScriptFailMsg):
 		return SUPPLY_FAIL_CODE
 	case strings.Contains(errMsg, FinalizeFailMsg):
 		return FINALIZE_FAIL_CODE

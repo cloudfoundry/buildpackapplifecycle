@@ -820,6 +820,57 @@ var _ = Describe("Building", func() {
 		})
 	})
 
+	Context("when a buildpack that isn't last doesn't have a supply script", func() {
+		BeforeEach(func() {
+			buildpackOrder = "has-finalize-no-supply,has-finalize"
+			skipDetect = true
+
+			cpBuildpack("has-finalize-no-supply")
+			cpBuildpack("has-finalize")
+			cp(filepath.Join(appFixtures, "bash-app", "app.sh"), buildDir)
+		})
+
+		It("should exit with a clear error", func() {
+			session := builder()
+			Eventually(session).Should(gexec.Exit(225))
+			Expect(session.Err).Should(gbytes.Say("Error: one of the buildpacks chosen to supply dependencies does not support multi-buildpack apps"))
+		})
+	})
+
+	Context("when a the final buildpack has compile but not finalize", func() {
+		Context("single buildpack", func() {
+			BeforeEach(func() {
+				buildpackOrder = "always-detects"
+				skipDetect = true
+
+				cpBuildpack("always-detects")
+				cp(filepath.Join(appFixtures, "bash-app", "app.sh"), buildDir)
+			})
+
+			It("should not display a warning about multi-buildpack compatibility", func() {
+				session := builder()
+				Eventually(session).Should(gexec.Exit(0))
+				Expect(session.Err).ToNot(gbytes.Say("Warning: the last buildpack is not compatible with multi-buildpack apps and cannot make use of any dependencies supplied by the buildpacks specified before it"))
+			})
+		})
+		Context("multi-buildpack", func() {
+			BeforeEach(func() {
+				buildpackOrder = "has-finalize,always-detects"
+				skipDetect = true
+
+				cpBuildpack("has-finalize")
+				cpBuildpack("always-detects")
+				cp(filepath.Join(appFixtures, "bash-app", "app.sh"), buildDir)
+			})
+
+			It("should display a warning about multi-buildpack compatibility", func() {
+				session := builder()
+				Eventually(session).Should(gexec.Exit(0))
+				Expect(session.Err).To(gbytes.Say("Warning: the last buildpack is not compatible with multi-buildpack apps and cannot make use of any dependencies supplied by the buildpacks specified before it"))
+			})
+		})
+	})
+
 	Context("when the buildpack release generates invalid yaml", func() {
 		BeforeEach(func() {
 			buildpackOrder = "release-generates-bad-yaml"
