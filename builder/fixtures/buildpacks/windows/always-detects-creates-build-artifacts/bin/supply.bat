@@ -16,6 +16,8 @@ if exist "%CACHE_DIR%\old-supply" (
 echo %contents% > %CACHE_DIR%\supplied
 echo %contents% > %DEP_DIR%\%SUB_DIR%\supplied
 
-echo '---' > %DEP_DIR%/%SUB_DIR%/config.yml
-echo 'name: Creates Buildpack Artifacts' >> %DEP_DIR%/%SUB_DIR%/config.yml
-echo 'version: 9.1.3' >> %DEP_DIR%/%SUB_DIR%/config.yml
+(
+echo '---'
+echo 'name: Creates Buildpack Artifacts'
+echo 'version: 9.1.3'
+) > %DEP_DIR%/%SUB_DIR%/config.yml
