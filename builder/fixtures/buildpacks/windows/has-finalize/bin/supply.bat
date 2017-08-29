@@ -20,4 +20,4 @@ echo 'extra:'
 echo '- data'
 echo 'more:'
 echo '  stuff: is good'
-) > %DEP_DIR%/%SUB_DIR%/config.yml
+) > %DEP_DIR%\%SUB_DIR%\config.yml

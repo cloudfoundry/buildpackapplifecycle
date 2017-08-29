@@ -20,4 +20,4 @@ echo %contents% > %DEP_DIR%\%SUB_DIR%\supplied
 echo '---'
 echo 'name: Creates Buildpack Artifacts'
 echo 'version: 9.1.3'
-) > %DEP_DIR%/%SUB_DIR%/config.yml
+) > %DEP_DIR%\%SUB_DIR%\config.yml
