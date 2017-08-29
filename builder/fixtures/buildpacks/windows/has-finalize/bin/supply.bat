@@ -12,3 +12,10 @@ set contents=has-finalize-buildpack
 
 echo %contents% > %CACHE_DIR%\supplied
 echo %contents% > %DEP_DIR%\%SUB_DIR%\supplied
+
+echo '---' > %DEP_DIR%/%SUB_DIR%/config.yml
+echo 'name: Finalize' >> %DEP_DIR%/%SUB_DIR%/config.yml
+echo 'extra:' >> %DEP_DIR%/%SUB_DIR%/config.yml
+echo '- data' >> %DEP_DIR%/%SUB_DIR%/config.yml
+echo 'more:' >> %DEP_DIR%/%SUB_DIR%/config.yml
+echo '  stuff: is good' >> %DEP_DIR%/%SUB_DIR%/config.yml

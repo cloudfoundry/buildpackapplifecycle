@@ -38,8 +38,15 @@ func ExitCodeFromError(err error) int {
 }
 
 type LifecycleMetadata struct {
-	BuildpackKey      string `json:"buildpack_key,omitempty"`
-	DetectedBuildpack string `json:"detected_buildpack"`
+	BuildpackKey      string              `json:"buildpack_key,omitempty"`
+	DetectedBuildpack string              `json:"detected_buildpack"`
+	Buildpacks        []BuildpackMetadata `json:"buildpacks"`
+}
+
+type BuildpackMetadata struct {
+	Key     string `json:"key"`
+	Name    string `json:"name"`
+	Version string `json:"version,omitempty"`
 }
 
 type ProcessTypes map[string]string

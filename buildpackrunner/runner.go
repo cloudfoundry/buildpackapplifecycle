@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -84,13 +85,11 @@ func (runner *Runner) Run() (string, error) {
 		if err != nil {
 			return "", err
 		}
-
 	} else {
 		detectedBuildpack, detectedBuildpackDir, detectOutput, ok = runner.detect()
 		if !ok {
 			return "", newDescriptiveError(nil, buildpackapplifecycle.DetectFailMsg)
 		}
-
 	}
 
 	if err := runner.runFinalize(detectedBuildpackDir); err != nil {
@@ -117,9 +116,19 @@ func (runner *Runner) Run() (string, error) {
 		return "", err
 	}
 
+	var buildpacks []buildpackapplifecycle.BuildpackMetadata
+	if runner.config.SkipDetect() {
+		buildpacks = runner.buildpacksMetadata(runner.config.BuildpackOrder())
+	} else {
+		buildpacks = runner.buildpacksMetadata([]string{detectedBuildpack})
+		if buildpacks[0].Name == "" {
+			buildpacks[0].Name = detectOutput
+		}
+	}
+
 	//generate staging_info.yml and result json file
 	infoFilePath := filepath.Join(runner.contentsDir, "staging_info.yml")
-	err = runner.saveInfo(infoFilePath, detectedBuildpack, detectOutput, releaseInfo)
+	err = runner.saveInfo(infoFilePath, buildpacks, releaseInfo)
 	if err != nil {
 		return "", newDescriptiveError(err, "Failed to encode generated metadata")
 	}
@@ -153,6 +162,25 @@ func (runner *Runner) Run() (string, error) {
 	}
 
 	return infoFilePath, nil
+}
+
+func (runner *Runner) buildpacksMetadata(buildpacks []string) []buildpackapplifecycle.BuildpackMetadata {
+	data := make([]buildpackapplifecycle.BuildpackMetadata, len(buildpacks))
+	for i, key := range buildpacks {
+		data[i].Key = key
+		configPath := filepath.Join(runner.depsDir, strconv.Itoa(i), "config.yml")
+		if contents, err := ioutil.ReadFile(configPath); err == nil {
+			configyaml := struct {
+				Name    string `yaml:"name"`
+				Version string `yaml:"version"`
+			}{}
+			if err := yaml.Unmarshal(contents, &configyaml); err == nil {
+				data[i].Name = configyaml.Name
+				data[i].Version = configyaml.Version
+			}
+		}
+	}
+	return data
 }
 
 func (runner *Runner) makeDirectories() error {
@@ -451,16 +479,21 @@ func (runner *Runner) release(buildpackDir string, startCommands map[string]stri
 	return parsedRelease, nil
 }
 
-func (runner *Runner) saveInfo(infoFilePath, buildpack, detectOutput string, releaseInfo Release) error {
+func (runner *Runner) saveInfo(infoFilePath string, buildpacks []buildpackapplifecycle.BuildpackMetadata, releaseInfo Release) error {
 	deaInfoFile, err := os.Create(infoFilePath)
 	if err != nil {
 		return err
 	}
 	defer deaInfoFile.Close()
 
+	var lastBuildpack buildpackapplifecycle.BuildpackMetadata
+	if len(buildpacks) > 0 {
+		lastBuildpack = buildpacks[len(buildpacks)-1]
+	}
+
 	// JSON ⊂ YAML
 	err = json.NewEncoder(deaInfoFile).Encode(DeaStagingInfo{
-		DetectedBuildpack: detectOutput,
+		DetectedBuildpack: lastBuildpack.Name,
 		StartCommand:      releaseInfo.DefaultProcessTypes["web"],
 	})
 	if err != nil {
@@ -476,8 +509,9 @@ func (runner *Runner) saveInfo(infoFilePath, buildpack, detectOutput string, rel
 	err = json.NewEncoder(resultFile).Encode(buildpackapplifecycle.NewStagingResult(
 		releaseInfo.DefaultProcessTypes,
 		buildpackapplifecycle.LifecycleMetadata{
-			BuildpackKey:      buildpack,
-			DetectedBuildpack: detectOutput,
+			BuildpackKey:      lastBuildpack.Key,
+			DetectedBuildpack: lastBuildpack.Name,
+			Buildpacks:        buildpacks,
 		},
 	))
 	if err != nil {

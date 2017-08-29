@@ -2,6 +2,7 @@ package main_test
 
 import (
 	"crypto/md5"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
@@ -12,6 +13,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"code.cloudfoundry.org/buildpackapplifecycle"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -110,6 +113,15 @@ var _ = Describe("Building", func() {
 		return resultInfo
 	}
 
+	resultJSONbuildpacks := func() []byte {
+		result := resultJSON()
+		var stagingResult buildpackapplifecycle.StagingResult
+		Expect(json.Unmarshal(result, &stagingResult)).To(Succeed())
+		bytes, err := json.Marshal(stagingResult.LifecycleMetadata.Buildpacks)
+		Expect(err).ToNot(HaveOccurred())
+		return bytes
+	}
+
 	Context("run detect", func() {
 		BeforeEach(func() {
 			buildpackOrder = "always-detects,also-always-detects"
@@ -192,7 +204,10 @@ var _ = Describe("Building", func() {
 						"lifecycle_type": "buildpack",
 						"lifecycle_metadata":{
 							"detected_buildpack": "Always Matching",
-							"buildpack_key": "always-detects"
+							"buildpack_key": "always-detects",
+							"buildpacks": [
+								{"key": "always-detects", "name": "Always Matching"}
+							]
 						},
 						"execution_metadata": ""
 				}`))
@@ -209,7 +224,10 @@ var _ = Describe("Building", func() {
 						"lifecycle_type": "buildpack",
 						"lifecycle_metadata":{
 							"detected_buildpack": "Always Matching",
-							"buildpack_key": "always-detects"
+							"buildpack_key": "always-detects",
+							"buildpacks": [
+								{ "key": "always-detects", "name": "Always Matching" }
+							]
 						},
 						"execution_metadata": ""
 				 }`))
@@ -227,7 +245,10 @@ var _ = Describe("Building", func() {
 						"lifecycle_type": "buildpack",
 						"lifecycle_metadata":{
 							"detected_buildpack": "Always Matching",
-							"buildpack_key": "always-detects"
+							"buildpack_key": "always-detects",
+							"buildpacks": [
+								{ "key": "always-detects", "name": "Always Matching" }
+							]
 						},
 						"execution_metadata": ""
 				 }`))
@@ -267,7 +288,10 @@ var _ = Describe("Building", func() {
 						"lifecycle_type": "buildpack",
 						"lifecycle_metadata":{
 							"detected_buildpack": "",
-							"buildpack_key": "always-detects"
+							"buildpack_key": "always-detects",
+							"buildpacks": [
+								{ "key": "always-detects", "name": "" }
+						  ]
 						},
 						"execution_metadata": ""
 				}`))
@@ -343,6 +367,14 @@ var _ = Describe("Building", func() {
 					content, err := exec.Command("tar", "-xzOf", outputDroplet, "./app/finalized").Output()
 					Expect(err).To(BeNil())
 					Expect(strings.TrimRight(string(content), " \r\n")).To(Equal("has-finalize-buildpack"))
+				})
+
+				It("writes metadata on all buildpacks", func() {
+					Expect(resultJSONbuildpacks()).To(MatchJSON(`[
+					  { "key": "always-detects-creates-build-artifacts", "name": "Creates Buildpack Artifacts", "version": "9.1.3" },
+						{ "key": "always-detects", "name": "" },
+						{ "key": "has-finalize", "name": "Finalize" }
+					]`))
 				})
 			})
 
@@ -558,7 +590,10 @@ var _ = Describe("Building", func() {
 						"lifecycle_type": "buildpack",
 						"lifecycle_metadata":{
 							"detected_buildpack": "Release Without Command",
-							"buildpack_key": "release-without-command"
+							"buildpack_key": "release-without-command",
+							"buildpacks": [
+							  { "key": "release-without-command", "name": "Release Without Command" }
+						  ]
 						},
 						"execution_metadata": ""
 					}`))
@@ -581,7 +616,10 @@ var _ = Describe("Building", func() {
 						"lifecycle_type": "buildpack",
 						"lifecycle_metadata": {
 							"detected_buildpack": "Release Without Command",
-							"buildpack_key": "release-without-command"
+							"buildpack_key": "release-without-command",
+							"buildpacks": [
+							  { "key": "release-without-command", "name": "Release Without Command" }
+						  ]
 						},
 						"execution_metadata": ""
 					}`))
@@ -625,7 +663,10 @@ var _ = Describe("Building", func() {
 						"lifecycle_type": "buildpack",
 						"lifecycle_metadata":{
 							"detected_buildpack": "Always Matching",
-							"buildpack_key": "always-detects"
+							"buildpack_key": "always-detects",
+							"buildpacks": [
+							  { "key": "always-detects", "name": "Always Matching" }
+						  ]
 						},
 						"execution_metadata": ""
 					}`))
@@ -648,7 +689,10 @@ var _ = Describe("Building", func() {
 						"lifecycle_type": "buildpack",
 						"lifecycle_metadata": {
 							"detected_buildpack": "Always Matching",
-							"buildpack_key": "always-detects"
+							"buildpack_key": "always-detects",
+							"buildpacks": [
+							  { "key": "always-detects", "name": "Always Matching" }
+						  ]
 						},
 						"execution_metadata": ""
 					}`))
@@ -672,7 +716,10 @@ var _ = Describe("Building", func() {
 						"lifecycle_type": "buildpack",
 						"lifecycle_metadata":{
 							"detected_buildpack": "Always Matching",
-							"buildpack_key": "always-detects"
+							"buildpack_key": "always-detects",
+							"buildpacks": [
+							  { "key": "always-detects", "name": "Always Matching" }
+						  ]
 						},
 						"execution_metadata": ""
 					}`))
@@ -702,7 +749,10 @@ var _ = Describe("Building", func() {
 						"lifecycle_type": "buildpack",
 						"lifecycle_metadata":{
 							"detected_buildpack": "Always Detects Non-Web",
-							"buildpack_key": "always-detects-non-web"
+							"buildpack_key": "always-detects-non-web",
+						  "buildpacks": [
+                  { "key": "always-detects-non-web", "name": "Always Detects Non-Web" }
+              ]
 						},
 						"execution_metadata": ""
 					}`))
@@ -725,7 +775,10 @@ var _ = Describe("Building", func() {
 						"lifecycle_type": "buildpack",
 						"lifecycle_metadata": {
 							"detected_buildpack": "Always Detects Non-Web",
-							"buildpack_key": "always-detects-non-web"
+							"buildpack_key": "always-detects-non-web",
+						  "buildpacks": [
+                  { "key": "always-detects-non-web", "name": "Always Detects Non-Web" }
+              ]
 						},
 						"execution_metadata": ""
 					}`))
@@ -748,7 +801,10 @@ var _ = Describe("Building", func() {
 						"lifecycle_type": "buildpack",
 						"lifecycle_metadata": {
 							"detected_buildpack": "Always Detects Non-Web",
-							"buildpack_key": "always-detects-non-web"
+							"buildpack_key": "always-detects-non-web",
+						  "buildpacks": [
+                  { "key": "always-detects-non-web", "name": "Always Detects Non-Web" }
+              ]
 						},
 						"execution_metadata": ""
 					}`))
