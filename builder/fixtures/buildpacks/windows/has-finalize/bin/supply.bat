@@ -14,10 +14,10 @@ echo %contents% > %CACHE_DIR%\supplied
 echo %contents% > %DEP_DIR%\%SUB_DIR%\supplied
 
 (
-echo '---'
-echo 'name: Finalize'
-echo 'extra:'
-echo '- data'
-echo 'more:'
-echo '  stuff: is good'
+echo ---
+echo name: Finalize
+echo extra:
+echo - data
+echo more:
+echo   stuff: is good
 ) > %DEP_DIR%\%SUB_DIR%\config.yml
