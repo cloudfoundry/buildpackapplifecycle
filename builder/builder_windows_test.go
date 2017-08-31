@@ -3,6 +3,7 @@ package main_test
 import (
 	"os/exec"
 	"path/filepath"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -18,5 +19,5 @@ func cp(src string, dst string) {
 		GinkgoWriter)
 	Expect(err).ToNot(HaveOccurred())
 
-	Eventually(session).Should(gexec.Exit(0))
+	Eventually(session, 5*time.Second).Should(gexec.Exit(0))
 }

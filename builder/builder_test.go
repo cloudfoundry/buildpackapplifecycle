@@ -609,7 +609,7 @@ var _ = Describe("Building", func() {
 					session := builder()
 					Eventually(session.Err).Should(gbytes.Say("No start command specified by buildpack or via Procfile."))
 					Eventually(session.Err).Should(gbytes.Say("App will not start unless a command is provided at runtime."))
-					Eventually(session).Should(gexec.Exit(0))
+					Eventually(session, 5*time.Second).Should(gexec.Exit(0))
 
 					Expect(resultJSON()).To(MatchJSON(`{
 						"process_types":{"spider":"bogus command"},
@@ -636,7 +636,7 @@ var _ = Describe("Building", func() {
 				session := builder()
 				Eventually(session.Err).Should(gbytes.Say("No start command specified by buildpack or via Procfile."))
 				Eventually(session.Err).Should(gbytes.Say("App will not start unless a command is provided at runtime."))
-				Eventually(session).Should(gexec.Exit(0))
+				Eventually(session, 5*time.Second).Should(gexec.Exit(0))
 			})
 		})
 	})
@@ -768,7 +768,7 @@ var _ = Describe("Building", func() {
 					session := builder()
 					Eventually(session.Err).Should(gbytes.Say("No start command specified by buildpack or via Procfile."))
 					Eventually(session.Err).Should(gbytes.Say("App will not start unless a command is provided at runtime."))
-					Eventually(session).Should(gexec.Exit(0))
+					Eventually(session, 5*time.Second).Should(gexec.Exit(0))
 
 					Expect(resultJSON()).To(MatchJSON(`{
 						"process_types":{"spider":"bogus command", "nonweb":"start nonweb buildpack"},
@@ -795,7 +795,7 @@ var _ = Describe("Building", func() {
 				session := builder()
 				Eventually(session.Err).Should(gbytes.Say("No start command specified by buildpack or via Procfile."))
 				Eventually(session.Err).Should(gbytes.Say("App will not start unless a command is provided at runtime."))
-				Eventually(session).Should(gexec.Exit(0))
+				Eventually(session, 5*time.Second).Should(gexec.Exit(0))
 				Expect(resultJSON()).To(MatchJSON(`{
 						"process_types":{"nonweb":"start nonweb buildpack"},
 						"lifecycle_type": "buildpack",
@@ -825,7 +825,7 @@ var _ = Describe("Building", func() {
 		It("fails", func() {
 			session := builder()
 			Eventually(session.Err).Should(gbytes.Say("Failed to read command from Procfile: invalid YAML"))
-			Eventually(session).Should(gexec.Exit(1))
+			Eventually(session, 5*time.Second).Should(gexec.Exit(1))
 		})
 	})
 
@@ -839,7 +839,7 @@ var _ = Describe("Building", func() {
 
 		It("should exit with an error", func() {
 			session := builder()
-			Eventually(session).Should(gexec.Exit(222))
+			Eventually(session, 5*time.Second).Should(gexec.Exit(222))
 			Expect(session.Err).To(gbytes.Say("None of the buildpacks detected a compatible application"))
 		})
 	})
@@ -854,7 +854,7 @@ var _ = Describe("Building", func() {
 
 		It("should exit with an error", func() {
 			session := builder()
-			Eventually(session).Should(gexec.Exit(223))
+			Eventually(session, 5*time.Second).Should(gexec.Exit(223))
 			Expect(session.Err).Should(gbytes.Say("Failed to compile droplet"))
 		})
 	})
@@ -871,7 +871,7 @@ var _ = Describe("Building", func() {
 
 		It("should exit with an error", func() {
 			session := builder()
-			Eventually(session).Should(gexec.Exit(225))
+			Eventually(session, 5*time.Second).Should(gexec.Exit(225))
 			Expect(session.Err).Should(gbytes.Say("Failed to run all supply scripts"))
 		})
 	})
@@ -888,7 +888,7 @@ var _ = Describe("Building", func() {
 
 		It("should exit with a clear error", func() {
 			session := builder()
-			Eventually(session).Should(gexec.Exit(225))
+			Eventually(session, 5*time.Second).Should(gexec.Exit(225))
 			Expect(session.Err).Should(gbytes.Say("Error: one of the buildpacks chosen to supply dependencies does not support multi-buildpack apps"))
 		})
 	})
@@ -905,7 +905,7 @@ var _ = Describe("Building", func() {
 
 			It("should not display a warning about multi-buildpack compatibility", func() {
 				session := builder()
-				Eventually(session).Should(gexec.Exit(0))
+				Eventually(session, 5*time.Second).Should(gexec.Exit(0))
 				Expect(session.Err).ToNot(gbytes.Say("Warning: the last buildpack is not compatible with multi-buildpack apps and cannot make use of any dependencies supplied by the buildpacks specified before it"))
 			})
 		})
@@ -921,7 +921,7 @@ var _ = Describe("Building", func() {
 
 			It("should display a warning about multi-buildpack compatibility", func() {
 				session := builder()
-				Eventually(session).Should(gexec.Exit(0))
+				Eventually(session, 5*time.Second).Should(gexec.Exit(0))
 				Expect(session.Err).To(gbytes.Say("Warning: the last buildpack is not compatible with multi-buildpack apps and cannot make use of any dependencies supplied by the buildpacks specified before it"))
 			})
 		})
@@ -937,7 +937,7 @@ var _ = Describe("Building", func() {
 
 		It("should exit with an error", func() {
 			session := builder()
-			Eventually(session).Should(gexec.Exit(224))
+			Eventually(session, 5*time.Second).Should(gexec.Exit(224))
 			Expect(session.Err).Should(gbytes.Say("buildpack's release output invalid"))
 		})
 	})
@@ -952,7 +952,7 @@ var _ = Describe("Building", func() {
 
 		It("should exit with an error", func() {
 			session := builder()
-			Eventually(session).Should(gexec.Exit(224))
+			Eventually(session, 5*time.Second).Should(gexec.Exit(224))
 			Expect(session.Err).Should(gbytes.Say("Failed to build droplet release"))
 		})
 	})
