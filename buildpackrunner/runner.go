@@ -12,7 +12,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
@@ -168,7 +167,7 @@ func (runner *Runner) buildpacksMetadata(buildpacks []string) []buildpackapplife
 	data := make([]buildpackapplifecycle.BuildpackMetadata, len(buildpacks))
 	for i, key := range buildpacks {
 		data[i].Key = key
-		configPath := filepath.Join(runner.depsDir, strconv.Itoa(i), "config.yml")
+		configPath := filepath.Join(runner.depsDir, runner.config.DepsIndex(i), "config.yml")
 		if contents, err := ioutil.ReadFile(configPath); err == nil {
 			configyaml := struct {
 				Name    string `yaml:"name"`
