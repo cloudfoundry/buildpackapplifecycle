@@ -15,7 +15,9 @@ import (
 
 func main() {
 	if len(os.Args) < 4 {
-		exitWithUsage()
+		fmt.Fprintf(os.Stderr, "%s: received only %d arguments\n", os.Args[0], len(os.Args)-1)
+		fmt.Fprintf(os.Stderr, "Usage: %s <app-directory> <start-command> <metadata>", os.Args[0])
+		os.Exit(1)
 	}
 
 	dir := os.Args[1]
@@ -72,16 +74,12 @@ func main() {
 	}
 
 	if command == "" {
-		exitWithUsage()
+		fmt.Fprintf(os.Stderr, "%s: no start command specified or detected in droplet", os.Args[0])
+		os.Exit(1)
 	}
 
 	runtime.GOMAXPROCS(1)
 	runProcess(dir, command)
-}
-
-func exitWithUsage() {
-	fmt.Fprintf(os.Stderr, "Usage: %s <app directory> <start command> <metadata>", os.Args[0])
-	os.Exit(1)
 }
 
 type stagingInfo struct {
