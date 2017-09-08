@@ -149,6 +149,27 @@ var _ = Describe("Launcher", func() {
 				Eventually(session).Should(gbytes.Say("running app"))
 			})
 		})
+
+		Context("when the given dir does not have .profile.d", func() {
+			It("does not report errors about missing .profile.d", func() {
+				Eventually(session).Should(gexec.Exit(0))
+				Expect(string(session.Err.Contents())).To(BeEmpty())
+			})
+		})
+
+		Context("when the given dir has an empty .profile.d", func() {
+			BeforeEach(func() {
+				if runtime.GOOS == "windows" {
+					Skip(".profile.d not supported on Windows")
+				}
+				Expect(os.MkdirAll(filepath.Join(appDir, ".profile.d"), 0755)).To(Succeed())
+			})
+
+			It("does not report errors about missing .profile.d", func() {
+				Eventually(session).Should(gexec.Exit(0))
+				Expect(string(session.Err.Contents())).To(BeEmpty())
+			})
+		})
 	}
 
 	Context("the app executable is in vcap/app", func() {
