@@ -10,7 +10,7 @@ import (
 const launcher = `
 cd "$1"
 
-if [ -d .profile.d ]; then
+if [ -d .profile.d ] && [ -z "$(ls -A .profile.d)" ]; then
   for env_file in .profile.d/*; do
     source $env_file
   done
