@@ -225,10 +225,10 @@ var _ = Describe("Launcher", func() {
 		ItExecutesTheCommandWithTheRightEnvironment()
 	})
 
-	var ItPrintsUsageInformation = func() {
-		It("prints usage information", func() {
+	var ItPrintsMissingStartCommandInformation = func() {
+		It("fails and reports no start command", func() {
 			Eventually(session).Should(gexec.Exit(1))
-			Eventually(session.Err).Should(gbytes.Say("Usage: launcher <app directory> <start command> <metadata>"))
+			Eventually(session.Err).Should(gbytes.Say("launcher: no start command specified or detected in droplet"))
 		})
 	}
 
@@ -243,7 +243,7 @@ var _ = Describe("Launcher", func() {
 		})
 
 		Context("when the app package does not contain staging_info.yml", func() {
-			ItPrintsUsageInformation()
+			ItPrintsMissingStartCommandInformation()
 		})
 
 		Context("when the app package has a staging_info.yml", func() {
@@ -253,7 +253,7 @@ var _ = Describe("Launcher", func() {
 					writeStagingInfo(extractDir, "detected_buildpack: Ruby")
 				})
 
-				ItPrintsUsageInformation()
+				ItPrintsMissingStartCommandInformation()
 			})
 
 			Context("when it contains a start command", func() {
@@ -299,7 +299,11 @@ var _ = Describe("Launcher", func() {
 			}
 		})
 
-		ItPrintsUsageInformation()
+		It("fails with an indication that too few arguments were passed", func() {
+			Eventually(session).Should(gexec.Exit(1))
+			Eventually(session.Err).Should(gbytes.Say("launcher: received only 2 arguments\n"))
+			Eventually(session.Err).Should(gbytes.Say("Usage: launcher <app-directory> <start-command> <metadata>"))
+		})
 	})
 })
 
