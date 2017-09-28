@@ -1,6 +1,9 @@
 package main_test
 
 import (
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
@@ -8,7 +11,10 @@ import (
 	"github.com/onsi/gomega/gexec"
 )
 
-var builderPath string
+var (
+	builderPath string
+	tarPath     string
+)
 
 func TestBuildpackLifecycleBuilder(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -16,15 +22,20 @@ func TestBuildpackLifecycleBuilder(t *testing.T) {
 }
 
 var _ = SynchronizedBeforeSuite(func() []byte {
-	builder, err := gexec.Build("code.cloudfoundry.org/buildpackapplifecycle/builder")
-	Expect(err).NotTo(HaveOccurred())
-	return []byte(builder)
-}, func(builder []byte) {
-	builderPath = string(builder)
+	builder := buildBuilder()
+	tar := downloadTar()
+	return []byte(builder + "^" + tar)
+}, func(exePaths []byte) {
+	paths := strings.Split(string(exePaths), "^")
+	builderPath = paths[0]
+	tarPath = paths[1]
 })
 
 var _ = SynchronizedAfterSuite(func() {
 	//noop
 }, func() {
 	gexec.CleanupBuildArtifacts()
+	if tarPath != "" {
+		Expect(os.RemoveAll(filepath.Dir(tarPath))).To(Succeed())
+	}
 })

@@ -61,6 +61,8 @@ var _ = Describe("Building", func() {
 		buildDir, err = ioutil.TempDir(tmpDir, "building-app")
 		Expect(err).NotTo(HaveOccurred())
 
+		copyTar(filepath.Join(tmpDir, "tmp", "lifecycle"))
+
 		buildpacksDir, err = ioutil.TempDir(tmpDir, "building-buildpacks")
 		Expect(err).NotTo(HaveOccurred())
 
@@ -104,6 +106,7 @@ var _ = Describe("Building", func() {
 
 		env := os.Environ()
 		builderCmd.Env = append(env, "TMPDIR="+tmpDir)
+		builderCmd.Dir = tmpDir
 	})
 
 	resultJSON := func() []byte {

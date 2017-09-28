@@ -110,7 +110,7 @@ func (runner *Runner) Run() (string, error) {
 		printError("App will not start unless a command is provided at runtime.")
 	}
 
-	tarPath, err := exec.LookPath("tar")
+	tarPath, err := runner.findTar()
 	if err != nil {
 		return "", err
 	}

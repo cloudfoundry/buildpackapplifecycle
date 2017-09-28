@@ -7,13 +7,14 @@ import (
 	"fmt"
 	"math"
 	"net/url"
-	"path"
+	"os"
+	"path/filepath"
 	"strings"
 )
 
 type LifecycleBuilderConfig struct {
 	*flag.FlagSet
-
+	workingDir     string
 	ExecutablePath string
 }
 
@@ -103,15 +104,20 @@ func NewLifecycleBuilderConfig(buildpacks []string, skipDetect bool, skipCertVer
 		"skip SSL certificate verification",
 	)
 
-	return LifecycleBuilderConfig{
-		FlagSet: flagSet,
+	wd, err := os.Getwd()
+	if err != nil {
+		wd = "."
+	}
 
+	return LifecycleBuilderConfig{
+		FlagSet:        flagSet,
+		workingDir:     wd,
 		ExecutablePath: "/tmp/lifecycle/builder",
 	}
 }
 
 func (s LifecycleBuilderConfig) Path() string {
-	return s.ExecutablePath
+	return s.getPath(s.ExecutablePath)
 }
 
 func (s LifecycleBuilderConfig) Args() []string {
@@ -142,7 +148,7 @@ func (s LifecycleBuilderConfig) Validate() error {
 }
 
 func (s LifecycleBuilderConfig) BuildDir() string {
-	return s.Lookup(lifecycleBuilderBuildDirFlag).Value.String()
+	return s.getPath(s.Lookup(lifecycleBuilderBuildDirFlag).Value.String())
 }
 
 func (s LifecycleBuilderConfig) BuildpackPath(buildpackName string) string {
@@ -151,7 +157,7 @@ func (s LifecycleBuilderConfig) BuildpackPath(buildpackName string) string {
 	if err == nil && buildpackURL.IsAbs() {
 		baseDir = s.BuildpacksDownloadDir()
 	}
-	return path.Join(baseDir, fmt.Sprintf("%x", md5.Sum([]byte(buildpackName))))
+	return filepath.Join(baseDir, fmt.Sprintf("%x", md5.Sum([]byte(buildpackName))))
 }
 
 func (s LifecycleBuilderConfig) BuildpackOrder() []string {
@@ -175,27 +181,27 @@ func (s LifecycleBuilderConfig) DepsIndex(i int) string {
 }
 
 func (s LifecycleBuilderConfig) BuildpacksDir() string {
-	return s.Lookup(lifecycleBuilderBuildpacksDirFlag).Value.String()
+	return s.getPath(s.Lookup(lifecycleBuilderBuildpacksDirFlag).Value.String())
 }
 
 func (s LifecycleBuilderConfig) BuildpacksDownloadDir() string {
-	return s.Lookup(lifecycleBuilderBuildpacksDownloadDirFlag).Value.String()
+	return s.getPath(s.Lookup(lifecycleBuilderBuildpacksDownloadDirFlag).Value.String())
 }
 
 func (s LifecycleBuilderConfig) BuildArtifactsCacheDir() string {
-	return s.Lookup(lifecycleBuilderBuildArtifactsCacheDirFlag).Value.String()
+	return s.getPath(s.Lookup(lifecycleBuilderBuildArtifactsCacheDirFlag).Value.String())
 }
 
 func (s LifecycleBuilderConfig) OutputDroplet() string {
-	return s.Lookup(lifecycleBuilderOutputDropletFlag).Value.String()
+	return s.getPath(s.Lookup(lifecycleBuilderOutputDropletFlag).Value.String())
 }
 
 func (s LifecycleBuilderConfig) OutputMetadata() string {
-	return s.Lookup(lifecycleBuilderOutputMetadataFlag).Value.String()
+	return s.getPath(s.Lookup(lifecycleBuilderOutputMetadataFlag).Value.String())
 }
 
 func (s LifecycleBuilderConfig) OutputBuildArtifactsCache() string {
-	return s.Lookup(lifecycleBuilderOutputBuildArtifactsCacheFlag).Value.String()
+	return s.getPath(s.Lookup(lifecycleBuilderOutputBuildArtifactsCacheFlag).Value.String())
 }
 
 func (s LifecycleBuilderConfig) SkipCertVerify() bool {
