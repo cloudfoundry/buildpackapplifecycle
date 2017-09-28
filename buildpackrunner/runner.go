@@ -231,17 +231,20 @@ func (runner *Runner) downloadBuildpacks() error {
 
 		destination := runner.config.BuildpackPath(buildpackName)
 
+		var downloadErr error
 		if IsZipFile(buildpackURL.Path) {
+			var size uint64
+
 			zipDownloader := NewZipDownloader(runner.config.SkipCertVerify())
-			size, err := zipDownloader.DownloadAndExtract(buildpackURL, destination)
-			if err == nil {
+			size, downloadErr = zipDownloader.DownloadAndExtract(buildpackURL, destination)
+			if downloadErr == nil {
 				fmt.Printf("Downloaded buildpack `%s` (%s)\n", buildpackURL.String(), bytefmt.ByteSize(size))
 			}
 		} else {
-			err = GitClone(*buildpackURL, destination)
+			downloadErr = GitClone(*buildpackURL, destination)
 		}
-		if err != nil {
-			return err
+		if downloadErr != nil {
+			return downloadErr
 		}
 	}
 
