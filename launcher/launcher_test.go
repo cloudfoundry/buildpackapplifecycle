@@ -1,9 +1,12 @@
 package main_test
 
 import (
+	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -14,6 +17,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
+	"github.com/onsi/gomega/ghttp"
 )
 
 var _ = Describe("Launcher", func() {
@@ -225,6 +229,125 @@ var _ = Describe("Launcher", func() {
 		ItExecutesTheCommandWithTheRightEnvironment()
 	})
 
+	Describe("interpolation of credhub-ref in VCAP_SERVICES", func() {
+		var server *ghttp.Server
+		BeforeEach(func() {
+			server = ghttp.NewServer()
+		})
+
+		Context("when VCAP_SERVICES contains credhub refs", func() {
+			var vcapServicesValue string
+			BeforeEach(func() {
+				vcapServicesValue = `{"my-server":[{"credentials":{"credhub-ref":"(//my-server/creds)"}}]}`
+				launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("VCAP_SERVICES=%s", vcapServicesValue))
+			})
+
+			Context("when the credhub location is passed to the launcher", func() {
+				BeforeEach(func() {
+					encodedCredhubLocation := base64.StdEncoding.EncodeToString([]byte(`{ "credhub_uri": "` + server.URL() + `"}`))
+					launcherCmd.Args = []string{
+						"launcher",
+						appDir,
+						startCommand,
+						"",
+						encodedCredhubLocation,
+					}
+				})
+
+				Context("when credhub successfully interpolates", func() {
+					BeforeEach(func() {
+						server.AppendHandlers(
+							ghttp.CombineHandlers(
+								ghttp.VerifyRequest("GET", "/info"),
+								ghttp.RespondWith(http.StatusOK, "{}"),
+							),
+							ghttp.CombineHandlers(
+								ghttp.VerifyRequest("POST", "/api/v1/interpolate"),
+								ghttp.VerifyBody([]byte(vcapServicesValue)),
+								ghttp.RespondWith(http.StatusOK, "INTERPOLATED_JSON"),
+							))
+					})
+
+					It("updates VCAP_SERVICES with the interpolated content", func() {
+						Eventually(session).Should(gexec.Exit(0))
+						Eventually(session.Out).Should(gbytes.Say("VCAP_SERVICES=INTERPOLATED_JSON"))
+					})
+				})
+
+				Context("when credhub fails", func() {
+					BeforeEach(func() {
+						server.AppendHandlers(
+							ghttp.CombineHandlers(
+								ghttp.VerifyRequest("GET", "/info"),
+								ghttp.RespondWith(http.StatusOK, "{}"),
+							),
+							ghttp.CombineHandlers(
+								ghttp.VerifyRequest("POST", "/api/v1/interpolate"),
+								ghttp.VerifyBody([]byte(vcapServicesValue)),
+								ghttp.RespondWith(http.StatusInternalServerError, "{}"),
+							))
+					})
+
+					It("prints an error message", func() {
+						Eventually(session).Should(gexec.Exit(4))
+						Eventually(session.Err).Should(gbytes.Say("Unable to interpolate credhub references"))
+					})
+				})
+			})
+			Context("when the credhub location is not passed to the launcher", func() {
+				BeforeEach(func() {
+					encodedCredhubLocation := base64.StdEncoding.EncodeToString([]byte(`{}`))
+					launcherCmd.Args = []string{
+						"launcher",
+						appDir,
+						startCommand,
+						"",
+						encodedCredhubLocation,
+					}
+				})
+
+				It("does not attempt to do any credhub interpolation", func() {
+					Eventually(session).Should(gexec.Exit(0))
+					Eventually(string(session.Out.Contents())).Should(ContainSubstring(fmt.Sprintf(fmt.Sprintf("VCAP_SERVICES=%s", vcapServicesValue))))
+				})
+			})
+
+			Context("when a 4th argument with invalid Base64 is passed to the launcher", func() {
+				BeforeEach(func() {
+					encodedCredhubLocation := "!!!" + base64.StdEncoding.EncodeToString([]byte(`{ "credhub_uri": "`+server.URL()+`"}`))
+					launcherCmd.Args = []string{
+						"launcher",
+						appDir,
+						startCommand,
+						"",
+						encodedCredhubLocation,
+					}
+				})
+				It("prints an error message", func() {
+					Eventually(session).Should(gexec.Exit(3))
+					Eventually(session.Err).Should(gbytes.Say("Invalid platform options"))
+				})
+			})
+
+			Context("when a 4th argument with invalid JSON is passed to the launcher", func() {
+				BeforeEach(func() {
+					encodedCredhubLocation := base64.StdEncoding.EncodeToString([]byte(`{"credhub_uri":"missing quote and brace`))
+					launcherCmd.Args = []string{
+						"launcher",
+						appDir,
+						startCommand,
+						"",
+						encodedCredhubLocation,
+					}
+				})
+				It("prints an error message", func() {
+					Eventually(session).Should(gexec.Exit(3))
+					Eventually(session.Err).Should(gbytes.Say("Invalid platform options"))
+				})
+			})
+		})
+	})
+
 	var ItPrintsMissingStartCommandInformation = func() {
 		It("fails and reports no start command", func() {
 			Eventually(session).Should(gexec.Exit(1))
@@ -302,7 +425,7 @@ var _ = Describe("Launcher", func() {
 		It("fails with an indication that too few arguments were passed", func() {
 			Eventually(session).Should(gexec.Exit(1))
 			Eventually(session.Err).Should(gbytes.Say("launcher: received only 2 arguments\n"))
-			Eventually(session.Err).Should(gbytes.Say("Usage: launcher <app-directory> <start-command> <metadata>"))
+			Eventually(session.Err).Should(gbytes.Say("Usage: launcher <app-directory> <start-command> <metadata> \\[<platform-options>\\]"))
 		})
 	})
 })

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,13 +11,19 @@ import (
 	"runtime"
 	"strconv"
 
+	"github.com/cloudfoundry-incubator/credhub-cli/credhub"
+
 	yaml "gopkg.in/yaml.v2"
 )
+
+type PlatformOptions struct {
+	CredhubURI string `json:"credhub_uri"`
+}
 
 func main() {
 	if len(os.Args) < 4 {
 		fmt.Fprintf(os.Stderr, "%s: received only %d arguments\n", os.Args[0], len(os.Args)-1)
-		fmt.Fprintf(os.Stderr, "Usage: %s <app-directory> <start-command> <metadata>", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %s <app-directory> <start-command> <metadata> [<platform-options>]", os.Args[0])
 		os.Exit(1)
 	}
 
@@ -78,8 +85,39 @@ func main() {
 		os.Exit(1)
 	}
 
+	platformOptions, err := platformOptions()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Invalid platform options: %v", err)
+		os.Exit(3)
+	}
+	if platformOptions != nil && platformOptions.CredhubURI != "" {
+		interpolatedServices, err := credhub.InterpolateString(platformOptions.CredhubURI, os.Getenv("VCAP_SERVICES"))
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Unable to interpolate credhub references: %v", err)
+			os.Exit(4)
+		}
+		os.Setenv("VCAP_SERVICES", interpolatedServices)
+	}
+
 	runtime.GOMAXPROCS(1)
 	runProcess(dir, command)
+}
+
+func platformOptions() (*PlatformOptions, error) {
+	if len(os.Args) > 4 {
+		base64PlatformOptions := os.Args[4]
+		jsonPlatformOptions, err := base64.StdEncoding.DecodeString(base64PlatformOptions)
+		if err != nil {
+			return nil, err
+		}
+		platformOptions := PlatformOptions{}
+		err = json.Unmarshal(jsonPlatformOptions, &platformOptions)
+		if err != nil {
+			return nil, err
+		}
+		return &platformOptions, nil
+	}
+	return nil, nil
 }
 
 type stagingInfo struct {
