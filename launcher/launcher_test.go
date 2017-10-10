@@ -355,7 +355,24 @@ var _ = Describe("Launcher", func() {
 				})
 
 			})
-			Context("when the credhub location is not passed to the launcher", func() {
+			Context("when the credhub location is not passed to the launcher (empty string)", func() {
+				BeforeEach(func() {
+					launcherCmd.Args = []string{
+						"launcher",
+						appDir,
+						startCommand,
+						"",
+						"",
+					}
+				})
+
+				It("does not attempt to do any credhub interpolation", func() {
+					Eventually(session).Should(gexec.Exit(0))
+					Eventually(string(session.Out.Contents())).Should(ContainSubstring(fmt.Sprintf(fmt.Sprintf("VCAP_SERVICES=%s", vcapServicesValue))))
+				})
+			})
+
+			Context("when the credhub location is not passed to the launcher (empty JSON)", func() {
 				BeforeEach(func() {
 					encodedCredhubLocation := base64.StdEncoding.EncodeToString([]byte(`{}`))
 					launcherCmd.Args = []string{

@@ -115,6 +115,9 @@ func main() {
 func platformOptions() (*PlatformOptions, error) {
 	if len(os.Args) > 4 {
 		base64PlatformOptions := os.Args[4]
+		if base64PlatformOptions == "" {
+			return nil, nil
+		}
 		jsonPlatformOptions, err := base64.StdEncoding.DecodeString(base64PlatformOptions)
 		if err != nil {
 			return nil, err
