@@ -280,7 +280,7 @@ var _ = Describe("Launcher", func() {
 				launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("VCAP_SERVICES=%s", vcapServicesValue))
 			})
 
-			Context("when the credhub location is passed to the launcher", func() {
+			Context("when the credhub location is passed to the launcher's platform options", func() {
 				BeforeEach(func() {
 					encodedCredhubLocation := base64.StdEncoding.EncodeToString([]byte(`{ "credhub_uri": "` + server.URL() + `"}`))
 					launcherCmd.Args = []string{
@@ -355,7 +355,7 @@ var _ = Describe("Launcher", func() {
 				})
 
 			})
-			Context("when the credhub location is not passed to the launcher (empty string)", func() {
+			Context("when an empty string is passed for the launcher platform options", func() {
 				BeforeEach(func() {
 					launcherCmd.Args = []string{
 						"launcher",
@@ -372,7 +372,7 @@ var _ = Describe("Launcher", func() {
 				})
 			})
 
-			Context("when the credhub location is not passed to the launcher (empty JSON)", func() {
+			Context("when an empty JSON is passed for the launcher platform options", func() {
 				BeforeEach(func() {
 					encodedCredhubLocation := base64.StdEncoding.EncodeToString([]byte(`{}`))
 					launcherCmd.Args = []string{
@@ -390,7 +390,7 @@ var _ = Describe("Launcher", func() {
 				})
 			})
 
-			Context("when a 4th argument with invalid Base64 is passed to the launcher", func() {
+			Context("when invalid Base64 is passed for the launcher platform options", func() {
 				BeforeEach(func() {
 					encodedCredhubLocation := "!!!" + base64.StdEncoding.EncodeToString([]byte(`{ "credhub_uri": "`+server.URL()+`"}`))
 					launcherCmd.Args = []string{
@@ -407,7 +407,7 @@ var _ = Describe("Launcher", func() {
 				})
 			})
 
-			Context("when a 4th argument with invalid JSON is passed to the launcher", func() {
+			Context("when invalid JSON is passed for the launcher platform options", func() {
 				BeforeEach(func() {
 					encodedCredhubLocation := base64.StdEncoding.EncodeToString([]byte(`{"credhub_uri":"missing quote and brace`))
 					launcherCmd.Args = []string{
