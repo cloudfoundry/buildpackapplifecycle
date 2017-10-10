@@ -424,6 +424,71 @@ var _ = Describe("Launcher", func() {
 				})
 			})
 		})
+
+		Context("DATABASE_URL is NOT set", func() {
+			const databaseURL = "postgres://thing.com/special"
+			BeforeEach(func() {
+				vcapServicesValue := `{"my-server":[{"credentials":{"credhub-ref":"(//my-server/creds)"}}]}`
+				encodedCredhubLocation := base64.StdEncoding.EncodeToString([]byte(`{ "credhub_uri": "` + server.URL() + `"}`))
+				launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("VCAP_SERVICES=%s", vcapServicesValue))
+				launcherCmd.Args = []string{
+					"launcher",
+					appDir,
+					startCommand,
+					"",
+					encodedCredhubLocation,
+				}
+				server.AppendHandlers(
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("POST", "/api/v1/interpolate"),
+						ghttp.RespondWith(http.StatusOK, `{"my-server":[{"credentials":{"uri":"`+databaseURL+`"}}]}`),
+					))
+			})
+			It("sets DATABASE_URL", func() {
+				Eventually(session).Should(gexec.Exit(0))
+				Eventually(string(session.Out.Contents())).Should(ContainSubstring(fmt.Sprintf(fmt.Sprintf("DATABASE_URL=%s", databaseURL))))
+			})
+		})
+	})
+
+	Describe("setting DATABASE_URL env variable", func() {
+		Context("DATABASE_URL already set", func() {
+			const databaseURL = "special://thing.com/example"
+			BeforeEach(func() {
+				launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("DATABASE_URL=%s", databaseURL))
+				launcherCmd.Args = []string{
+					"launcher",
+					appDir,
+					startCommand,
+					"",
+					"",
+				}
+			})
+			It("is not overriden", func() {
+				Eventually(session).Should(gexec.Exit(0))
+				Eventually(string(session.Out.Contents())).Should(ContainSubstring(fmt.Sprintf(fmt.Sprintf("DATABASE_URL=%s", databaseURL))))
+			})
+		})
+		Context("DATABASE_URL is NOT set", func() {
+			Context("VCAP_SERVICES is NOT encrypted", func() {
+				const databaseURL = "postgres://thing.com/special"
+				BeforeEach(func() {
+					vcapServicesValue := `{"my-server":[{"credentials":{"uri":"` + databaseURL + `"}}]}`
+					launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("VCAP_SERVICES=%s", vcapServicesValue))
+					launcherCmd.Args = []string{
+						"launcher",
+						appDir,
+						startCommand,
+						"",
+						"",
+					}
+				})
+				It("sets DATABASE_URL", func() {
+					Eventually(session).Should(gexec.Exit(0))
+					Eventually(string(session.Out.Contents())).Should(ContainSubstring(fmt.Sprintf(fmt.Sprintf("DATABASE_URL=%s", databaseURL))))
+				})
+			})
+		})
 	})
 
 	var ItPrintsMissingStartCommandInformation = func() {

@@ -11,6 +11,8 @@ import (
 	"runtime"
 	"strconv"
 
+	"code.cloudfoundry.org/buildpackapplifecycle/databaseuri"
+
 	"github.com/cloudfoundry-incubator/credhub-cli/credhub"
 
 	yaml "gopkg.in/yaml.v2"
@@ -106,6 +108,13 @@ func main() {
 			os.Exit(5)
 		}
 		os.Setenv("VCAP_SERVICES", interpolatedServices)
+	}
+
+	if os.Getenv("DATABASE_URL") == "" {
+		dbUri := databaseuri.New()
+		if creds, err := dbUri.Credentials([]byte(os.Getenv("VCAP_SERVICES"))); err == nil {
+			os.Setenv("DATABASE_URL", dbUri.Uri(creds))
+		}
 	}
 
 	runtime.GOMAXPROCS(1)
