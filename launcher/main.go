@@ -91,10 +91,19 @@ func main() {
 		os.Exit(3)
 	}
 	if platformOptions != nil && platformOptions.CredhubURI != "" {
-		interpolatedServices, err := credhub.InterpolateString(platformOptions.CredhubURI, os.Getenv("VCAP_SERVICES"))
+		if os.Getenv("CF_INSTANCE_CERT") == "" || os.Getenv("CF_INSTANCE_KEY") == "" {
+			fmt.Fprintf(os.Stderr, "Missing CF_INSTANCE_CERT and/or CF_INSTANCE_KEY")
+			os.Exit(6)
+		}
+		ch, err := credhub.New(platformOptions.CredhubURI, credhub.ClientCert(os.Getenv("CF_INSTANCE_CERT"), os.Getenv("CF_INSTANCE_KEY")))
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Unable to set up credhub client: %v", err)
+			os.Exit(4)
+		}
+		interpolatedServices, err := ch.InterpolateString(os.Getenv("VCAP_SERVICES"))
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Unable to interpolate credhub references: %v", err)
-			os.Exit(4)
+			os.Exit(5)
 		}
 		os.Setenv("VCAP_SERVICES", interpolatedServices)
 	}
