@@ -3,7 +3,6 @@ package main_test
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -346,13 +345,12 @@ var _ = Describe("Launcher", func() {
 
 			Context("when the credhub location is passed to the launcher's platform options", func() {
 				BeforeEach(func() {
-					encodedCredhubLocation := base64.StdEncoding.EncodeToString([]byte(`{ "credhub_uri": "` + server.URL() + `"}`))
+					launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf(`CF_PLATFORM_OPTIONS={ "credhub_uri": "`+server.URL()+`"}`))
 					launcherCmd.Args = []string{
 						"launcher",
 						appDir,
 						startCommand,
 						"",
-						encodedCredhubLocation,
 					}
 				})
 
@@ -438,6 +436,7 @@ var _ = Describe("Launcher", func() {
 
 			Context("when an empty string is passed for the launcher platform options", func() {
 				BeforeEach(func() {
+					launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf(`CF_PLATFORM_OPTIONS=`))
 					launcherCmd.Args = []string{
 						"launcher",
 						appDir,
@@ -455,13 +454,12 @@ var _ = Describe("Launcher", func() {
 
 			Context("when an empty JSON is passed for the launcher platform options", func() {
 				BeforeEach(func() {
-					encodedCredhubLocation := base64.StdEncoding.EncodeToString([]byte(`{}`))
+					launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf(`CF_PLATFORM_OPTIONS={}`))
 					launcherCmd.Args = []string{
 						"launcher",
 						appDir,
 						startCommand,
 						"",
-						encodedCredhubLocation,
 					}
 				})
 
@@ -471,32 +469,14 @@ var _ = Describe("Launcher", func() {
 				})
 			})
 
-			Context("when invalid Base64 is passed for the launcher platform options", func() {
-				BeforeEach(func() {
-					encodedCredhubLocation := "!!!" + base64.StdEncoding.EncodeToString([]byte(`{ "credhub_uri": "`+server.URL()+`"}`))
-					launcherCmd.Args = []string{
-						"launcher",
-						appDir,
-						startCommand,
-						"",
-						encodedCredhubLocation,
-					}
-				})
-				It("prints an error message", func() {
-					Eventually(session).Should(gexec.Exit(3))
-					Eventually(session.Err).Should(gbytes.Say("Invalid platform options"))
-				})
-			})
-
 			Context("when invalid JSON is passed for the launcher platform options", func() {
 				BeforeEach(func() {
-					encodedCredhubLocation := base64.StdEncoding.EncodeToString([]byte(`{"credhub_uri":"missing quote and brace`))
+					launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf(`CF_PLATFORM_OPTIONS='{"credhub_uri":"missing quote and brace'`))
 					launcherCmd.Args = []string{
 						"launcher",
 						appDir,
 						startCommand,
 						"",
-						encodedCredhubLocation,
 					}
 				})
 				It("prints an error message", func() {
@@ -649,7 +629,7 @@ var _ = Describe("Launcher", func() {
 		It("fails with an indication that too few arguments were passed", func() {
 			Eventually(session).Should(gexec.Exit(1))
 			Eventually(session.Err).Should(gbytes.Say("launcher: received only 2 arguments\n"))
-			Eventually(session.Err).Should(gbytes.Say("Usage: launcher <app-directory> <start-command> <metadata> \\[<platform-options>\\]"))
+			Eventually(session.Err).Should(gbytes.Say("Usage: launcher <app-directory> <start-command> <metadata>"))
 		})
 	})
 })

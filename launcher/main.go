@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -26,7 +25,7 @@ type PlatformOptions struct {
 func main() {
 	if len(os.Args) < 4 {
 		fmt.Fprintf(os.Stderr, "%s: received only %d arguments\n", os.Args[0], len(os.Args)-1)
-		fmt.Fprintf(os.Stderr, "Usage: %s <app-directory> <start-command> <metadata> [<platform-options>]", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %s <app-directory> <start-command> <metadata>", os.Args[0])
 		os.Exit(1)
 	}
 
@@ -151,17 +150,10 @@ func main() {
 }
 
 func platformOptions() (*PlatformOptions, error) {
-	if len(os.Args) > 4 {
-		base64PlatformOptions := os.Args[4]
-		if base64PlatformOptions == "" {
-			return nil, nil
-		}
-		jsonPlatformOptions, err := base64.StdEncoding.DecodeString(base64PlatformOptions)
-		if err != nil {
-			return nil, err
-		}
+	jsonPlatformOptions := os.Getenv("CF_PLATFORM_OPTIONS")
+	if jsonPlatformOptions != "" {
 		platformOptions := PlatformOptions{}
-		err = json.Unmarshal(jsonPlatformOptions, &platformOptions)
+		err := json.Unmarshal([]byte(jsonPlatformOptions), &platformOptions)
 		if err != nil {
 			return nil, err
 		}
