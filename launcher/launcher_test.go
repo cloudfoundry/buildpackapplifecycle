@@ -249,13 +249,13 @@ var _ = Describe("Launcher", func() {
 
 		BeforeEach(func() {
 			sslCertDir = os.Getenv("SSL_CERT_DIR")
-			fixturesSslDir, err := filepath.Abs("./fixtures/")
+			fixturesSslDir, err := filepath.Abs("fixtures")
 			Expect(err).NotTo(HaveOccurred())
 			os.Setenv("SSL_CERT_DIR", fixturesSslDir)
 
 			server = ghttp.NewUnstartedServer()
 
-			cert, err := tls.LoadX509KeyPair("./fixtures/server-tls-cert.pem", "./fixtures/server-tls-key.pem")
+			cert, err := tls.LoadX509KeyPair(filepath.Join("fixtures", "server-tls-cert.pem"), filepath.Join("fixtures", "server-tls-key.pem"))
 			Expect(err).NotTo(HaveOccurred())
 			server.HTTPTestServer.TLS = &tls.Config{
 				ClientAuth:   tls.RequireAndVerifyClientCert,
@@ -263,8 +263,8 @@ var _ = Describe("Launcher", func() {
 			}
 			server.HTTPTestServer.StartTLS()
 
-			launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_INSTANCE_CERT=%s/client-tls-cert.pem", fixturesSslDir))
-			launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_INSTANCE_KEY=%s/client-tls-key.pem", fixturesSslDir))
+			launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_INSTANCE_CERT=%s", filepath.Join(fixturesSslDir, "client-tls-cert.pem")))
+			launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_INSTANCE_KEY=%s", filepath.Join(fixturesSslDir, "client-tls-key.pem")))
 			launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("SSL_CERT_DIR=%s", fixturesSslDir))
 		})
 
@@ -327,8 +327,8 @@ var _ = Describe("Launcher", func() {
 
 				Context("when the instance cert and key are invalid", func() {
 					BeforeEach(func() {
-						launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_INSTANCE_CERT=%s/client-tls-key.pem", fixturesSslDir))
-						launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_INSTANCE_KEY=%s/client-tls-cert.pem", fixturesSslDir))
+						launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_INSTANCE_CERT=%s", filepath.Join(fixturesSslDir, "client-tls-key.pem")))
+						launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_INSTANCE_KEY=%s", filepath.Join(fixturesSslDir, "client-tls-cert.pem")))
 					})
 
 					It("prints an error message", func() {
