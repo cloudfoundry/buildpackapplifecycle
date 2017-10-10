@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
+	"strings"
 
 	"code.cloudfoundry.org/buildpackapplifecycle/databaseuri"
 
@@ -97,7 +98,35 @@ func main() {
 			fmt.Fprintf(os.Stderr, "Missing CF_INSTANCE_CERT and/or CF_INSTANCE_KEY")
 			os.Exit(6)
 		}
-		ch, err := credhub.New(platformOptions.CredhubURI, credhub.ClientCert(os.Getenv("CF_INSTANCE_CERT"), os.Getenv("CF_INSTANCE_KEY")))
+		if os.Getenv("CF_SYSTEM_CERTS_PATH") == "" {
+			fmt.Fprintf(os.Stderr, "Missing CF_SYSTEM_CERTS_PATH")
+			os.Exit(7)
+		}
+
+		systemCertsPath := os.Getenv("CF_SYSTEM_CERTS_PATH")
+		caCerts := []string{}
+		files, err := ioutil.ReadDir(systemCertsPath)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Can't read contents of system cert path: %v", err)
+			os.Exit(8)
+		}
+		for _, file := range files {
+			if strings.HasSuffix(file.Name(), ".crt") {
+				contents, err := ioutil.ReadFile(filepath.Join(systemCertsPath, file.Name()))
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Can't read contents of cert in system cert path: %v", err)
+					os.Exit(9)
+				}
+				caCerts = append(caCerts, string(contents))
+			}
+		}
+
+		ch, err := credhub.New(
+			platformOptions.CredhubURI,
+			credhub.ClientCert(os.Getenv("CF_INSTANCE_CERT"), os.Getenv("CF_INSTANCE_KEY")),
+			credhub.CaCerts(caCerts...),
+		)
+
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Unable to set up credhub client: %v", err)
 			os.Exit(4)

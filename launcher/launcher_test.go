@@ -2,6 +2,7 @@ package main_test
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -293,7 +294,6 @@ var _ = Describe("Launcher", func() {
 	Describe("interpolation of credhub-ref in VCAP_SERVICES", func() {
 		var (
 			server         *ghttp.Server
-			sslCertDir     string
 			fixturesSslDir string
 		)
 
@@ -307,29 +307,34 @@ var _ = Describe("Launcher", func() {
 		}
 
 		BeforeEach(func() {
-			sslCertDir = os.Getenv("SSL_CERT_DIR")
 			fixturesSslDir, err := filepath.Abs("fixtures")
 			Expect(err).NotTo(HaveOccurred())
-			os.Setenv("SSL_CERT_DIR", fixturesSslDir)
 
 			server = ghttp.NewUnstartedServer()
 
-			cert, err := tls.LoadX509KeyPair(filepath.Join("fixtures", "server-tls-cert.pem"), filepath.Join("fixtures", "server-tls-key.pem"))
+			cert, err := tls.LoadX509KeyPair(filepath.Join("fixtures", "server-tls.crt"), filepath.Join("fixtures", "server-tls.key"))
 			Expect(err).NotTo(HaveOccurred())
+
+			caCerts := x509.NewCertPool()
+
+			caCertBytes, err := ioutil.ReadFile(filepath.Join("fixtures", "client-tls-ca.crt"))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(caCerts.AppendCertsFromPEM(caCertBytes)).To(BeTrue())
+
 			server.HTTPTestServer.TLS = &tls.Config{
 				ClientAuth:   tls.RequireAndVerifyClientCert,
 				Certificates: []tls.Certificate{cert},
+				ClientCAs:    caCerts,
 			}
 			server.HTTPTestServer.StartTLS()
 
-			launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_INSTANCE_CERT=%s", filepath.Join(fixturesSslDir, "client-tls-cert.pem")))
-			launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_INSTANCE_KEY=%s", filepath.Join(fixturesSslDir, "client-tls-key.pem")))
-			launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("SSL_CERT_DIR=%s", fixturesSslDir))
+			launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_INSTANCE_CERT=%s", filepath.Join(fixturesSslDir, "client-tls.crt")))
+			launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_INSTANCE_KEY=%s", filepath.Join(fixturesSslDir, "client-tls.key")))
+			launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_SYSTEM_CERTS_PATH=%s", fixturesSslDir))
 		})
 
 		AfterEach(func() {
 			server.Close()
-			os.Setenv("SSL_CERT_DIR", sslCertDir)
 		})
 
 		Context("when VCAP_SERVICES contains credhub refs", func() {
@@ -386,8 +391,8 @@ var _ = Describe("Launcher", func() {
 
 				Context("when the instance cert and key are invalid", func() {
 					BeforeEach(func() {
-						launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_INSTANCE_CERT=%s", filepath.Join(fixturesSslDir, "client-tls-key.pem")))
-						launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_INSTANCE_KEY=%s", filepath.Join(fixturesSslDir, "client-tls-cert.pem")))
+						launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_INSTANCE_CERT=%s", filepath.Join(fixturesSslDir, "client-tls.key")))
+						launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_INSTANCE_KEY=%s", filepath.Join(fixturesSslDir, "client-tls.crt")))
 					})
 
 					It("prints an error message", func() {
@@ -413,7 +418,24 @@ var _ = Describe("Launcher", func() {
 					})
 				})
 
+				Context("when the system certs path isn't set", func() {
+					BeforeEach(func() {
+						newEnv := []string{}
+						for _, env := range launcherCmd.Env {
+							if !strings.HasPrefix(env, "CF_SYSTEM_CERTS_PATH") {
+								newEnv = append(newEnv, env)
+							}
+						}
+						launcherCmd.Env = newEnv
+					})
+
+					It("prints an error message", func() {
+						Eventually(session).Should(gexec.Exit(7))
+						Eventually(session.Err).Should(gbytes.Say("Missing CF_SYSTEM_CERTS_PATH"))
+					})
+				})
 			})
+
 			Context("when an empty string is passed for the launcher platform options", func() {
 				BeforeEach(func() {
 					launcherCmd.Args = []string{
