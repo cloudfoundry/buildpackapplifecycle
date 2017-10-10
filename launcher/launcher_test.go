@@ -411,7 +411,7 @@ var _ = Describe("Launcher", func() {
 					})
 
 					It("prints an error message", func() {
-						Eventually(session).Should(gexec.Exit(6))
+						Eventually(session).Should(gexec.Exit(4))
 						Eventually(session.Err).Should(gbytes.Say("Missing CF_INSTANCE_CERT and/or CF_INSTANCE_KEY"))
 					})
 				})
@@ -428,7 +428,7 @@ var _ = Describe("Launcher", func() {
 					})
 
 					It("prints an error message", func() {
-						Eventually(session).Should(gexec.Exit(7))
+						Eventually(session).Should(gexec.Exit(4))
 						Eventually(session.Err).Should(gbytes.Say("Missing CF_SYSTEM_CERTS_PATH"))
 					})
 				})

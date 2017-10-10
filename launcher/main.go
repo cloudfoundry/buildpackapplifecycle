@@ -93,39 +93,7 @@ func main() {
 		os.Exit(3)
 	}
 	if platformOptions != nil && platformOptions.CredhubURI != "" {
-		if os.Getenv("CF_INSTANCE_CERT") == "" || os.Getenv("CF_INSTANCE_KEY") == "" {
-			fmt.Fprintf(os.Stderr, "Missing CF_INSTANCE_CERT and/or CF_INSTANCE_KEY")
-			os.Exit(6)
-		}
-		if os.Getenv("CF_SYSTEM_CERTS_PATH") == "" {
-			fmt.Fprintf(os.Stderr, "Missing CF_SYSTEM_CERTS_PATH")
-			os.Exit(7)
-		}
-
-		systemCertsPath := os.Getenv("CF_SYSTEM_CERTS_PATH")
-		caCerts := []string{}
-		files, err := ioutil.ReadDir(systemCertsPath)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Can't read contents of system cert path: %v", err)
-			os.Exit(8)
-		}
-		for _, file := range files {
-			if strings.HasSuffix(file.Name(), ".crt") {
-				contents, err := ioutil.ReadFile(filepath.Join(systemCertsPath, file.Name()))
-				if err != nil {
-					fmt.Fprintf(os.Stderr, "Can't read contents of cert in system cert path: %v", err)
-					os.Exit(9)
-				}
-				caCerts = append(caCerts, string(contents))
-			}
-		}
-
-		ch, err := credhub.New(
-			platformOptions.CredhubURI,
-			credhub.ClientCert(os.Getenv("CF_INSTANCE_CERT"), os.Getenv("CF_INSTANCE_KEY")),
-			credhub.CaCerts(caCerts...),
-		)
-
+		ch, err := credhubClient(platformOptions.CredhubURI)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Unable to set up credhub client: %v", err)
 			os.Exit(4)
@@ -147,6 +115,37 @@ func main() {
 
 	runtime.GOMAXPROCS(1)
 	runProcess(dir, command)
+}
+
+func credhubClient(credhubURI string) (*credhub.CredHub, error) {
+	if os.Getenv("CF_INSTANCE_CERT") == "" || os.Getenv("CF_INSTANCE_KEY") == "" {
+		return nil, fmt.Errorf("Missing CF_INSTANCE_CERT and/or CF_INSTANCE_KEY")
+	}
+	if os.Getenv("CF_SYSTEM_CERTS_PATH") == "" {
+		return nil, fmt.Errorf("Missing CF_SYSTEM_CERTS_PATH")
+	}
+
+	systemCertsPath := os.Getenv("CF_SYSTEM_CERTS_PATH")
+	caCerts := []string{}
+	files, err := ioutil.ReadDir(systemCertsPath)
+	if err != nil {
+		return nil, fmt.Errorf("Can't read contents of system cert path: %v", err)
+	}
+	for _, file := range files {
+		if strings.HasSuffix(file.Name(), ".crt") {
+			contents, err := ioutil.ReadFile(filepath.Join(systemCertsPath, file.Name()))
+			if err != nil {
+				return nil, fmt.Errorf("Can't read contents of cert in system cert path: %v", err)
+			}
+			caCerts = append(caCerts, string(contents))
+		}
+	}
+
+	return credhub.New(
+		credhubURI,
+		credhub.ClientCert(os.Getenv("CF_INSTANCE_CERT"), os.Getenv("CF_INSTANCE_KEY")),
+		credhub.CaCerts(caCerts...),
+	)
 }
 
 func platformOptions() (*PlatformOptions, error) {
