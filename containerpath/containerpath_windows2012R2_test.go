@@ -3,7 +3,10 @@
 package containerpath_test
 
 import (
-	. "code.cloudfoundry.org/buildpackapplifecycle/containerpath"
+	"os"
+	"path/filepath"
+
+	"code.cloudfoundry.org/buildpackapplifecycle/containerpath"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -13,7 +16,7 @@ var _ = Describe("containerpath.For", func() {
 	var userProfile string
 	BeforeEach(func() {
 		userProfile = os.Getenv("USERPROFILE")
-		os.Setenv("USERPROFILE", filepath.Join("C:", "varrr", "veecap")
+		os.Setenv("USERPROFILE", filepath.Join("C:\\", "varrr", "veecap"))
 	})
 
 	AfterEach(func() {
@@ -21,6 +24,6 @@ var _ = Describe("containerpath.For", func() {
 	})
 
 	It("returns paths relative to %USERPROFILE%", func() {
-		Expect(containerpath.For(filepath.FromSlash("/foo/bar/baz")).To(Equal(filepath.FromSlash("C:/varrr/veecap/foo/bar/baz"))
+		Expect(containerpath.For(filepath.FromSlash("/foo/bar/baz"))).To(Equal(filepath.FromSlash("C:/varrr/veecap/foo/bar/baz")))
 	})
 })

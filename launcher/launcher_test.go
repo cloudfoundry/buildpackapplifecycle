@@ -31,6 +31,23 @@ var _ = Describe("Launcher", func() {
 	var session *gexec.Session
 	var startCommand string
 
+	removeFromLauncherEnv := func(keys ...string) {
+		newEnv := []string{}
+		for _, env := range launcherCmd.Env {
+			found := false
+			for _, key := range keys {
+				if strings.HasPrefix(env, key) {
+					found = true
+					break
+				}
+			}
+			if !found {
+				newEnv = append(newEnv, env)
+			}
+		}
+		launcherCmd.Env = newEnv
+	}
+
 	BeforeEach(func() {
 		Expect(os.Setenv("CALLERENV", "some-value")).To(Succeed())
 
@@ -334,6 +351,7 @@ var _ = Describe("Launcher", func() {
 			}
 			server.HTTPTestServer.StartTLS()
 
+			removeFromLauncherEnv("USERPROFILE")
 			launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("USERPROFILE=%s", fixturesSslDir))
 			if containerpath.For("/") == fixturesSslDir {
 				launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_INSTANCE_CERT=%s", filepath.Join("/certs", "client-tls.crt")))
@@ -360,7 +378,7 @@ var _ = Describe("Launcher", func() {
 
 			Context("when the credhub location is passed to the launcher's platform options", func() {
 				BeforeEach(func() {
-					launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf(`CF_PLATFORM_OPTIONS={ "credhub_uri": "`+server.URL()+`"}`))
+					launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf(`VCAP_PLATFORM_OPTIONS={ "credhub_uri": "`+server.URL()+`"}`))
 					launcherCmd.Args = []string{
 						"launcher",
 						appDir,
@@ -404,6 +422,7 @@ var _ = Describe("Launcher", func() {
 
 				Context("when the instance cert and key are invalid", func() {
 					BeforeEach(func() {
+						removeFromLauncherEnv("CF_INSTANCE_CERT", "CF_INSTANCE_KEY")
 						if containerpath.For("/") == fixturesSslDir {
 							launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_INSTANCE_CERT=%s", filepath.Join("/hello", "hello.go")))
 							launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_INSTANCE_KEY=%s", filepath.Join("/hello", "hello.go")))
@@ -421,13 +440,7 @@ var _ = Describe("Launcher", func() {
 
 				Context("when the instance cert and key aren't set", func() {
 					BeforeEach(func() {
-						newEnv := []string{}
-						for _, env := range launcherCmd.Env {
-							if !(strings.HasPrefix(env, "CF_INSTANCE_CERT") || strings.HasPrefix(env, "CF_INSTANCE_KEY")) {
-								newEnv = append(newEnv, env)
-							}
-						}
-						launcherCmd.Env = newEnv
+						removeFromLauncherEnv("CF_INSTANCE_CERT", "CF_INSTANCE_KEY")
 					})
 
 					It("prints an error message", func() {
@@ -438,13 +451,7 @@ var _ = Describe("Launcher", func() {
 
 				Context("when the system certs path isn't set", func() {
 					BeforeEach(func() {
-						newEnv := []string{}
-						for _, env := range launcherCmd.Env {
-							if !strings.HasPrefix(env, "CF_SYSTEM_CERTS_PATH") {
-								newEnv = append(newEnv, env)
-							}
-						}
-						launcherCmd.Env = newEnv
+						removeFromLauncherEnv("CF_SYSTEM_CERTS_PATH")
 					})
 
 					It("prints an error message", func() {
@@ -456,7 +463,7 @@ var _ = Describe("Launcher", func() {
 
 			Context("when an empty string is passed for the launcher platform options", func() {
 				BeforeEach(func() {
-					launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf(`CF_PLATFORM_OPTIONS=`))
+					launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf(`VCAP_PLATFORM_OPTIONS=`))
 					launcherCmd.Args = []string{
 						"launcher",
 						appDir,
@@ -474,7 +481,7 @@ var _ = Describe("Launcher", func() {
 
 			Context("when an empty JSON is passed for the launcher platform options", func() {
 				BeforeEach(func() {
-					launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf(`CF_PLATFORM_OPTIONS={}`))
+					launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf(`VCAP_PLATFORM_OPTIONS={}`))
 					launcherCmd.Args = []string{
 						"launcher",
 						appDir,
@@ -491,7 +498,7 @@ var _ = Describe("Launcher", func() {
 
 			Context("when invalid JSON is passed for the launcher platform options", func() {
 				BeforeEach(func() {
-					launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf(`CF_PLATFORM_OPTIONS='{"credhub_uri":"missing quote and brace'`))
+					launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf(`VCAP_PLATFORM_OPTIONS='{"credhub_uri":"missing quote and brace'`))
 					launcherCmd.Args = []string{
 						"launcher",
 						appDir,
@@ -510,7 +517,7 @@ var _ = Describe("Launcher", func() {
 			const databaseURL = "postgres://thing.com/special"
 			BeforeEach(func() {
 				vcapServicesValue := `{"my-server":[{"credentials":{"credhub-ref":"(//my-server/creds)"}}]}`
-				launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf(`CF_PLATFORM_OPTIONS={ "credhub_uri": "`+server.URL()+`"}`))
+				launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf(`VCAP_PLATFORM_OPTIONS={ "credhub_uri": "`+server.URL()+`"}`))
 				launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("VCAP_SERVICES=%s", vcapServicesValue))
 				launcherCmd.Args = []string{
 					"launcher",

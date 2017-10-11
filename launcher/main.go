@@ -150,7 +150,7 @@ func credhubClient(credhubURI string) (*credhub.CredHub, error) {
 }
 
 func platformOptions() (*PlatformOptions, error) {
-	jsonPlatformOptions := os.Getenv("CF_PLATFORM_OPTIONS")
+	jsonPlatformOptions := os.Getenv("VCAP_PLATFORM_OPTIONS")
 	if jsonPlatformOptions != "" {
 		platformOptions := PlatformOptions{}
 		err := json.Unmarshal([]byte(jsonPlatformOptions), &platformOptions)
