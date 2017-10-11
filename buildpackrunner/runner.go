@@ -27,6 +27,7 @@ type Runner struct {
 	config      *buildpackapplifecycle.LifecycleBuilderConfig
 	depsDir     string
 	contentsDir string
+	profileDir  string
 }
 
 type descriptiveError struct {
@@ -215,6 +216,11 @@ func (runner *Runner) makeDirectories() error {
 		}
 	}
 
+	runner.profileDir = filepath.Join(runner.contentsDir, "profile.d")
+	if err := os.MkdirAll(runner.profileDir, 0755); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -385,7 +391,7 @@ func (runner *Runner) runFinalize(buildpackPath string) error {
 			}
 		}
 
-		if err := runner.run(exec.Command(filepath.Join(buildpackPath, "bin", "finalize"), runner.config.BuildDir(), cacheDir, runner.depsDir, depsIdx), os.Stdout); err != nil {
+		if err := runner.run(exec.Command(filepath.Join(buildpackPath, "bin", "finalize"), runner.config.BuildDir(), cacheDir, runner.depsDir, depsIdx, runner.profileDir), os.Stdout); err != nil {
 			return newDescriptiveError(err, buildpackapplifecycle.FinalizeFailMsg)
 		}
 	} else {

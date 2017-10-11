@@ -182,6 +182,10 @@ var _ = Describe("Building", func() {
 					Expect(files).To(ContainElement("./app/finalized"))
 					Expect(files).ToNot(ContainElement("./app/compiled"))
 				})
+
+				It("places profile.d scripts in ./profile.d (not app)", func() {
+					Expect(files).To(ContainElement("./profile.d/finalized.sh"))
+				})
 			})
 		})
 
