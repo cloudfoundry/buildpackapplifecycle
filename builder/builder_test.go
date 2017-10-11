@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -184,6 +185,10 @@ var _ = Describe("Building", func() {
 				})
 
 				It("places profile.d scripts in ./profile.d (not app)", func() {
+					if runtime.GOOS == "windows" {
+						Skip("profile.d not supported on Windows")
+					}
+
 					Expect(files).To(ContainElement("./profile.d/finalized.sh"))
 				})
 			})
