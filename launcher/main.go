@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 
+	"code.cloudfoundry.org/buildpackapplifecycle/containerpath"
 	"code.cloudfoundry.org/buildpackapplifecycle/databaseuri"
 
 	"github.com/cloudfoundry-incubator/credhub-cli/credhub"
@@ -125,7 +126,7 @@ func credhubClient(credhubURI string) (*credhub.CredHub, error) {
 		return nil, fmt.Errorf("Missing CF_SYSTEM_CERTS_PATH")
 	}
 
-	systemCertsPath := os.Getenv("CF_SYSTEM_CERTS_PATH")
+	systemCertsPath := containerpath.For(os.Getenv("CF_SYSTEM_CERTS_PATH"))
 	caCerts := []string{}
 	files, err := ioutil.ReadDir(systemCertsPath)
 	if err != nil {
@@ -143,7 +144,7 @@ func credhubClient(credhubURI string) (*credhub.CredHub, error) {
 
 	return credhub.New(
 		credhubURI,
-		credhub.ClientCert(os.Getenv("CF_INSTANCE_CERT"), os.Getenv("CF_INSTANCE_KEY")),
+		credhub.ClientCert(containerpath.For(os.Getenv("CF_INSTANCE_CERT")), containerpath.For(os.Getenv("CF_INSTANCE_KEY"))),
 		credhub.CaCerts(caCerts...),
 	)
 }

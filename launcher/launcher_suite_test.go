@@ -28,8 +28,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	helloPath, err := gexec.Build("code.cloudfoundry.org/buildpackapplifecycle/launcher/fixtures/hello")
 	Expect(err).NotTo(HaveOccurred())
 
-	launcherPath, err := gexec.Build("code.cloudfoundry.org/buildpackapplifecycle/launcher", "-race")
-	Expect(err).NotTo(HaveOccurred())
+	launcherPath := buildLauncher()
 	return []byte(helloPath + "^" + launcherPath)
 }, func(exePaths []byte) {
 	paths := strings.Split(string(exePaths), "^")

@@ -15,6 +15,8 @@ import (
 	"runtime"
 	"strings"
 
+	"code.cloudfoundry.org/buildpackapplifecycle/containerpath"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
@@ -294,6 +296,7 @@ var _ = Describe("Launcher", func() {
 		var (
 			server         *ghttp.Server
 			fixturesSslDir string
+			userProfile    string
 		)
 
 		VerifyClientCerts := func() http.HandlerFunc {
@@ -306,17 +309,21 @@ var _ = Describe("Launcher", func() {
 		}
 
 		BeforeEach(func() {
+			userProfile = os.Getenv("USERPROFILE")
+
 			fixturesSslDir, err := filepath.Abs("fixtures")
 			Expect(err).NotTo(HaveOccurred())
 
+			os.Setenv("USERPROFILE", fixturesSslDir)
+
 			server = ghttp.NewUnstartedServer()
 
-			cert, err := tls.LoadX509KeyPair(filepath.Join("fixtures", "server-tls.crt"), filepath.Join("fixtures", "server-tls.key"))
+			cert, err := tls.LoadX509KeyPair(filepath.Join("fixtures", "certs", "server-tls.crt"), filepath.Join("fixtures", "certs", "server-tls.key"))
 			Expect(err).NotTo(HaveOccurred())
 
 			caCerts := x509.NewCertPool()
 
-			caCertBytes, err := ioutil.ReadFile(filepath.Join("fixtures", "client-tls-ca.crt"))
+			caCertBytes, err := ioutil.ReadFile(filepath.Join("fixtures", "cacerts", "client-tls-ca.crt"))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(caCerts.AppendCertsFromPEM(caCertBytes)).To(BeTrue())
 
@@ -327,13 +334,21 @@ var _ = Describe("Launcher", func() {
 			}
 			server.HTTPTestServer.StartTLS()
 
-			launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_INSTANCE_CERT=%s", filepath.Join(fixturesSslDir, "client-tls.crt")))
-			launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_INSTANCE_KEY=%s", filepath.Join(fixturesSslDir, "client-tls.key")))
-			launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_SYSTEM_CERTS_PATH=%s", fixturesSslDir))
+			launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("USERPROFILE=%s", fixturesSslDir))
+			if containerpath.For("/") == fixturesSslDir {
+				launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_INSTANCE_CERT=%s", filepath.Join("/certs", "client-tls.crt")))
+				launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_INSTANCE_KEY=%s", filepath.Join("/certs", "client-tls.key")))
+				launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_SYSTEM_CERTS_PATH=%s", "/cacerts"))
+			} else {
+				launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_INSTANCE_CERT=%s", filepath.Join(fixturesSslDir, "certs", "client-tls.crt")))
+				launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_INSTANCE_KEY=%s", filepath.Join(fixturesSslDir, "certs", "client-tls.key")))
+				launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_SYSTEM_CERTS_PATH=%s", filepath.Join(fixturesSslDir, "cacerts")))
+			}
 		})
 
 		AfterEach(func() {
 			server.Close()
+			os.Setenv("USERPROFILE", userProfile)
 		})
 
 		Context("when VCAP_SERVICES contains credhub refs", func() {
@@ -389,8 +404,13 @@ var _ = Describe("Launcher", func() {
 
 				Context("when the instance cert and key are invalid", func() {
 					BeforeEach(func() {
-						launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_INSTANCE_CERT=%s", filepath.Join(fixturesSslDir, "client-tls.key")))
-						launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_INSTANCE_KEY=%s", filepath.Join(fixturesSslDir, "client-tls.crt")))
+						if containerpath.For("/") == fixturesSslDir {
+							launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_INSTANCE_CERT=%s", filepath.Join("/hello", "hello.go")))
+							launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_INSTANCE_KEY=%s", filepath.Join("/hello", "hello.go")))
+						} else {
+							launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_INSTANCE_CERT=%s", filepath.Join(fixturesSslDir, "hello", "hello.go")))
+							launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_INSTANCE_KEY=%s", filepath.Join(fixturesSslDir, "hello", "hello.go")))
+						}
 					})
 
 					It("prints an error message", func() {
@@ -490,14 +510,13 @@ var _ = Describe("Launcher", func() {
 			const databaseURL = "postgres://thing.com/special"
 			BeforeEach(func() {
 				vcapServicesValue := `{"my-server":[{"credentials":{"credhub-ref":"(//my-server/creds)"}}]}`
-				encodedCredhubLocation := base64.StdEncoding.EncodeToString([]byte(`{ "credhub_uri": "` + server.URL() + `"}`))
+				launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf(`CF_PLATFORM_OPTIONS={ "credhub_uri": "`+server.URL()+`"}`))
 				launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("VCAP_SERVICES=%s", vcapServicesValue))
 				launcherCmd.Args = []string{
 					"launcher",
 					appDir,
 					startCommand,
 					"",
-					encodedCredhubLocation,
 				}
 				server.AppendHandlers(
 					ghttp.CombineHandlers(
