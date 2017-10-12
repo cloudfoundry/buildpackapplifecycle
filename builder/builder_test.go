@@ -2,10 +2,13 @@ package main_test
 
 import (
 	"crypto/md5"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
+	"net/http"
 	"os"
 	"os/exec"
 	"path"
