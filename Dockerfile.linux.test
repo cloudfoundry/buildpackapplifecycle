@@ -14,7 +14,9 @@ RUN go get github.com/onsi/ginkgo/ginkgo && go get github.com/onsi/gomega
 
 ADD . /go/src/code.cloudfoundry.org/buildpackapplifecycle/
 
-WORKDIR /go/src/code.cloudfoundry.org/buildpackapplifecycle/
+WORKDIR /go/src/
 RUN go get ./...
+
+WORKDIR /go/src/code.cloudfoundry.org/buildpackapplifecycle/
 
 CMD ginkgo -r -p
