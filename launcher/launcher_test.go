@@ -314,6 +314,7 @@ var _ = Describe("Launcher", func() {
 			server         *ghttp.Server
 			fixturesSslDir string
 			userProfile    string
+			err            error
 		)
 
 		VerifyClientCerts := func() http.HandlerFunc {
@@ -328,19 +329,19 @@ var _ = Describe("Launcher", func() {
 		BeforeEach(func() {
 			userProfile = os.Getenv("USERPROFILE")
 
-			fixturesSslDir, err := filepath.Abs("fixtures")
+			fixturesSslDir, err = filepath.Abs(filepath.Join("..", "fixtures"))
 			Expect(err).NotTo(HaveOccurred())
 
 			os.Setenv("USERPROFILE", fixturesSslDir)
 
 			server = ghttp.NewUnstartedServer()
 
-			cert, err := tls.LoadX509KeyPair(filepath.Join("fixtures", "certs", "server-tls.crt"), filepath.Join("fixtures", "certs", "server-tls.key"))
+			cert, err := tls.LoadX509KeyPair(filepath.Join(fixturesSslDir, "certs", "server-tls.crt"), filepath.Join(fixturesSslDir, "certs", "server-tls.key"))
 			Expect(err).NotTo(HaveOccurred())
 
 			caCerts := x509.NewCertPool()
 
-			caCertBytes, err := ioutil.ReadFile(filepath.Join("fixtures", "cacerts", "client-tls-ca.crt"))
+			caCertBytes, err := ioutil.ReadFile(filepath.Join(fixturesSslDir, "cacerts", "client-tls-ca.crt"))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(caCerts.AppendCertsFromPEM(caCertBytes)).To(BeTrue())
 
@@ -416,48 +417,8 @@ var _ = Describe("Launcher", func() {
 					})
 
 					It("prints an error message", func() {
-						Eventually(session).Should(gexec.Exit(5))
+						Eventually(session).Should(gexec.Exit(4))
 						Eventually(session.Err).Should(gbytes.Say("Unable to interpolate credhub references"))
-					})
-				})
-
-				Context("when the instance cert and key are invalid", func() {
-					BeforeEach(func() {
-						removeFromLauncherEnv("CF_INSTANCE_CERT", "CF_INSTANCE_KEY")
-						if containerpath.For("/") == fixturesSslDir {
-							launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_INSTANCE_CERT=%s", filepath.Join("/hello", "hello.go")))
-							launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_INSTANCE_KEY=%s", filepath.Join("/hello", "hello.go")))
-						} else {
-							launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_INSTANCE_CERT=%s", filepath.Join(fixturesSslDir, "hello", "hello.go")))
-							launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_INSTANCE_KEY=%s", filepath.Join(fixturesSslDir, "hello", "hello.go")))
-						}
-					})
-
-					It("prints an error message", func() {
-						Eventually(session).Should(gexec.Exit(4))
-						Eventually(session.Err).Should(gbytes.Say("Unable to set up credhub client"))
-					})
-				})
-
-				Context("when the instance cert and key aren't set", func() {
-					BeforeEach(func() {
-						removeFromLauncherEnv("CF_INSTANCE_CERT", "CF_INSTANCE_KEY")
-					})
-
-					It("prints an error message", func() {
-						Eventually(session).Should(gexec.Exit(4))
-						Eventually(session.Err).Should(gbytes.Say("Missing CF_INSTANCE_CERT and/or CF_INSTANCE_KEY"))
-					})
-				})
-
-				Context("when the system certs path isn't set", func() {
-					BeforeEach(func() {
-						removeFromLauncherEnv("CF_SYSTEM_CERTS_PATH")
-					})
-
-					It("prints an error message", func() {
-						Eventually(session).Should(gexec.Exit(4))
-						Eventually(session.Err).Should(gbytes.Say("Missing CF_SYSTEM_CERTS_PATH"))
 					})
 				})
 			})

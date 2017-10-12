@@ -9,13 +9,10 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
-	"strings"
 
-	"code.cloudfoundry.org/buildpackapplifecycle/containerpath"
+	"code.cloudfoundry.org/buildpackapplifecycle/credhub"
 	"code.cloudfoundry.org/buildpackapplifecycle/databaseuri"
 	"code.cloudfoundry.org/buildpackapplifecycle/platformoptions"
-
-	"github.com/cloudfoundry-incubator/credhub-cli/credhub"
 
 	yaml "gopkg.in/yaml.v2"
 )
@@ -91,17 +88,11 @@ func main() {
 		os.Exit(3)
 	}
 	if platformOptions != nil && platformOptions.CredhubURI != "" {
-		ch, err := credhubClient(platformOptions.CredhubURI)
+		err := credhub.InterpolateServiceRefs(platformOptions.CredhubURI)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Unable to set up credhub client: %v", err)
+			fmt.Fprintf(os.Stderr, "Unable to interpolate credhub refs: %v", err)
 			os.Exit(4)
 		}
-		interpolatedServices, err := ch.InterpolateString(os.Getenv("VCAP_SERVICES"))
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Unable to interpolate credhub references: %v", err)
-			os.Exit(5)
-		}
-		os.Setenv("VCAP_SERVICES", interpolatedServices)
 	}
 
 	if os.Getenv("DATABASE_URL") == "" {
@@ -113,37 +104,6 @@ func main() {
 
 	runtime.GOMAXPROCS(1)
 	runProcess(dir, command)
-}
-
-func credhubClient(credhubURI string) (*credhub.CredHub, error) {
-	if os.Getenv("CF_INSTANCE_CERT") == "" || os.Getenv("CF_INSTANCE_KEY") == "" {
-		return nil, fmt.Errorf("Missing CF_INSTANCE_CERT and/or CF_INSTANCE_KEY")
-	}
-	if os.Getenv("CF_SYSTEM_CERTS_PATH") == "" {
-		return nil, fmt.Errorf("Missing CF_SYSTEM_CERTS_PATH")
-	}
-
-	systemCertsPath := containerpath.For(os.Getenv("CF_SYSTEM_CERTS_PATH"))
-	caCerts := []string{}
-	files, err := ioutil.ReadDir(systemCertsPath)
-	if err != nil {
-		return nil, fmt.Errorf("Can't read contents of system cert path: %v", err)
-	}
-	for _, file := range files {
-		if strings.HasSuffix(file.Name(), ".crt") {
-			contents, err := ioutil.ReadFile(filepath.Join(systemCertsPath, file.Name()))
-			if err != nil {
-				return nil, fmt.Errorf("Can't read contents of cert in system cert path: %v", err)
-			}
-			caCerts = append(caCerts, string(contents))
-		}
-	}
-
-	return credhub.New(
-		credhubURI,
-		credhub.ClientCert(containerpath.For(os.Getenv("CF_INSTANCE_CERT")), containerpath.For(os.Getenv("CF_INSTANCE_KEY"))),
-		credhub.CaCerts(caCerts...),
-	)
 }
 
 type stagingInfo struct {
