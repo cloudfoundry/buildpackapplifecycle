@@ -110,7 +110,7 @@ var _ = Describe("Building", func() {
 			"-skipDetect="+strconv.FormatBool(skipDetect),
 		)
 
-		env := os.Environ()
+		env := append(os.Environ(), "TEST_CREDENTIAL_FILTER_WHITELIST=DATABASE_URL,VCAP_SERVICES")
 		builderCmd.Env = append(env, "TMPDIR="+tmpDir)
 		builderCmd.Dir = tmpDir
 	})
