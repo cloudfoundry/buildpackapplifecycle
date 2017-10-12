@@ -13,15 +13,12 @@ import (
 
 	"code.cloudfoundry.org/buildpackapplifecycle/containerpath"
 	"code.cloudfoundry.org/buildpackapplifecycle/databaseuri"
+	"code.cloudfoundry.org/buildpackapplifecycle/platformoptions"
 
 	"github.com/cloudfoundry-incubator/credhub-cli/credhub"
 
 	yaml "gopkg.in/yaml.v2"
 )
-
-type PlatformOptions struct {
-	CredhubURI string `json:"credhub_uri"`
-}
 
 func main() {
 	if len(os.Args) < 4 {
@@ -88,7 +85,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	platformOptions, err := platformOptions()
+	platformOptions, err := platformoptions.Get()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Invalid platform options: %v", err)
 		os.Exit(3)
@@ -147,24 +144,6 @@ func credhubClient(credhubURI string) (*credhub.CredHub, error) {
 		credhub.ClientCert(containerpath.For(os.Getenv("CF_INSTANCE_CERT")), containerpath.For(os.Getenv("CF_INSTANCE_KEY"))),
 		credhub.CaCerts(caCerts...),
 	)
-}
-
-var cachedPlatformOptions *PlatformOptions
-
-func platformOptions() (*PlatformOptions, error) {
-	if cachedPlatformOptions == nil {
-		jsonPlatformOptions := os.Getenv("VCAP_PLATFORM_OPTIONS")
-		if jsonPlatformOptions != "" {
-			platformOptions := PlatformOptions{}
-			err := json.Unmarshal([]byte(jsonPlatformOptions), &platformOptions)
-			if err != nil {
-				return nil, err
-			}
-			cachedPlatformOptions = &platformOptions
-		}
-		os.Unsetenv("VCAP_PLATFORM_OPTIONS")
-	}
-	return cachedPlatformOptions, nil
 }
 
 type stagingInfo struct {
