@@ -149,17 +149,22 @@ func credhubClient(credhubURI string) (*credhub.CredHub, error) {
 	)
 }
 
+var cachedPlatformOptions *PlatformOptions
+
 func platformOptions() (*PlatformOptions, error) {
-	jsonPlatformOptions := os.Getenv("VCAP_PLATFORM_OPTIONS")
-	if jsonPlatformOptions != "" {
-		platformOptions := PlatformOptions{}
-		err := json.Unmarshal([]byte(jsonPlatformOptions), &platformOptions)
-		if err != nil {
-			return nil, err
+	if cachedPlatformOptions == nil {
+		jsonPlatformOptions := os.Getenv("VCAP_PLATFORM_OPTIONS")
+		if jsonPlatformOptions != "" {
+			platformOptions := PlatformOptions{}
+			err := json.Unmarshal([]byte(jsonPlatformOptions), &platformOptions)
+			if err != nil {
+				return nil, err
+			}
+			cachedPlatformOptions = &platformOptions
 		}
-		return &platformOptions, nil
+		os.Unsetenv("VCAP_PLATFORM_OPTIONS")
 	}
-	return nil, nil
+	return cachedPlatformOptions, nil
 }
 
 type stagingInfo struct {
