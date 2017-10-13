@@ -93,10 +93,13 @@ func main() {
 		}
 	}
 
-	if os.Getenv("DATABASE_URL") == "" {
+	if os.Getenv("VCAP_SERVICES") != "" {
 		dbUri := databaseuri.New()
 		if creds, err := dbUri.Credentials([]byte(os.Getenv("VCAP_SERVICES"))); err == nil {
-			os.Setenv("DATABASE_URL", dbUri.Uri(creds))
+			databaseUrl := dbUri.Uri(creds)
+			if databaseUrl != "" {
+				os.Setenv("DATABASE_URL", databaseUrl)
+			}
 		}
 	}
 

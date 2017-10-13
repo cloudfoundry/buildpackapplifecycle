@@ -295,7 +295,7 @@ var _ = Describe("Building", func() {
 			})
 		})
 
-		Context("DATABASE_URL is NOT set", func() {
+		Context("VCAP_SERVICES has an appropriate database", func() {
 			const databaseURL = "postgres://thing.com/special"
 			BeforeEach(func() {
 				vcapServicesValue := `{"my-server":[{"credentials":{"credhub-ref":"(//my-server/creds)"}}]}`
@@ -310,6 +310,21 @@ var _ = Describe("Building", func() {
 			It("sets DATABASE_URL", func() {
 				Eventually(session).Should(gexec.Exit(0))
 				Eventually(string(session.Out.Contents())).Should(ContainSubstring(fmt.Sprintf(fmt.Sprintf("DATABASE_URL=%s", databaseURL))))
+			})
+
+			Context("DATABASE_URL was set before running builder", func() {
+				BeforeEach(func() {
+					os.Setenv("DATABASE_URL", "original text")
+				})
+				AfterEach(func() {
+					os.Unsetenv("DATABASE_URL")
+				})
+
+				It("overrides DATABASE_URL", func() {
+					Eventually(session).Should(gexec.Exit(0))
+					Eventually(string(session.Out.Contents())).Should(ContainSubstring(fmt.Sprintf(fmt.Sprintf("DATABASE_URL=%s", databaseURL))))
+					Expect(string(session.Out.Contents())).ToNot(ContainSubstring("DATABASE_URL=original content"))
+				})
 			})
 		})
 	})
@@ -332,18 +347,13 @@ var _ = Describe("Building", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		Context("DATABASE_URL already set", func() {
-			const databaseURL = "special://thing.com/example"
-			BeforeEach(func() {
-				os.Setenv("DATABASE_URL", databaseURL)
-			})
-
-			It("is not overriden", func() {
+		Context("VCAP_SERVICES does not have an appropriate credential", func() {
+			It("DATABASE_URL is not set", func() {
 				Eventually(session).Should(gexec.Exit(0))
-				Eventually(string(session.Out.Contents())).Should(ContainSubstring(fmt.Sprintf(fmt.Sprintf("DATABASE_URL=%s", databaseURL))))
+				Expect(string(session.Out.Contents())).ToNot(ContainSubstring("DATABASE_URL="))
 			})
 		})
-		Context("DATABASE_URL is NOT set", func() {
+		Context("VCAP_SERVICES has an appropriate credential", func() {
 			Context("VCAP_SERVICES is NOT encrypted", func() {
 				const databaseURL = "postgres://thing.com/special"
 				BeforeEach(func() {
@@ -353,6 +363,18 @@ var _ = Describe("Building", func() {
 				It("sets DATABASE_URL", func() {
 					Eventually(session).Should(gexec.Exit(0))
 					Eventually(string(session.Out.Contents())).Should(ContainSubstring(fmt.Sprintf(fmt.Sprintf("DATABASE_URL=%s", databaseURL))))
+				})
+				Context("DATABASE_URL was set before running builder", func() {
+					BeforeEach(func() {
+						os.Setenv("DATABASE_URL", "original text")
+					})
+					AfterEach(func() { os.Unsetenv("DATABASE_URL") })
+
+					It("overrides DATABASE_URL", func() {
+						Eventually(session).Should(gexec.Exit(0))
+						Eventually(string(session.Out.Contents())).Should(ContainSubstring(fmt.Sprintf(fmt.Sprintf("DATABASE_URL=%s", databaseURL))))
+						Expect(string(session.Out.Contents())).ToNot(ContainSubstring("DATABASE_URL=original content"))
+					})
 				})
 			})
 		})

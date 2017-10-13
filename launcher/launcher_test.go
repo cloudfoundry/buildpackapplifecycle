@@ -459,7 +459,13 @@ var _ = Describe("Launcher", func() {
 			})
 		})
 
-		Context("DATABASE_URL is NOT set", func() {
+		Context("VCAP_SERVICES does not have an appropriate credential", func() {
+			It("DATABASE_URL is not set", func() {
+				Eventually(session).Should(gexec.Exit(0))
+				Expect(string(session.Out.Contents())).ToNot(ContainSubstring("DATABASE_URL="))
+			})
+		})
+		Context("VCAP_SERVICES has an appropriate credential", func() {
 			const databaseURL = "postgres://thing.com/special"
 			BeforeEach(func() {
 				vcapServicesValue := `{"my-server":[{"credentials":{"credhub-ref":"(//my-server/creds)"}}]}`
@@ -473,46 +479,63 @@ var _ = Describe("Launcher", func() {
 			})
 			It("sets DATABASE_URL", func() {
 				Eventually(session).Should(gexec.Exit(0))
-				Eventually(string(session.Out.Contents())).Should(ContainSubstring(fmt.Sprintf(fmt.Sprintf("DATABASE_URL=%s", databaseURL))))
+				Eventually(string(session.Out.Contents())).Should(ContainSubstring(fmt.Sprintf("DATABASE_URL=%s", databaseURL)))
+			})
+			Context("DATABASE_URL was set before running launcher", func() {
+				BeforeEach(func() {
+					launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("DATABASE_URL=%s", "original content"))
+				})
+
+				It("overrides DATABASE_URL", func() {
+					Eventually(session).Should(gexec.Exit(0))
+					Eventually(string(session.Out.Contents())).Should(ContainSubstring(fmt.Sprintf("DATABASE_URL=%s", databaseURL)))
+					Expect(string(session.Out.Contents())).ToNot(ContainSubstring("DATABASE_URL=original content"))
+				})
 			})
 		})
 	})
 
 	Describe("setting DATABASE_URL env variable", func() {
-		Context("DATABASE_URL already set", func() {
-			const databaseURL = "special://thing.com/example"
-			BeforeEach(func() {
-				launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("DATABASE_URL=%s", databaseURL))
-				launcherCmd.Args = []string{
-					"launcher",
-					appDir,
-					startCommand,
-					"",
-					"",
-				}
-			})
-			It("is not overriden", func() {
+		BeforeEach(func() {
+			launcherCmd.Args = []string{
+				"launcher",
+				appDir,
+				startCommand,
+				"",
+				"",
+			}
+		})
+
+		Context("VCAP_SERVICES does not have an appropriate credential", func() {
+			It("DATABASE_URL is not set", func() {
 				Eventually(session).Should(gexec.Exit(0))
-				Eventually(string(session.Out.Contents())).Should(ContainSubstring(fmt.Sprintf(fmt.Sprintf("DATABASE_URL=%s", databaseURL))))
+				Expect(string(session.Out.Contents())).ToNot(ContainSubstring("DATABASE_URL="))
 			})
 		})
-		Context("DATABASE_URL is NOT set", func() {
+
+		Context("VCAP_SERVICES has an appropriate credential", func() {
 			Context("VCAP_SERVICES is NOT encrypted", func() {
 				const databaseURL = "postgres://thing.com/special"
 				BeforeEach(func() {
 					vcapServicesValue := `{"my-server":[{"credentials":{"uri":"` + databaseURL + `"}}]}`
 					launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("VCAP_SERVICES=%s", vcapServicesValue))
-					launcherCmd.Args = []string{
-						"launcher",
-						appDir,
-						startCommand,
-						"",
-						"",
-					}
 				})
+
 				It("sets DATABASE_URL", func() {
 					Eventually(session).Should(gexec.Exit(0))
 					Eventually(string(session.Out.Contents())).Should(ContainSubstring(fmt.Sprintf(fmt.Sprintf("DATABASE_URL=%s", databaseURL))))
+				})
+
+				Context("DATABASE_URL was set before running builder", func() {
+					BeforeEach(func() {
+						launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("DATABASE_URL=%s", "original text"))
+					})
+
+					It("overrides DATABASE_URL", func() {
+						Eventually(session).Should(gexec.Exit(0))
+						Eventually(string(session.Out.Contents())).Should(ContainSubstring(fmt.Sprintf(fmt.Sprintf("DATABASE_URL=%s", databaseURL))))
+						Expect(string(session.Out.Contents())).ToNot(ContainSubstring("DATABASE_URL=original content"))
+					})
 				})
 			})
 		})
