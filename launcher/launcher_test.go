@@ -357,11 +357,11 @@ var _ = Describe("Launcher", func() {
 			if containerpath.For("/") == fixturesSslDir {
 				launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_INSTANCE_CERT=%s", filepath.Join("/certs", "client-tls.crt")))
 				launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_INSTANCE_KEY=%s", filepath.Join("/certs", "client-tls.key")))
-				launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_SYSTEM_CERTS_PATH=%s", "/cacerts"))
+				launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_SYSTEM_CERT_PATH=%s", "/cacerts"))
 			} else {
 				launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_INSTANCE_CERT=%s", filepath.Join(fixturesSslDir, "certs", "client-tls.crt")))
 				launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_INSTANCE_KEY=%s", filepath.Join(fixturesSslDir, "certs", "client-tls.key")))
-				launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_SYSTEM_CERTS_PATH=%s", filepath.Join(fixturesSslDir, "cacerts")))
+				launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_SYSTEM_CERT_PATH=%s", filepath.Join(fixturesSslDir, "cacerts")))
 			}
 
 			launcherCmd.Args = []string{

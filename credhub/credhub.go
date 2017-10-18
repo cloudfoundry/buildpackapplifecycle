@@ -28,11 +28,11 @@ func credhubClient(credhubURI string) (*credhub.CredHub, error) {
 	if os.Getenv("CF_INSTANCE_CERT") == "" || os.Getenv("CF_INSTANCE_KEY") == "" {
 		return nil, fmt.Errorf("Missing CF_INSTANCE_CERT and/or CF_INSTANCE_KEY")
 	}
-	if os.Getenv("CF_SYSTEM_CERTS_PATH") == "" {
-		return nil, fmt.Errorf("Missing CF_SYSTEM_CERTS_PATH")
+	if os.Getenv("CF_SYSTEM_CERT_PATH") == "" {
+		return nil, fmt.Errorf("Missing CF_SYSTEM_CERT_PATH")
 	}
 
-	systemCertsPath := containerpath.For(os.Getenv("CF_SYSTEM_CERTS_PATH"))
+	systemCertsPath := containerpath.For(os.Getenv("CF_SYSTEM_CERT_PATH"))
 	caCerts := []string{}
 	files, err := ioutil.ReadDir(systemCertsPath)
 	if err != nil {

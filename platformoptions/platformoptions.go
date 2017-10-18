@@ -6,7 +6,7 @@ import (
 )
 
 type PlatformOptions struct {
-	CredhubURI string `json:"credhub_uri"`
+	CredhubURI string `json:"credhub-uri"`
 }
 
 var cachedPlatformOptions *PlatformOptions

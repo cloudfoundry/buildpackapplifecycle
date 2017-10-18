@@ -77,7 +77,7 @@ var _ = Describe("Platformoptions", func() {
 
 	Context("when VCAP_PLATFORM_OPTIONS is an invalid JSON object", func() {
 		BeforeEach(func() {
-			os.Setenv("VCAP_PLATFORM_OPTIONS", `{"credhub_uri":"missing quote and brace`)
+			os.Setenv("VCAP_PLATFORM_OPTIONS", `{"credhub-uri":"missing quote and brace`)
 		})
 
 		It("returns a nil PlatformOptions with an error", func() {
@@ -90,7 +90,7 @@ var _ = Describe("Platformoptions", func() {
 
 	Context("when VCAP_PLATFORM_OPTIONS is a valid JSON object", func() {
 		BeforeEach(func() {
-			os.Setenv("VCAP_PLATFORM_OPTIONS", `{"credhub_uri":"valid_json"}`)
+			os.Setenv("VCAP_PLATFORM_OPTIONS", `{"credhub-uri":"valid_json"}`)
 		})
 
 		It("returns populated PlatformOptions", func() {

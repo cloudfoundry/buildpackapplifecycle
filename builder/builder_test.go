@@ -157,7 +157,7 @@ var _ = Describe("Building", func() {
 			userProfile = os.Getenv("USERPROFILE")
 			cfInstanceCert = os.Getenv("CF_INSTANCE_CERT")
 			cfInstanceKey = os.Getenv("CF_INSTANCE_KEY")
-			cfSystemCertsPath = os.Getenv("CF_SYSTEM_CERTS_PATH")
+			cfSystemCertsPath = os.Getenv("CF_SYSTEM_CERT_PATH")
 			vcapServices = os.Getenv("VCAP_SERVICES")
 
 			fixturesSslDir, err = filepath.Abs(filepath.Join("..", "fixtures"))
@@ -185,11 +185,11 @@ var _ = Describe("Building", func() {
 			if containerpath.For("/") == fixturesSslDir {
 				os.Setenv("CF_INSTANCE_CERT", filepath.Join("/certs", "client-tls.crt"))
 				os.Setenv("CF_INSTANCE_KEY", filepath.Join("/certs", "client-tls.key"))
-				os.Setenv("CF_SYSTEM_CERTS_PATH", "/cacerts")
+				os.Setenv("CF_SYSTEM_CERT_PATH", "/cacerts")
 			} else {
 				os.Setenv("CF_INSTANCE_CERT", filepath.Join(fixturesSslDir, "certs", "client-tls.crt"))
 				os.Setenv("CF_INSTANCE_KEY", filepath.Join(fixturesSslDir, "certs", "client-tls.key"))
-				os.Setenv("CF_SYSTEM_CERTS_PATH", filepath.Join(fixturesSslDir, "cacerts"))
+				os.Setenv("CF_SYSTEM_CERT_PATH", filepath.Join(fixturesSslDir, "cacerts"))
 			}
 
 			buildpackOrder = "always-detects"
@@ -201,7 +201,7 @@ var _ = Describe("Building", func() {
 			os.Setenv("USERPROFILE", userProfile)
 			os.Setenv("CF_INSTANCE_CERT", cfInstanceCert)
 			os.Setenv("CF_INSTANCE_KEY", cfInstanceKey)
-			os.Setenv("CF_SYSTEM_CERTS_PATH", cfSystemCertsPath)
+			os.Setenv("CF_SYSTEM_CERT_PATH", cfSystemCertsPath)
 			os.Setenv("VCAP_SERVICES", vcapServices)
 			os.Unsetenv("VCAP_PLATFORM_OPTIONS")
 		})
