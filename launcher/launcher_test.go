@@ -386,7 +386,7 @@ var _ = Describe("Launcher", func() {
 
 			Context("when the credhub location is passed to the launcher's platform options", func() {
 				BeforeEach(func() {
-					launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf(`VCAP_PLATFORM_OPTIONS={ "credhub_uri": "`+server.URL()+`"}`))
+					launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf(`VCAP_PLATFORM_OPTIONS={ "credhub-uri": "`+server.URL()+`"}`))
 				})
 
 				Context("when credhub successfully interpolates", func() {
@@ -450,7 +450,7 @@ var _ = Describe("Launcher", func() {
 
 			Context("when invalid JSON is passed for the launcher platform options", func() {
 				BeforeEach(func() {
-					launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf(`VCAP_PLATFORM_OPTIONS='{"credhub_uri":"missing quote and brace'`))
+					launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf(`VCAP_PLATFORM_OPTIONS='{"credhub-uri":"missing quote and brace'`))
 				})
 				It("prints an error message", func() {
 					Eventually(session).Should(gexec.Exit(3))
@@ -469,7 +469,7 @@ var _ = Describe("Launcher", func() {
 			const databaseURL = "postgres://thing.com/special"
 			BeforeEach(func() {
 				vcapServicesValue := `{"my-server":[{"credentials":{"credhub-ref":"(//my-server/creds)"}}]}`
-				launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf(`VCAP_PLATFORM_OPTIONS={ "credhub_uri": "`+server.URL()+`"}`))
+				launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf(`VCAP_PLATFORM_OPTIONS={ "credhub-uri": "`+server.URL()+`"}`))
 				launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("VCAP_SERVICES=%s", vcapServicesValue))
 				server.AppendHandlers(
 					ghttp.CombineHandlers(

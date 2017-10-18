@@ -221,7 +221,7 @@ var _ = Describe("Building", func() {
 
 			Context("when the credhub location is passed to the launcher's platform options", func() {
 				BeforeEach(func() {
-					os.Setenv("VCAP_PLATFORM_OPTIONS", `{ "credhub_uri": "`+server.URL()+`"}`)
+					os.Setenv("VCAP_PLATFORM_OPTIONS", `{ "credhub-uri": "`+server.URL()+`"}`)
 				})
 
 				Context("when credhub successfully interpolates", func() {
@@ -285,7 +285,7 @@ var _ = Describe("Building", func() {
 
 			Context("when invalid JSON is passed for the launcher platform options", func() {
 				BeforeEach(func() {
-					os.Setenv("VCAP_PLATFORM_OPTIONS", `{"credhub_uri":"missing quote and brace`)
+					os.Setenv("VCAP_PLATFORM_OPTIONS", `{"credhub-uri":"missing quote and brace`)
 				})
 
 				It("prints an error message", func() {
@@ -299,7 +299,7 @@ var _ = Describe("Building", func() {
 			const databaseURL = "postgres://thing.com/special"
 			BeforeEach(func() {
 				vcapServicesValue := `{"my-server":[{"credentials":{"credhub-ref":"(//my-server/creds)"}}]}`
-				os.Setenv("VCAP_PLATFORM_OPTIONS", `{ "credhub_uri": "`+server.URL()+`"}`)
+				os.Setenv("VCAP_PLATFORM_OPTIONS", `{ "credhub-uri": "`+server.URL()+`"}`)
 				os.Setenv("VCAP_SERVICES", vcapServicesValue)
 				server.AppendHandlers(
 					ghttp.CombineHandlers(
