@@ -12,6 +12,9 @@ import (
 )
 
 func InterpolateServiceRefs(credhubURI string) error {
+	if !strings.Contains(os.Getenv("VCAP_SERVICES"), `"credhub-ref"`) {
+		return nil
+	}
 	ch, err := credhubClient(credhubURI)
 	if err != nil {
 		return fmt.Errorf("Unable to set up credhub client: %v", err)

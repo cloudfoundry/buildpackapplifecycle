@@ -97,6 +97,23 @@ var _ = Describe("credhub", func() {
 			err = credhub.InterpolateServiceRefs(server.URL())
 		})
 
+		Context("when there are no credhub refs in VCAP_SERVICES and no TLS environment variables are present", func() {
+			BeforeEach(func() {
+				os.Unsetenv("CF_INSTANCE_CERT")
+				os.Unsetenv("CF_INSTANCE_KEY")
+				os.Unsetenv("CF_SYSTEM_CERT_PATH")
+				os.Unsetenv("USERPROFILE")
+
+				vcapServicesValue = `{"my-server":[{"credentials":{"no refs here":"and this string containing credhub-ref doesnt count"}}]}`
+				os.Setenv("VCAP_SERVICES", vcapServicesValue)
+			})
+
+			It("does not fail and does not change VCAP_SERVICES", func() {
+				Expect(err).NotTo(HaveOccurred())
+				Expect(os.Getenv("VCAP_SERVICES")).To(Equal(vcapServicesValue))
+			})
+		})
+
 		Context("when credhub successfully interpolates", func() {
 			BeforeEach(func() {
 				server.AppendHandlers(
