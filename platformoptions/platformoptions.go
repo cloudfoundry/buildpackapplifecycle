@@ -13,14 +13,13 @@ var cachedPlatformOptions *PlatformOptions
 
 func Get() (*PlatformOptions, error) {
 	jsonPlatformOptions := os.Getenv("VCAP_PLATFORM_OPTIONS")
-	defer os.Unsetenv("VCAP_PLATFORM_OPTIONS")
 	if jsonPlatformOptions != "" {
 		platformOptions := PlatformOptions{}
 		err := json.Unmarshal([]byte(jsonPlatformOptions), &platformOptions)
 		if err != nil {
 			return nil, err
 		}
-		cachedPlatformOptions = &platformOptions
+		return &platformOptions, nil
 	}
-	return cachedPlatformOptions, nil
+	return nil, nil
 }

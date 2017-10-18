@@ -103,6 +103,7 @@ func main() {
 		}
 	}
 
+	os.Unsetenv("VCAP_PLATFORM_OPTIONS")
 	runtime.GOMAXPROCS(1)
 	runProcess(dir, command)
 }

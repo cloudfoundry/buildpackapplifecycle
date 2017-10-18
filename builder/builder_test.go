@@ -238,7 +238,6 @@ var _ = Describe("Building", func() {
 					It("updates VCAP_SERVICES with the interpolated content and runs the process without VCAP_PLATFORM_OPTIONS", func() {
 						Eventually(session).Should(gexec.Exit(0))
 						Eventually(session.Out).Should(gbytes.Say("VCAP_SERVICES=INTERPOLATED_JSON"))
-						Eventually(session.Out).ShouldNot(gbytes.Say("VCAP_PLATFORM_OPTIONS"))
 					})
 				})
 
@@ -267,7 +266,6 @@ var _ = Describe("Building", func() {
 				It("does not attempt to do any credhub interpolation", func() {
 					Eventually(session).Should(gexec.Exit(0))
 					Eventually(string(session.Out.Contents())).Should(ContainSubstring(fmt.Sprintf(fmt.Sprintf("VCAP_SERVICES=%s", vcapServicesValue))))
-					Eventually(session.Out).ShouldNot(gbytes.Say("VCAP_PLATFORM_OPTIONS"))
 				})
 			})
 
@@ -279,7 +277,6 @@ var _ = Describe("Building", func() {
 				It("does not attempt to do any credhub interpolation", func() {
 					Eventually(session).Should(gexec.Exit(0))
 					Eventually(string(session.Out.Contents())).Should(ContainSubstring(fmt.Sprintf(fmt.Sprintf("VCAP_SERVICES=%s", vcapServicesValue))))
-					Eventually(session.Out).ShouldNot(gbytes.Say("VCAP_PLATFORM_OPTIONS"))
 				})
 			})
 

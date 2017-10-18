@@ -28,13 +28,6 @@ var _ = Describe("Platformoptions", func() {
 		os.Setenv("VCAP_PLATFORM_OPTIONS", vcapPlatformOptions)
 	})
 
-	assertRemovesVcapPlatformOptions := func() {
-		It("removes the VCAP_PLATFORM_OPTIONS environment variable", func() {
-			_, envVarExists := os.LookupEnv("VCAP_PLATFORM_OPTIONS")
-			Expect(envVarExists).To(BeFalse())
-		})
-	}
-
 	Context("when VCAP_PLATFORM_OPTIONS is not set", func() {
 		BeforeEach(func() {
 			os.Unsetenv("VCAP_PLATFORM_OPTIONS")
@@ -44,8 +37,6 @@ var _ = Describe("Platformoptions", func() {
 			Expect(platformOptions).To(BeNil())
 			Expect(err).ToNot(HaveOccurred())
 		})
-
-		assertRemovesVcapPlatformOptions()
 	})
 
 	Context("when VCAP_PLATFORM_OPTIONS is an empty string", func() {
@@ -57,8 +48,6 @@ var _ = Describe("Platformoptions", func() {
 			Expect(platformOptions).To(BeNil())
 			Expect(err).ToNot(HaveOccurred())
 		})
-
-		assertRemovesVcapPlatformOptions()
 	})
 
 	Context("when VCAP_PLATFORM_OPTIONS is an empty JSON object", func() {
@@ -71,8 +60,6 @@ var _ = Describe("Platformoptions", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(platformOptions).To(Equal(&platformoptions.PlatformOptions{}))
 		})
-
-		assertRemovesVcapPlatformOptions()
 	})
 
 	Context("when VCAP_PLATFORM_OPTIONS is an invalid JSON object", func() {
@@ -84,8 +71,6 @@ var _ = Describe("Platformoptions", func() {
 			Expect(platformOptions).To(BeNil())
 			Expect(err).To(HaveOccurred())
 		})
-
-		assertRemovesVcapPlatformOptions()
 	})
 
 	Context("when VCAP_PLATFORM_OPTIONS is a valid JSON object", func() {
@@ -104,7 +89,5 @@ var _ = Describe("Platformoptions", func() {
 			Expect(platformOptions).NotTo(BeNil())
 			Expect(platformOptions.CredhubURI).To(Equal("valid_json"))
 		})
-
-		assertRemovesVcapPlatformOptions()
 	})
 })
