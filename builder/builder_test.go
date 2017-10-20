@@ -42,6 +42,8 @@ var _ = Describe("Building", func() {
 		outputMetadata            string
 		outputBuildArtifactsCache string
 		skipDetect                bool
+
+		sessionEnv []string
 	)
 
 	builder := func() *gexec.Session {
@@ -92,6 +94,8 @@ var _ = Describe("Building", func() {
 		buildpackOrder = ""
 
 		skipDetect = false
+
+		sessionEnv = append(os.Environ(), "TEST_CREDENTIAL_FILTER_WHITELIST=DATABASE_URL,VCAP_SERVICES", "TMPDIR="+tmpDir)
 	})
 
 	AfterEach(func() {
@@ -110,8 +114,7 @@ var _ = Describe("Building", func() {
 			"-skipDetect="+strconv.FormatBool(skipDetect),
 		)
 
-		env := append(os.Environ(), "TEST_CREDENTIAL_FILTER_WHITELIST=DATABASE_URL,VCAP_SERVICES")
-		builderCmd.Env = append(env, "TMPDIR="+tmpDir)
+		builderCmd.Env = sessionEnv
 		builderCmd.Dir = tmpDir
 	})
 
@@ -131,17 +134,22 @@ var _ = Describe("Building", func() {
 		return bytes
 	}
 
+	sessionSetEnv := func(key, value string) {
+		newEnv := []string{}
+		for _, env := range sessionEnv {
+			if !strings.HasPrefix(env, key+"=") {
+				newEnv = append(newEnv, env)
+			}
+		}
+		sessionEnv = append(newEnv, key+"="+value)
+	}
+
 	Describe("interpolation of credhub-ref in VCAP_SERVICES", func() {
 		var (
-			server            *ghttp.Server
-			session           *gexec.Session
-			fixturesSslDir    string
-			userProfile       string
-			vcapServices      string
-			cfInstanceCert    string
-			cfInstanceKey     string
-			cfSystemCertsPath string
-			err               error
+			server         *ghttp.Server
+			session        *gexec.Session
+			fixturesSslDir string
+			err            error
 		)
 
 		VerifyClientCerts := func() http.HandlerFunc {
@@ -154,12 +162,6 @@ var _ = Describe("Building", func() {
 		}
 
 		BeforeEach(func() {
-			userProfile = os.Getenv("USERPROFILE")
-			cfInstanceCert = os.Getenv("CF_INSTANCE_CERT")
-			cfInstanceKey = os.Getenv("CF_INSTANCE_KEY")
-			cfSystemCertsPath = os.Getenv("CF_SYSTEM_CERT_PATH")
-			vcapServices = os.Getenv("VCAP_SERVICES")
-
 			fixturesSslDir, err = filepath.Abs(filepath.Join("..", "fixtures"))
 			Expect(err).NotTo(HaveOccurred())
 
@@ -181,15 +183,15 @@ var _ = Describe("Building", func() {
 			}
 			server.HTTPTestServer.StartTLS()
 
-			os.Setenv("USERPROFILE", fixturesSslDir)
+			sessionSetEnv("USERPROFILE", fixturesSslDir)
 			if containerpath.For("/") == fixturesSslDir {
-				os.Setenv("CF_INSTANCE_CERT", filepath.Join("/certs", "client-tls.crt"))
-				os.Setenv("CF_INSTANCE_KEY", filepath.Join("/certs", "client-tls.key"))
-				os.Setenv("CF_SYSTEM_CERT_PATH", "/cacerts")
+				sessionSetEnv("CF_INSTANCE_CERT", filepath.Join("/certs", "client-tls.crt"))
+				sessionSetEnv("CF_INSTANCE_KEY", filepath.Join("/certs", "client-tls.key"))
+				sessionSetEnv("CF_SYSTEM_CERT_PATH", "/cacerts")
 			} else {
-				os.Setenv("CF_INSTANCE_CERT", filepath.Join(fixturesSslDir, "certs", "client-tls.crt"))
-				os.Setenv("CF_INSTANCE_KEY", filepath.Join(fixturesSslDir, "certs", "client-tls.key"))
-				os.Setenv("CF_SYSTEM_CERT_PATH", filepath.Join(fixturesSslDir, "cacerts"))
+				sessionSetEnv("CF_INSTANCE_CERT", filepath.Join(fixturesSslDir, "certs", "client-tls.crt"))
+				sessionSetEnv("CF_INSTANCE_KEY", filepath.Join(fixturesSslDir, "certs", "client-tls.key"))
+				sessionSetEnv("CF_SYSTEM_CERT_PATH", filepath.Join(fixturesSslDir, "cacerts"))
 			}
 
 			buildpackOrder = "always-detects"
@@ -198,12 +200,6 @@ var _ = Describe("Building", func() {
 
 		AfterEach(func() {
 			server.Close()
-			os.Setenv("USERPROFILE", userProfile)
-			os.Setenv("CF_INSTANCE_CERT", cfInstanceCert)
-			os.Setenv("CF_INSTANCE_KEY", cfInstanceKey)
-			os.Setenv("CF_SYSTEM_CERT_PATH", cfSystemCertsPath)
-			os.Setenv("VCAP_SERVICES", vcapServices)
-			os.Unsetenv("VCAP_PLATFORM_OPTIONS")
 		})
 
 		JustBeforeEach(func() {
@@ -216,12 +212,12 @@ var _ = Describe("Building", func() {
 			var vcapServicesValue string
 			BeforeEach(func() {
 				vcapServicesValue = `{"my-server":[{"credentials":{"credhub-ref":"(//my-server/creds)"}}]}`
-				os.Setenv("VCAP_SERVICES", vcapServicesValue)
+				sessionSetEnv("VCAP_SERVICES", vcapServicesValue)
 			})
 
 			Context("when the credhub location is passed to the launcher's platform options", func() {
 				BeforeEach(func() {
-					os.Setenv("VCAP_PLATFORM_OPTIONS", `{ "credhub-uri": "`+server.URL()+`"}`)
+					sessionSetEnv("VCAP_PLATFORM_OPTIONS", `{ "credhub-uri": "`+server.URL()+`"}`)
 				})
 
 				Context("when credhub successfully interpolates", func() {
@@ -260,7 +256,7 @@ var _ = Describe("Building", func() {
 
 			Context("when an empty string is passed for the launcher platform options", func() {
 				BeforeEach(func() {
-					os.Setenv("VCAP_PLATFORM_OPTIONS", "")
+					sessionSetEnv("VCAP_PLATFORM_OPTIONS", "")
 				})
 
 				It("does not attempt to do any credhub interpolation", func() {
@@ -271,7 +267,7 @@ var _ = Describe("Building", func() {
 
 			Context("when an empty JSON is passed for the launcher platform options", func() {
 				BeforeEach(func() {
-					os.Setenv("VCAP_PLATFORM_OPTIONS", "{}")
+					sessionSetEnv("VCAP_PLATFORM_OPTIONS", "{}")
 				})
 
 				It("does not attempt to do any credhub interpolation", func() {
@@ -282,7 +278,7 @@ var _ = Describe("Building", func() {
 
 			Context("when invalid JSON is passed for the launcher platform options", func() {
 				BeforeEach(func() {
-					os.Setenv("VCAP_PLATFORM_OPTIONS", `{"credhub-uri":"missing quote and brace`)
+					sessionSetEnv("VCAP_PLATFORM_OPTIONS", `{"credhub-uri":"missing quote and brace`)
 				})
 
 				It("prints an error message", func() {
@@ -296,8 +292,8 @@ var _ = Describe("Building", func() {
 			const databaseURL = "postgres://thing.com/special"
 			BeforeEach(func() {
 				vcapServicesValue := `{"my-server":[{"credentials":{"credhub-ref":"(//my-server/creds)"}}]}`
-				os.Setenv("VCAP_PLATFORM_OPTIONS", `{ "credhub-uri": "`+server.URL()+`"}`)
-				os.Setenv("VCAP_SERVICES", vcapServicesValue)
+				sessionSetEnv("VCAP_PLATFORM_OPTIONS", `{ "credhub-uri": "`+server.URL()+`"}`)
+				sessionSetEnv("VCAP_SERVICES", vcapServicesValue)
 				server.AppendHandlers(
 					ghttp.CombineHandlers(
 						ghttp.VerifyRequest("POST", "/api/v1/interpolate"),
@@ -311,10 +307,7 @@ var _ = Describe("Building", func() {
 
 			Context("DATABASE_URL was set before running builder", func() {
 				BeforeEach(func() {
-					os.Setenv("DATABASE_URL", "original text")
-				})
-				AfterEach(func() {
-					os.Unsetenv("DATABASE_URL")
+					sessionSetEnv("DATABASE_URL", "original text")
 				})
 
 				It("overrides DATABASE_URL", func() {
@@ -328,11 +321,6 @@ var _ = Describe("Building", func() {
 
 	Describe("setting DATABASE_URL env variable", func() {
 		var session *gexec.Session
-
-		AfterEach(func() {
-			os.Unsetenv("DATABASE_URL")
-		})
-
 		BeforeEach(func() {
 			buildpackOrder = "always-detects"
 			cpBuildpack("always-detects")
@@ -348,10 +336,7 @@ var _ = Describe("Building", func() {
 			const databaseURL = "datastore://thing.com/special"
 			BeforeEach(func() {
 				vcapServicesValue := `{"my-server":[{"credentials":{"uri":"` + databaseURL + `"}}]}`
-				os.Setenv("VCAP_SERVICES", vcapServicesValue)
-			})
-			AfterEach(func() {
-				os.Unsetenv("VCAP_SERVICES")
+				sessionSetEnv("VCAP_SERVICES", vcapServicesValue)
 			})
 			It("DATABASE_URL is not set", func() {
 				Eventually(session).Should(gexec.Exit(0))
@@ -363,10 +348,7 @@ var _ = Describe("Building", func() {
 				const databaseURL = "postgres://thing.com/special"
 				BeforeEach(func() {
 					vcapServicesValue := `{"my-server":[{"credentials":{"uri":"` + databaseURL + `"}}]}`
-					os.Setenv("VCAP_SERVICES", vcapServicesValue)
-				})
-				AfterEach(func() {
-					os.Unsetenv("VCAP_SERVICES")
+					sessionSetEnv("VCAP_SERVICES", vcapServicesValue)
 				})
 				It("sets DATABASE_URL", func() {
 					Eventually(session).Should(gexec.Exit(0))
@@ -374,9 +356,8 @@ var _ = Describe("Building", func() {
 				})
 				Context("DATABASE_URL was set before running builder", func() {
 					BeforeEach(func() {
-						os.Setenv("DATABASE_URL", "original text")
+						sessionSetEnv("DATABASE_URL", "original text")
 					})
-					AfterEach(func() { os.Unsetenv("DATABASE_URL") })
 
 					It("overrides DATABASE_URL", func() {
 						Eventually(session).Should(gexec.Exit(0))

@@ -49,8 +49,6 @@ var _ = Describe("Launcher", func() {
 	}
 
 	BeforeEach(func() {
-		Expect(os.Setenv("CALLERENV", "some-value")).To(Succeed())
-
 		if runtime.GOOS == "windows" {
 			startCommand = "cmd /C set && echo PWD=%cd% && echo running app"
 		} else {
@@ -70,6 +68,7 @@ var _ = Describe("Launcher", func() {
 			Dir:  extractDir,
 			Env: append(
 				os.Environ(),
+				"CALLERENV=some-value",
 				"TEST_CREDENTIAL_FILTER_WHITELIST=CALLERENV,DEPS_DIR,VCAP_APPLICATION,VCAP_SERVICES,A,B,C,INSTANCE_GUID,INSTANCE_INDEX,PORT,DATABASE_URL",
 				"PORT=8080",
 				"INSTANCE_GUID=some-instance-guid",
@@ -327,11 +326,10 @@ var _ = Describe("Launcher", func() {
 		}
 
 		BeforeEach(func() {
-			userProfile = os.Getenv("USERPROFILE")
-
 			fixturesSslDir, err = filepath.Abs(filepath.Join("..", "fixtures"))
 			Expect(err).NotTo(HaveOccurred())
 
+			userProfile = os.Getenv("USERPROFILE")
 			os.Setenv("USERPROFILE", fixturesSslDir)
 
 			server = ghttp.NewUnstartedServer()
