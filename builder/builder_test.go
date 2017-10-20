@@ -345,6 +345,14 @@ var _ = Describe("Building", func() {
 		})
 
 		Context("VCAP_SERVICES does not have an appropriate credential", func() {
+			const databaseURL = "datastore://thing.com/special"
+			BeforeEach(func() {
+				vcapServicesValue := `{"my-server":[{"credentials":{"uri":"` + databaseURL + `"}}]}`
+				os.Setenv("VCAP_SERVICES", vcapServicesValue)
+			})
+			AfterEach(func() {
+				os.Unsetenv("VCAP_SERVICES")
+			})
 			It("DATABASE_URL is not set", func() {
 				Eventually(session).Should(gexec.Exit(0))
 				Expect(string(session.Out.Contents())).ToNot(ContainSubstring("DATABASE_URL="))
@@ -356,6 +364,9 @@ var _ = Describe("Building", func() {
 				BeforeEach(func() {
 					vcapServicesValue := `{"my-server":[{"credentials":{"uri":"` + databaseURL + `"}}]}`
 					os.Setenv("VCAP_SERVICES", vcapServicesValue)
+				})
+				AfterEach(func() {
+					os.Unsetenv("VCAP_SERVICES")
 				})
 				It("sets DATABASE_URL", func() {
 					Eventually(session).Should(gexec.Exit(0))
