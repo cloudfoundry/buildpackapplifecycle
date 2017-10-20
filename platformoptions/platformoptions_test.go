@@ -1,8 +1,6 @@
 package platformoptions_test
 
 import (
-	"os"
-
 	"code.cloudfoundry.org/buildpackapplifecycle/platformoptions"
 
 	. "github.com/onsi/ginkgo"
@@ -16,32 +14,13 @@ var _ = Describe("Platformoptions", func() {
 		vcapPlatformOptions string
 	)
 
-	BeforeEach(func() {
-		vcapPlatformOptions = os.Getenv("VCAP_PLATFORM_OPTIONS")
-	})
-
 	JustBeforeEach(func() {
-		platformOptions, err = platformoptions.Get()
-	})
-
-	AfterEach(func() {
-		os.Setenv("VCAP_PLATFORM_OPTIONS", vcapPlatformOptions)
-	})
-
-	Context("when VCAP_PLATFORM_OPTIONS is not set", func() {
-		BeforeEach(func() {
-			os.Unsetenv("VCAP_PLATFORM_OPTIONS")
-		})
-
-		It("returns nil PlatformOptions without error", func() {
-			Expect(platformOptions).To(BeNil())
-			Expect(err).ToNot(HaveOccurred())
-		})
+		platformOptions, err = platformoptions.Get(vcapPlatformOptions)
 	})
 
 	Context("when VCAP_PLATFORM_OPTIONS is an empty string", func() {
 		BeforeEach(func() {
-			os.Setenv("VCAP_PLATFORM_OPTIONS", "")
+			vcapPlatformOptions = ""
 		})
 
 		It("returns nil PlatformOptions without error", func() {
@@ -52,7 +31,7 @@ var _ = Describe("Platformoptions", func() {
 
 	Context("when VCAP_PLATFORM_OPTIONS is an empty JSON object", func() {
 		BeforeEach(func() {
-			os.Setenv("VCAP_PLATFORM_OPTIONS", "{}")
+			vcapPlatformOptions = "{}"
 		})
 
 		It("returns an unset PlatformOptions", func() {
@@ -64,7 +43,7 @@ var _ = Describe("Platformoptions", func() {
 
 	Context("when VCAP_PLATFORM_OPTIONS is an invalid JSON object", func() {
 		BeforeEach(func() {
-			os.Setenv("VCAP_PLATFORM_OPTIONS", `{"credhub-uri":"missing quote and brace`)
+			vcapPlatformOptions = `{"credhub-uri":"missing quote and brace`
 		})
 
 		It("returns a nil PlatformOptions with an error", func() {
@@ -75,7 +54,7 @@ var _ = Describe("Platformoptions", func() {
 
 	Context("when VCAP_PLATFORM_OPTIONS is a valid JSON object", func() {
 		BeforeEach(func() {
-			os.Setenv("VCAP_PLATFORM_OPTIONS", `{"credhub-uri":"valid_json"}`)
+			vcapPlatformOptions = `{"credhub-uri":"valid_json"}`
 		})
 
 		It("returns populated PlatformOptions", func() {
@@ -84,7 +63,7 @@ var _ = Describe("Platformoptions", func() {
 		})
 
 		It("returns the same populated PlatformOptions on subsequent invocations", func() {
-			platformOptions, err = platformoptions.Get()
+			platformOptions, err = platformoptions.Get(vcapPlatformOptions)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(platformOptions).NotTo(BeNil())
 			Expect(platformOptions.CredhubURI).To(Equal("valid_json"))

@@ -2,7 +2,6 @@ package platformoptions
 
 import (
 	"encoding/json"
-	"os"
 )
 
 type PlatformOptions struct {
@@ -11,8 +10,7 @@ type PlatformOptions struct {
 
 var cachedPlatformOptions *PlatformOptions
 
-func Get() (*PlatformOptions, error) {
-	jsonPlatformOptions := os.Getenv("VCAP_PLATFORM_OPTIONS")
+func Get(jsonPlatformOptions string) (*PlatformOptions, error) {
 	if jsonPlatformOptions != "" {
 		platformOptions := PlatformOptions{}
 		err := json.Unmarshal([]byte(jsonPlatformOptions), &platformOptions)

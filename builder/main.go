@@ -25,7 +25,7 @@ func main() {
 		usage()
 	}
 
-	if platformOptions, err := platformoptions.Get(); err != nil {
+	if platformOptions, err := platformoptions.Get(os.Getenv("VCAP_PLATFORM_OPTIONS")); err != nil {
 		fmt.Fprintf(os.Stderr, "Invalid platform options: %v", err)
 		os.Exit(3)
 	} else if platformOptions != nil && platformOptions.CredhubURI != "" {
