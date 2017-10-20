@@ -86,7 +86,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Invalid platform options: %v", err)
 		os.Exit(3)
 	} else if platformOptions != nil && platformOptions.CredhubURI != "" {
-		err := credhub.InterpolateServiceRefs(platformOptions.CredhubURI)
+		err := credhub.New().InterpolateServiceRefs(platformOptions.CredhubURI)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Unable to interpolate credhub refs: %v", err)
 			os.Exit(4)

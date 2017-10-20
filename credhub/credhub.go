@@ -8,34 +8,46 @@ import (
 	"strings"
 
 	"code.cloudfoundry.org/buildpackapplifecycle/containerpath"
-	"github.com/cloudfoundry-incubator/credhub-cli/credhub"
+	api "github.com/cloudfoundry-incubator/credhub-cli/credhub"
 )
 
-func InterpolateServiceRefs(credhubURI string) error {
-	if !strings.Contains(os.Getenv("VCAP_SERVICES"), `"credhub-ref"`) {
+type Credhub struct {
+	Setenv func(key, value string) error
+	Getenv func(key string) string
+}
+
+func New() *Credhub {
+	return &Credhub{
+		Setenv: os.Setenv,
+		Getenv: os.Getenv,
+	}
+}
+
+func (c *Credhub) InterpolateServiceRefs(credhubURI string) error {
+	if !strings.Contains(c.Getenv("VCAP_SERVICES"), `"credhub-ref"`) {
 		return nil
 	}
-	ch, err := credhubClient(credhubURI)
+	ch, err := c.credhubClient(credhubURI)
 	if err != nil {
 		return fmt.Errorf("Unable to set up credhub client: %v", err)
 	}
-	interpolatedServices, err := ch.InterpolateString(os.Getenv("VCAP_SERVICES"))
+	interpolatedServices, err := ch.InterpolateString(c.Getenv("VCAP_SERVICES"))
 	if err != nil {
 		return fmt.Errorf("Unable to interpolate credhub references: %v", err)
 	}
-	os.Setenv("VCAP_SERVICES", interpolatedServices)
+	c.Setenv("VCAP_SERVICES", interpolatedServices)
 	return nil
 }
 
-func credhubClient(credhubURI string) (*credhub.CredHub, error) {
-	if os.Getenv("CF_INSTANCE_CERT") == "" || os.Getenv("CF_INSTANCE_KEY") == "" {
+func (c *Credhub) credhubClient(credhubURI string) (*api.CredHub, error) {
+	if c.Getenv("CF_INSTANCE_CERT") == "" || c.Getenv("CF_INSTANCE_KEY") == "" {
 		return nil, fmt.Errorf("Missing CF_INSTANCE_CERT and/or CF_INSTANCE_KEY")
 	}
-	if os.Getenv("CF_SYSTEM_CERT_PATH") == "" {
+	if c.Getenv("CF_SYSTEM_CERT_PATH") == "" {
 		return nil, fmt.Errorf("Missing CF_SYSTEM_CERT_PATH")
 	}
 
-	systemCertsPath := containerpath.For(os.Getenv("CF_SYSTEM_CERT_PATH"))
+	systemCertsPath := containerpath.For(c.Getenv("CF_SYSTEM_CERT_PATH"))
 	caCerts := []string{}
 	files, err := ioutil.ReadDir(systemCertsPath)
 	if err != nil {
@@ -51,9 +63,9 @@ func credhubClient(credhubURI string) (*credhub.CredHub, error) {
 		}
 	}
 
-	return credhub.New(
+	return api.New(
 		credhubURI,
-		credhub.ClientCert(containerpath.For(os.Getenv("CF_INSTANCE_CERT")), containerpath.For(os.Getenv("CF_INSTANCE_KEY"))),
-		credhub.CaCerts(caCerts...),
+		api.ClientCert(containerpath.For(c.Getenv("CF_INSTANCE_CERT")), containerpath.For(c.Getenv("CF_INSTANCE_KEY"))),
+		api.CaCerts(caCerts...),
 	)
 }
