@@ -5,7 +5,6 @@ import (
 	"crypto/x509"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"path/filepath"
 
 	"code.cloudfoundry.org/buildpackapplifecycle/containerpath"
@@ -42,8 +41,6 @@ var _ = Describe("credhub", func() {
 			fixturesSslDir, err := filepath.Abs(filepath.Join("..", "fixtures"))
 			Expect(err).NotTo(HaveOccurred())
 
-			os.Setenv("USERPROFILE", fixturesSslDir)
-
 			server = ghttp.NewUnstartedServer()
 
 			cert, err := tls.LoadX509KeyPair(filepath.Join(fixturesSslDir, "certs", "server-tls.crt"), filepath.Join(fixturesSslDir, "certs", "server-tls.key"))
@@ -62,7 +59,8 @@ var _ = Describe("credhub", func() {
 			}
 			server.HTTPTestServer.StartTLS()
 
-			if containerpath.For("/") == fixturesSslDir {
+			cpath := containerpath.New(fixturesSslDir)
+			if cpath.For("/") == fixturesSslDir {
 				fakeEnv["CF_INSTANCE_CERT"] = filepath.Join("/certs", "client-tls.crt")
 				fakeEnv["CF_INSTANCE_KEY"] = filepath.Join("/certs", "client-tls.key")
 				fakeEnv["CF_SYSTEM_CERT_PATH"] = "/cacerts"
@@ -80,11 +78,11 @@ var _ = Describe("credhub", func() {
 				Getenv: func(key string) string {
 					return fakeEnv[key]
 				},
+				PathFor: containerpath.New(fixturesSslDir).For,
 			}
 		})
 
 		AfterEach(func() {
-			os.Unsetenv("USERPROFILE")
 			server.Close()
 		})
 
@@ -102,7 +100,6 @@ var _ = Describe("credhub", func() {
 				delete(fakeEnv, "CF_INSTANCE_CERT")
 				delete(fakeEnv, "CF_INSTANCE_KEY")
 				delete(fakeEnv, "CF_SYSTEM_CERT_PATH")
-				os.Unsetenv("USERPROFILE")
 
 				vcapServicesValue = `{"my-server":[{"credentials":{"no refs here":"and this string containing credhub-ref doesnt count"}}]}`
 				fakeEnv["VCAP_SERVICES"] = vcapServicesValue
@@ -149,7 +146,8 @@ var _ = Describe("credhub", func() {
 
 		Context("when the instance cert and key are invalid", func() {
 			BeforeEach(func() {
-				if containerpath.For("/") == fixturesSslDir {
+				cpath := containerpath.New(fixturesSslDir)
+				if cpath.For("/") == fixturesSslDir {
 					fakeEnv["CF_INSTANCE_CERT"] = "not_a_cert"
 					fakeEnv["CF_INSTANCE_KEY"] = "not_a_cert"
 				} else {

@@ -12,14 +12,16 @@ import (
 )
 
 type Credhub struct {
-	Setenv func(key, value string) error
-	Getenv func(key string) string
+	Setenv  func(key, value string) error
+	Getenv  func(key string) string
+	PathFor func(path ...string) string
 }
 
 func New() *Credhub {
 	return &Credhub{
-		Setenv: os.Setenv,
-		Getenv: os.Getenv,
+		Setenv:  os.Setenv,
+		Getenv:  os.Getenv,
+		PathFor: containerpath.New(os.Getenv("USERPROFILE")).For,
 	}
 }
 
@@ -47,7 +49,7 @@ func (c *Credhub) credhubClient(credhubURI string) (*api.CredHub, error) {
 		return nil, fmt.Errorf("Missing CF_SYSTEM_CERT_PATH")
 	}
 
-	systemCertsPath := containerpath.For(c.Getenv("CF_SYSTEM_CERT_PATH"))
+	systemCertsPath := c.PathFor(c.Getenv("CF_SYSTEM_CERT_PATH"))
 	caCerts := []string{}
 	files, err := ioutil.ReadDir(systemCertsPath)
 	if err != nil {
@@ -65,7 +67,7 @@ func (c *Credhub) credhubClient(credhubURI string) (*api.CredHub, error) {
 
 	return api.New(
 		credhubURI,
-		api.ClientCert(containerpath.For(c.Getenv("CF_INSTANCE_CERT")), containerpath.For(c.Getenv("CF_INSTANCE_KEY"))),
+		api.ClientCert(c.PathFor(c.Getenv("CF_INSTANCE_CERT")), c.PathFor(c.Getenv("CF_INSTANCE_KEY"))),
 		api.CaCerts(caCerts...),
 	)
 }

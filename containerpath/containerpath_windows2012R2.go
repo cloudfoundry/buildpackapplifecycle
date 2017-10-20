@@ -3,10 +3,11 @@
 package containerpath
 
 import (
-	"os"
 	"path/filepath"
 )
 
-func For(path string) string {
-	return filepath.Join(filepath.Clean(os.Getenv("USERPROFILE")), path)
+func New(root string) *cpath {
+	return &cpath{
+		root: filepath.Clean(root),
+	}
 }

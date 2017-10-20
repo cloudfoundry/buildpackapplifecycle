@@ -6,6 +6,17 @@ import (
 	"path/filepath"
 )
 
-func For(path string) string {
-	return filepath.Clean(path)
+type cpath struct {
+	root string
+}
+
+func New(_ string) *cpath {
+	return &cpath{
+		root: "/",
+	}
+}
+
+func (c *cpath) For(path ...string) string {
+	path = append([]string{c.root}, path...)
+	return filepath.Clean(filepath.Join(path...))
 }

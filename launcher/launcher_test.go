@@ -312,7 +312,6 @@ var _ = Describe("Launcher", func() {
 		var (
 			server         *ghttp.Server
 			fixturesSslDir string
-			userProfile    string
 			err            error
 		)
 
@@ -328,9 +327,6 @@ var _ = Describe("Launcher", func() {
 		BeforeEach(func() {
 			fixturesSslDir, err = filepath.Abs(filepath.Join("..", "fixtures"))
 			Expect(err).NotTo(HaveOccurred())
-
-			userProfile = os.Getenv("USERPROFILE")
-			os.Setenv("USERPROFILE", fixturesSslDir)
 
 			server = ghttp.NewUnstartedServer()
 
@@ -352,7 +348,8 @@ var _ = Describe("Launcher", func() {
 
 			removeFromLauncherEnv("USERPROFILE")
 			launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("USERPROFILE=%s", fixturesSslDir))
-			if containerpath.For("/") == fixturesSslDir {
+			cpath := containerpath.New(fixturesSslDir)
+			if cpath.For("/") == fixturesSslDir {
 				launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_INSTANCE_CERT=%s", filepath.Join("/certs", "client-tls.crt")))
 				launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_INSTANCE_KEY=%s", filepath.Join("/certs", "client-tls.key")))
 				launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_SYSTEM_CERT_PATH=%s", "/cacerts"))
@@ -372,7 +369,6 @@ var _ = Describe("Launcher", func() {
 
 		AfterEach(func() {
 			server.Close()
-			os.Setenv("USERPROFILE", userProfile)
 		})
 
 		Context("when VCAP_SERVICES contains credhub refs", func() {
