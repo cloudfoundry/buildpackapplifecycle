@@ -73,6 +73,7 @@ var _ = Describe("credhub", func() {
 			server.HTTPTestServer.StartTLS()
 
 			cpath := containerpath.New(fixturesSslDir)
+			fakeOs.Setenv("USERPROFILE", fixturesSslDir)
 			if cpath.For("/") == fixturesSslDir {
 				fakeOs.Setenv("CF_INSTANCE_CERT", filepath.Join("/certs", "client-tls.crt"))
 				fakeOs.Setenv("CF_INSTANCE_KEY", filepath.Join("/certs", "client-tls.key"))

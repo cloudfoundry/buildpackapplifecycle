@@ -184,11 +184,14 @@ var _ = Describe("Building", func() {
 			server.HTTPTestServer.StartTLS()
 
 			cpath := containerpath.New(fixturesSslDir)
+			sessionSetEnv("USERPROFILE", fixturesSslDir)
 			if cpath.For("/") == fixturesSslDir {
-				sessionSetEnv("CF_INSTANCE_CERT", filepath.Join("/certs", "client-tls.crt"))
-				sessionSetEnv("CF_INSTANCE_KEY", filepath.Join("/certs", "client-tls.key"))
-				sessionSetEnv("CF_SYSTEM_CERT_PATH", "/cacerts")
+				// windows2012
+				sessionSetEnv("CF_INSTANCE_CERT", filepath.Join("/", "certs", "client-tls.crt"))
+				sessionSetEnv("CF_INSTANCE_KEY", filepath.Join("/", "certs", "client-tls.key"))
+				sessionSetEnv("CF_SYSTEM_CERT_PATH", filepath.Join("/", "cacerts"))
 			} else {
+				// all others
 				sessionSetEnv("CF_INSTANCE_CERT", filepath.Join(fixturesSslDir, "certs", "client-tls.crt"))
 				sessionSetEnv("CF_INSTANCE_KEY", filepath.Join(fixturesSslDir, "certs", "client-tls.key"))
 				sessionSetEnv("CF_SYSTEM_CERT_PATH", filepath.Join(fixturesSslDir, "cacerts"))

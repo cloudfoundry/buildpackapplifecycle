@@ -1,10 +1,8 @@
-// +build !windows2012R2
+// +build !windows !windows2012R2
 
 package containerpath
 
-import (
-	"path/filepath"
-)
+import "path/filepath"
 
 type cpath struct {
 	root string
@@ -12,7 +10,7 @@ type cpath struct {
 
 func New(_ string) *cpath {
 	return &cpath{
-		root: "/",
+		root: "",
 	}
 }
 
