@@ -3,53 +3,51 @@ package credhub
 import (
 	"fmt"
 	"io/ioutil"
-	"os"
 	"path/filepath"
 	"strings"
 
 	"code.cloudfoundry.org/buildpackapplifecycle/containerpath"
+	"code.cloudfoundry.org/goshims/osshim"
 	api "github.com/cloudfoundry-incubator/credhub-cli/credhub"
 )
 
 type Credhub struct {
-	Setenv  func(key, value string) error
-	Getenv  func(key string) string
-	PathFor func(path ...string) string
+	os      osshim.Os
+	pathFor func(path ...string) string
 }
 
-func New() *Credhub {
+func New(os osshim.Os) *Credhub {
 	return &Credhub{
-		Setenv:  os.Setenv,
-		Getenv:  os.Getenv,
-		PathFor: containerpath.New(os.Getenv("USERPROFILE")).For,
+		os:      os,
+		pathFor: containerpath.New(os.Getenv("USERPROFILE")).For,
 	}
 }
 
 func (c *Credhub) InterpolateServiceRefs(credhubURI string) error {
-	if !strings.Contains(c.Getenv("VCAP_SERVICES"), `"credhub-ref"`) {
+	if !strings.Contains(c.os.Getenv("VCAP_SERVICES"), `"credhub-ref"`) {
 		return nil
 	}
 	ch, err := c.credhubClient(credhubURI)
 	if err != nil {
 		return fmt.Errorf("Unable to set up credhub client: %v", err)
 	}
-	interpolatedServices, err := ch.InterpolateString(c.Getenv("VCAP_SERVICES"))
+	interpolatedServices, err := ch.InterpolateString(c.os.Getenv("VCAP_SERVICES"))
 	if err != nil {
 		return fmt.Errorf("Unable to interpolate credhub references: %v", err)
 	}
-	c.Setenv("VCAP_SERVICES", interpolatedServices)
+	c.os.Setenv("VCAP_SERVICES", interpolatedServices)
 	return nil
 }
 
 func (c *Credhub) credhubClient(credhubURI string) (*api.CredHub, error) {
-	if c.Getenv("CF_INSTANCE_CERT") == "" || c.Getenv("CF_INSTANCE_KEY") == "" {
+	if c.os.Getenv("CF_INSTANCE_CERT") == "" || c.os.Getenv("CF_INSTANCE_KEY") == "" {
 		return nil, fmt.Errorf("Missing CF_INSTANCE_CERT and/or CF_INSTANCE_KEY")
 	}
-	if c.Getenv("CF_SYSTEM_CERT_PATH") == "" {
+	if c.os.Getenv("CF_SYSTEM_CERT_PATH") == "" {
 		return nil, fmt.Errorf("Missing CF_SYSTEM_CERT_PATH")
 	}
 
-	systemCertsPath := c.PathFor(c.Getenv("CF_SYSTEM_CERT_PATH"))
+	systemCertsPath := c.pathFor(c.os.Getenv("CF_SYSTEM_CERT_PATH"))
 	caCerts := []string{}
 	files, err := ioutil.ReadDir(systemCertsPath)
 	if err != nil {
@@ -67,7 +65,7 @@ func (c *Credhub) credhubClient(credhubURI string) (*api.CredHub, error) {
 
 	return api.New(
 		credhubURI,
-		api.ClientCert(c.PathFor(c.Getenv("CF_INSTANCE_CERT")), c.PathFor(c.Getenv("CF_INSTANCE_KEY"))),
+		api.ClientCert(c.pathFor(c.os.Getenv("CF_INSTANCE_CERT")), c.pathFor(c.os.Getenv("CF_INSTANCE_KEY"))),
 		api.CaCerts(caCerts...),
 	)
 }
