@@ -1,20 +1,15 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
-	"strconv"
 
-	"code.cloudfoundry.org/buildpackapplifecycle/credhub"
-	"code.cloudfoundry.org/buildpackapplifecycle/databaseuri"
-	"code.cloudfoundry.org/buildpackapplifecycle/platformoptions"
+	"code.cloudfoundry.org/buildpackapplifecycle/env"
 	"code.cloudfoundry.org/goshims/osshim"
-
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -31,40 +26,6 @@ func main() {
 	absDir, err := filepath.Abs(dir)
 	if err == nil {
 		dir = absDir
-	}
-	os.Setenv("HOME", dir)
-
-	tmpDir, err := filepath.Abs(filepath.Join(dir, "..", "tmp"))
-	if err == nil {
-		os.Setenv("TMPDIR", tmpDir)
-	}
-
-	depsDir, err := filepath.Abs(filepath.Join(dir, "..", "deps"))
-	if err == nil {
-		os.Setenv("DEPS_DIR", depsDir)
-	}
-
-	vcapAppEnv := map[string]interface{}{}
-	err = json.Unmarshal([]byte(os.Getenv("VCAP_APPLICATION")), &vcapAppEnv)
-	if err == nil {
-		vcapAppEnv["host"] = "0.0.0.0"
-
-		vcapAppEnv["instance_id"] = os.Getenv("INSTANCE_GUID")
-
-		port, err := strconv.Atoi(os.Getenv("PORT"))
-		if err == nil {
-			vcapAppEnv["port"] = port
-		}
-
-		index, err := strconv.Atoi(os.Getenv("INSTANCE_INDEX"))
-		if err == nil {
-			vcapAppEnv["instance_index"] = index
-		}
-
-		mungedAppEnv, err := json.Marshal(vcapAppEnv)
-		if err == nil {
-			os.Setenv("VCAP_APPLICATION", string(mungedAppEnv))
-		}
 	}
 
 	var command string
@@ -83,28 +44,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	if platformOptions, err := platformoptions.Get(os.Getenv("VCAP_PLATFORM_OPTIONS")); err != nil {
-		fmt.Fprintf(os.Stderr, "Invalid platform options: %v", err)
+	if err := env.CalcEnv(&osshim.OsShim{}, dir); err != nil {
+		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(3)
-	} else if platformOptions != nil && platformOptions.CredhubURI != "" {
-		err := credhub.New(&osshim.OsShim{}).InterpolateServiceRefs(platformOptions.CredhubURI)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Unable to interpolate credhub refs: %v", err)
-			os.Exit(4)
-		}
 	}
 
-	if os.Getenv("VCAP_SERVICES") != "" {
-		dbUri := databaseuri.New()
-		if creds, err := dbUri.Credentials([]byte(os.Getenv("VCAP_SERVICES"))); err == nil {
-			databaseUrl := dbUri.Uri(creds)
-			if databaseUrl != "" {
-				os.Setenv("DATABASE_URL", databaseUrl)
-			}
-		}
-	}
-
-	os.Unsetenv("VCAP_PLATFORM_OPTIONS")
 	runtime.GOMAXPROCS(1)
 	runProcess(dir, command)
 }
