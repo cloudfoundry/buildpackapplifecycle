@@ -426,6 +426,11 @@ func (runner *Runner) detect() (string, string, string, bool) {
 			return buildpack, buildpackPath, "", true
 		}
 
+		if err := runner.warnIfDetectNotExecutable(buildpackPath); err != nil {
+			printError(err.Error())
+			continue
+		}
+
 		output := new(bytes.Buffer)
 		err = runner.run(exec.Command(filepath.Join(buildpackPath, "bin", "detect"), runner.config.BuildDir()), output)
 

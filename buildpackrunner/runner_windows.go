@@ -38,6 +38,10 @@ func (runner *Runner) copyApp(buildDir, stageDir string) error {
 	return copyDirectory(buildDir, stageDir)
 }
 
+func (runner *Runner) warnIfDetectNotExecutable(buildpackPath string) error {
+	return nil
+}
+
 func copyDirectory(srcDir, destDir string) error {
 	destExists, err := fileExists(destDir)
 	if err != nil {

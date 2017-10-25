@@ -373,6 +373,7 @@ var _ = Describe("Building", func() {
 	})
 
 	Context("run detect", func() {
+		var session *gexec.Session
 		BeforeEach(func() {
 			buildpackOrder = "always-detects,also-always-detects"
 
@@ -382,7 +383,36 @@ var _ = Describe("Building", func() {
 		})
 
 		JustBeforeEach(func() {
-			Eventually(builder(), 5*time.Second).Should(gexec.Exit(0))
+			session = builder()
+			Eventually(session, 5*time.Second).Should(gexec.Exit(0))
+		})
+
+		Context("first buildpack detect is not executable", func() {
+			BeforeEach(func() {
+				if runtime.GOOS == "windows" {
+					Skip("warning is unnecessary on Windows")
+				}
+
+				hash := fmt.Sprintf("%x", md5.Sum([]byte("always-detects")))
+				binDetect := filepath.Join(buildpacksDir, hash, "bin", "detect")
+				Expect(os.Chmod(binDetect, 0644)).To(Succeed())
+			})
+
+			It("should warn that detect is not executable", func() {
+				Eventually(session.Out).Should(gbytes.Say("WARNING: buildpack script '/bin/detect' is not executable"))
+			})
+
+			It("should have chosen the second buildpack detect", func() {
+				data := &struct {
+					LifeCycle struct {
+						Key string `json:"buildpack_key"`
+					} `json:"lifecycle_metadata"`
+				}{}
+				Expect(json.Unmarshal(resultJSON(), data)).To(Succeed())
+
+				Expect(data.LifeCycle.Key).To(Equal("also-always-detects"))
+			})
+
 		})
 
 		Describe("the contents of the output tgz", func() {
