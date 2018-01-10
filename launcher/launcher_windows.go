@@ -24,8 +24,21 @@ func runProcess(dir, command string) {
 	cwd, err := syscall.UTF16PtrFromString(dir)
 	handleErr("casting cwd failed", err)
 
-	//Default is to use parent's Stdin, Stdout, Stderr
+	p, _ := syscall.GetCurrentProcess()
+	fd := make([]syscall.Handle, 3)
+	for i, file := range []*os.File{os.Stdin, os.Stdout, os.Stderr} {
+		err := syscall.DuplicateHandle(p, syscall.Handle(file.Fd()), p, &fd[i], 0, true, syscall.DUPLICATE_SAME_ACCESS)
+		if err != nil {
+			handleErr("DuplicateHandle failed", err)
+		}
+		defer syscall.CloseHandle(syscall.Handle(fd[i]))
+	}
 	si := new(syscall.StartupInfo)
+	si.Cb = uint32(unsafe.Sizeof(*si))
+	si.Flags = syscall.STARTF_USESTDHANDLES
+	si.StdInput = fd[0]
+	si.StdOutput = fd[1]
+	si.StdErr = fd[2]
 	pi := new(syscall.ProcessInformation)
 
 	// Change the parent's working directory to the app dir so
@@ -43,7 +56,7 @@ func runProcess(dir, command string) {
 		uintptr(unsafe.Pointer(args)), // executable and args
 		uintptr(unsafe.Pointer(nil)),  // process security attributes
 		uintptr(unsafe.Pointer(nil)),  // thread security attributes
-		uintptr(uint32(0)),            // don't inherit parent's handles
+		uintptr(uint32(1)),            // inherit parent's handles
 		uintptr(uint32(0)),            // creation flags
 		uintptr(unsafe.Pointer(nil)),  // inherit parent's environment
 		uintptr(unsafe.Pointer(cwd)),  // process working directory
