@@ -50,9 +50,9 @@ var _ = Describe("Launcher", func() {
 
 	BeforeEach(func() {
 		if runtime.GOOS == "windows" {
-			startCommand = "cmd /C set && echo PWD=%cd% && echo running app"
+			startCommand = "cmd /C set && echo PWD=%cd% && echo running app && " + hello
 		} else {
-			startCommand = "env; echo running app"
+			startCommand = "env; echo running app; " + hello
 		}
 
 		var err error
@@ -257,28 +257,6 @@ var _ = Describe("Launcher", func() {
 
 	Context("the app executable is in vcap/app", func() {
 		BeforeEach(func() {
-			copyExe := func(dstDir, src string) error {
-				in, err := os.Open(src)
-				if err != nil {
-					return err
-				}
-				defer in.Close()
-
-				exeName := filepath.Base(src)
-				dst := filepath.Join(dstDir, exeName)
-				out, err := os.OpenFile(dst, os.O_RDWR|os.O_CREATE, 0755)
-				if err != nil {
-					return err
-				}
-				defer out.Close()
-				_, err = io.Copy(out, in)
-				cerr := out.Close()
-				if err != nil {
-					return err
-				}
-				return cerr
-			}
-
 			Expect(copyExe(appDir, hello)).To(Succeed())
 
 			launcherCmd.Args = []string{
@@ -292,6 +270,85 @@ var _ = Describe("Launcher", func() {
 		It("finds the app executable", func() {
 			Eventually(session).Should(gexec.Exit(0))
 			Expect(string(session.Out.Contents())).To(ContainSubstring("app is running"))
+		})
+	})
+
+	Context("the app executable path contains a space", func() {
+		BeforeEach(func() {
+			if runtime.GOOS != "windows" {
+				Skip("file/directory names with spaces should be escaped on non-Windows OSes")
+			}
+
+			appDirWithSpaces := filepath.Join(appDir, "space dir")
+			Expect(os.MkdirAll(appDirWithSpaces, 0755)).To(Succeed())
+			Expect(copyExe(appDirWithSpaces, hello)).To(Succeed())
+
+			launcherCmd.Args = []string{
+				"launcher",
+				appDir,
+				filepath.Join(appDirWithSpaces, "hello"),
+				`{ "start_command": "echo should not run this" }`,
+			}
+		})
+
+		It("finds the app executable", func() {
+			Eventually(session).Should(gexec.Exit(0))
+			Expect(string(session.Out.Contents())).To(ContainSubstring("app is running"))
+		})
+	})
+
+	Context("when the app exits", func() {
+		BeforeEach(func() {
+			if runtime.GOOS == "windows" {
+				startCommand = "cmd.exe /C exit 26"
+			} else {
+				startCommand = "exit 26"
+			}
+
+			launcherCmd.Args = []string{
+				"launcher",
+				appDir,
+				startCommand,
+				`{ "start_command": "echo should not run this" }`,
+			}
+		})
+
+		It("exits with the exit code of the app", func() {
+			Eventually(session).Should(gexec.Exit(26))
+		})
+	})
+
+	Context("when the start command starts a subprocess", func() {
+		Context("the subprocess outputs to stdout", func() {
+			BeforeEach(func() {
+				launcherCmd.Args = []string{
+					"launcher",
+					appDir,
+					startCommand,
+					`{ "start_command": "echo should not run this" }`,
+				}
+			})
+
+			It("captures stdout", func() {
+				Eventually(session).Should(gexec.Exit(0))
+				Expect(string(session.Out.Contents())).To(ContainSubstring("app is running"))
+			})
+		})
+
+		Context("the subprocess outputs to stderr", func() {
+			BeforeEach(func() {
+				launcherCmd.Args = []string{
+					"launcher",
+					appDir,
+					startCommand + " 1>&2",
+					`{ "start_command": "echo should not run this" }`,
+				}
+			})
+
+			It("captures stderr", func() {
+				Eventually(session).Should(gexec.Exit(0))
+				Expect(string(session.Err.Contents())).To(ContainSubstring("app is running"))
+			})
 		})
 	})
 
@@ -620,4 +677,26 @@ var _ = Describe("Launcher", func() {
 func writeStagingInfo(extractDir, stagingInfo string) {
 	err := ioutil.WriteFile(filepath.Join(extractDir, "staging_info.yml"), []byte(stagingInfo), 0644)
 	Expect(err).NotTo(HaveOccurred())
+}
+
+func copyExe(dstDir, src string) error {
+	in, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+
+	exeName := filepath.Base(src)
+	dst := filepath.Join(dstDir, exeName)
+	out, err := os.OpenFile(dst, os.O_RDWR|os.O_CREATE, 0755)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+	_, err = io.Copy(out, in)
+	cerr := out.Close()
+	if err != nil {
+		return err
+	}
+	return cerr
 }
