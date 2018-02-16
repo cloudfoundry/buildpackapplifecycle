@@ -79,8 +79,7 @@ var _ = Describe("Launcher", func() {
 	})
 
 	AfterEach(func() {
-		err := os.RemoveAll(extractDir)
-		Expect(err).NotTo(HaveOccurred())
+		Expect(os.RemoveAll(extractDir)).To(Succeed())
 	})
 
 	JustBeforeEach(func() {
@@ -140,10 +139,6 @@ var _ = Describe("Launcher", func() {
 
 		Context("when the given dir has .profile.d with scripts in it", func() {
 			BeforeEach(func() {
-				if runtime.GOOS == "windows" {
-					Skip(".profile.d not supported on Windows")
-				}
-
 				var err error
 
 				profileDir := filepath.Join(appDir, ".profile.d")
@@ -151,23 +146,35 @@ var _ = Describe("Launcher", func() {
 				err = os.MkdirAll(profileDir, 0755)
 				Expect(err).NotTo(HaveOccurred())
 
-				err = ioutil.WriteFile(filepath.Join(profileDir, "a.sh"), []byte("echo sourcing a\nexport A=1\n"), 0644)
-				Expect(err).NotTo(HaveOccurred())
-
-				err = ioutil.WriteFile(filepath.Join(profileDir, "b.sh"), []byte("echo sourcing b\nexport B=1\n"), 0644)
-				Expect(err).NotTo(HaveOccurred())
-
-				err = ioutil.WriteFile(filepath.Join(appDir, ".profile"), []byte("echo sourcing .profile\nexport C=$A$B\n"), 0644)
-				Expect(err).NotTo(HaveOccurred())
+				if runtime.GOOS == "windows" {
+					err = ioutil.WriteFile(filepath.Join(profileDir, "a.bat"), []byte("@echo off\necho sourcing a.bat\nset A=1\n"), 0644)
+					Expect(err).NotTo(HaveOccurred())
+					err = ioutil.WriteFile(filepath.Join(profileDir, "b.bat"), []byte("@echo off\necho sourcing b.bat\nset B=1\n"), 0644)
+					Expect(err).NotTo(HaveOccurred())
+					err = ioutil.WriteFile(filepath.Join(appDir, ".profile.bat"), []byte("@echo off\necho sourcing .profile.bat\nset C=%A%%B%\n"), 0644)
+					Expect(err).NotTo(HaveOccurred())
+				} else {
+					err = ioutil.WriteFile(filepath.Join(profileDir, "a.sh"), []byte("echo sourcing a.sh\nexport A=1\n"), 0644)
+					Expect(err).NotTo(HaveOccurred())
+					err = ioutil.WriteFile(filepath.Join(profileDir, "b.sh"), []byte("echo sourcing b.sh\nexport B=1\n"), 0644)
+					Expect(err).NotTo(HaveOccurred())
+					err = ioutil.WriteFile(filepath.Join(appDir, ".profile"), []byte("echo sourcing .profile\nexport C=$A$B\n"), 0644)
+					Expect(err).NotTo(HaveOccurred())
+				}
 
 			})
 
 			It("sources them before sourcing .profile and before executing", func() {
 				Eventually(session).Should(gexec.Exit(0))
-				Eventually(session).Should(gbytes.Say("sourcing a"))
-				Eventually(session).Should(gbytes.Say("sourcing b"))
-				Eventually(session).Should(gbytes.Say("sourcing .profile"))
-				Eventually(session).Should(gbytes.Say("A=1"))
+				if runtime.GOOS == "windows" {
+					Eventually(session).Should(gbytes.Say("sourcing a.bat"))
+					Eventually(session).Should(gbytes.Say("sourcing b.bat"))
+					Eventually(session).Should(gbytes.Say("sourcing .profile.bat"))
+				} else {
+					Eventually(session).Should(gbytes.Say("sourcing a.sh"))
+					Eventually(session).Should(gbytes.Say("sourcing b.sh"))
+					Eventually(session).Should(gbytes.Say("sourcing .profile"))
+				}
 				Eventually(session).Should(gbytes.Say("B=1"))
 				Eventually(session).Should(gbytes.Say("C=11"))
 				Eventually(session).Should(gbytes.Say("running app"))
@@ -183,9 +190,6 @@ var _ = Describe("Launcher", func() {
 
 		Context("when the given dir has an empty .profile.d", func() {
 			BeforeEach(func() {
-				if runtime.GOOS == "windows" {
-					Skip(".profile.d not supported on Windows")
-				}
 				Expect(os.MkdirAll(filepath.Join(appDir, ".profile.d"), 0755)).To(Succeed())
 			})
 
@@ -197,35 +201,44 @@ var _ = Describe("Launcher", func() {
 
 		Context("when the given dir has ../profile.d with scripts in it", func() {
 			BeforeEach(func() {
-				if runtime.GOOS == "windows" {
-					Skip("profile.d not supported on Windows")
-				}
-
 				var err error
-
 				profileDir := filepath.Join(appDir, "..", "profile.d")
 
 				err = os.MkdirAll(profileDir, 0755)
 				Expect(err).NotTo(HaveOccurred())
 
-				err = ioutil.WriteFile(filepath.Join(profileDir, "a.sh"), []byte("echo sourcing a\nexport A=1\n"), 0644)
-				Expect(err).NotTo(HaveOccurred())
-
-				err = ioutil.WriteFile(filepath.Join(profileDir, "b.sh"), []byte("echo sourcing b\nexport B=1\n"), 0644)
-				Expect(err).NotTo(HaveOccurred())
-
-				err = os.MkdirAll(filepath.Join(appDir, ".profile.d"), 0755)
-				Expect(err).NotTo(HaveOccurred())
-				err = ioutil.WriteFile(filepath.Join(appDir, ".profile.d", "c.sh"), []byte("echo sourcing c\nexport C=$A$B\n"), 0644)
-				Expect(err).NotTo(HaveOccurred())
-
+				if runtime.GOOS == "windows" {
+					err = ioutil.WriteFile(filepath.Join(profileDir, "a.bat"), []byte("@echo off\necho sourcing a.bat\nset A=1\n"), 0644)
+					Expect(err).NotTo(HaveOccurred())
+					err = ioutil.WriteFile(filepath.Join(profileDir, "b.bat"), []byte("@echo off\necho sourcing b.bat\nset B=1\n"), 0644)
+					Expect(err).NotTo(HaveOccurred())
+					err = os.MkdirAll(filepath.Join(appDir, ".profile.d"), 0755)
+					Expect(err).NotTo(HaveOccurred())
+					err = ioutil.WriteFile(filepath.Join(appDir, ".profile.d", "c.bat"), []byte("@echo off\necho sourcing c.bat\nset C=%A%%B%\n"), 0644)
+					Expect(err).NotTo(HaveOccurred())
+				} else {
+					err = ioutil.WriteFile(filepath.Join(profileDir, "a.sh"), []byte("echo sourcing a.sh\nexport A=1\n"), 0644)
+					Expect(err).NotTo(HaveOccurred())
+					err = ioutil.WriteFile(filepath.Join(profileDir, "b.sh"), []byte("echo sourcing b.sh\nexport B=1\n"), 0644)
+					Expect(err).NotTo(HaveOccurred())
+					err = os.MkdirAll(filepath.Join(appDir, ".profile.d"), 0755)
+					Expect(err).NotTo(HaveOccurred())
+					err = ioutil.WriteFile(filepath.Join(appDir, ".profile.d", "c.sh"), []byte("echo sourcing c.sh\nexport C=$A$B\n"), 0644)
+					Expect(err).NotTo(HaveOccurred())
+				}
 			})
 
 			It("sources them before sourcing .profile.d/* and before executing", func() {
 				Eventually(session).Should(gexec.Exit(0))
-				Eventually(session).Should(gbytes.Say("sourcing a"))
-				Eventually(session).Should(gbytes.Say("sourcing b"))
-				Eventually(session).Should(gbytes.Say("sourcing c"))
+				if runtime.GOOS == "windows" {
+					Eventually(session).Should(gbytes.Say("sourcing a.bat"))
+					Eventually(session).Should(gbytes.Say("sourcing b.bat"))
+					Eventually(session).Should(gbytes.Say("sourcing c.bat"))
+				} else {
+					Eventually(session).Should(gbytes.Say("sourcing a.sh"))
+					Eventually(session).Should(gbytes.Say("sourcing b.sh"))
+					Eventually(session).Should(gbytes.Say("sourcing c.sh"))
+				}
 				Eventually(session).Should(gbytes.Say("A=1"))
 				Eventually(session).Should(gbytes.Say("B=1"))
 				Eventually(session).Should(gbytes.Say("C=11"))
@@ -242,9 +255,6 @@ var _ = Describe("Launcher", func() {
 
 		Context("when the given dir has an empty ../profile.d", func() {
 			BeforeEach(func() {
-				if runtime.GOOS == "windows" {
-					Skip("profile.d not supported on Windows")
-				}
 				Expect(os.MkdirAll(filepath.Join(appDir, "../profile.d"), 0755)).To(Succeed())
 			})
 
@@ -259,10 +269,16 @@ var _ = Describe("Launcher", func() {
 		BeforeEach(func() {
 			Expect(copyExe(appDir, hello)).To(Succeed())
 
+			var executable string
+			if runtime.GOOS == "windows" {
+				executable = ".\\hello"
+			} else {
+				executable = "./hello"
+			}
 			launcherCmd.Args = []string{
 				"launcher",
 				appDir,
-				"./hello",
+				executable,
 				`{ "start_command": "echo should not run this" }`,
 			}
 		})
