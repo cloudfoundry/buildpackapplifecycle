@@ -1,11 +1,15 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"os"
 	"syscall"
+	"unicode/utf16"
 	"unsafe"
+
+	"code.cloudfoundry.org/buildpackapplifecycle/launcher/profile"
 
 	"golang.org/x/sys/windows"
 )
@@ -23,6 +27,18 @@ func runProcess(dir, command string) {
 	handleErr("casting command failed", err)
 	cwd, err := syscall.UTF16PtrFromString(dir)
 	handleErr("casting cwd failed", err)
+
+	tmpDir, ok := os.LookupEnv("TMPDIR")
+	if !ok {
+		handleErr("TMPDIR must be set", errors.New("TMPDIR must be set"))
+	}
+
+	if err := os.MkdirAll(tmpDir, 0755); err != nil {
+		handleErr("creating TMPDIR", err)
+	}
+
+	envs, err := profile.ProfileEnv(dir, tmpDir, os.Stdout, os.Stderr)
+	handleErr("getting environment failed", err)
 
 	p, _ := syscall.GetCurrentProcess()
 	fd := make([]syscall.Handle, 3)
@@ -46,22 +62,22 @@ func runProcess(dir, command string) {
 	err = os.Chdir(dir)
 	handleErr("couldn't change working directory", err)
 
+	creationFlags := syscall.CREATE_UNICODE_ENVIRONMENT
 	// CreateProcessW docs
 	// https://msdn.microsoft.com/en-us/library/windows/desktop/ms682425(v=vs.85).aspx
-
 	// Process Creation flags
 	// https://msdn.microsoft.com/en-us/library/windows/desktop/ms684863(v=vs.85).aspx
 	r, _, e := syscall.Syscall12(createProcessW.Addr(), 10,
-		uintptr(uint16(0)),            // appname
-		uintptr(unsafe.Pointer(args)), // executable and args
-		uintptr(unsafe.Pointer(nil)),  // process security attributes
-		uintptr(unsafe.Pointer(nil)),  // thread security attributes
-		uintptr(uint32(1)),            // inherit parent's handles
-		uintptr(uint32(0)),            // creation flags
-		uintptr(unsafe.Pointer(nil)),  // inherit parent's environment
-		uintptr(unsafe.Pointer(cwd)),  // process working directory
-		uintptr(unsafe.Pointer(si)),   // startup info
-		uintptr(unsafe.Pointer(pi)),   // process info for the created process
+		uintptr(uint16(0)),                            // appname
+		uintptr(unsafe.Pointer(args)),                 // executable and args
+		uintptr(unsafe.Pointer(nil)),                  // process security attributes
+		uintptr(unsafe.Pointer(nil)),                  // thread security attributes
+		uintptr(uint32(1)),                            // inherit parent's handles
+		uintptr(creationFlags),                        // creation flags
+		uintptr(unsafe.Pointer(createEnvBlock(envs))), // use generated environment
+		uintptr(unsafe.Pointer(cwd)),                  // process working directory
+		uintptr(unsafe.Pointer(si)),                   // startup info
+		uintptr(unsafe.Pointer(pi)),                   // process info for the created process
 		0, 0)
 
 	if r == 0 {
@@ -85,4 +101,27 @@ func handleErr(description string, err error) {
 		fmt.Printf("%s: %s", description, err.Error())
 		os.Exit(1)
 	}
+}
+
+func createEnvBlock(envv []string) *uint16 {
+	if len(envv) == 0 {
+		return &utf16.Encode([]rune("\x00\x00"))[0]
+	}
+	length := 0
+	for _, s := range envv {
+		length += len(s) + 1
+	}
+	length += 1
+
+	b := make([]byte, length)
+	i := 0
+	for _, s := range envv {
+		l := len(s)
+		copy(b[i:i+l], []byte(s))
+		copy(b[i+l:i+l+1], []byte{0})
+		i = i + l + 1
+	}
+	copy(b[i:i+1], []byte{0})
+
+	return &utf16.Encode([]rune(string(b)))[0]
 }
