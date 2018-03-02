@@ -2,7 +2,6 @@ package buildpackrunner
 
 import (
 	"crypto/tls"
-	"crypto/x509"
 	"fmt"
 	"io/ioutil"
 	"net/url"
@@ -13,6 +12,7 @@ import (
 	"code.cloudfoundry.org/archiver/extractor"
 	"code.cloudfoundry.org/cacheddownloader"
 	"code.cloudfoundry.org/lager"
+	"code.cloudfoundry.org/systemcerts"
 )
 
 type ZipDownloader struct {
@@ -23,17 +23,9 @@ func IsZipFile(filename string) bool {
 	return strings.HasSuffix(filename, ".zip")
 }
 
-func SystemCerts() *x509.CertPool {
-	caCertPool, err := x509.SystemCertPool()
-	if err != nil {
-		caCertPool = x509.NewCertPool()
-	}
-	return caCertPool
-}
-
 func NewZipDownloader(skipSSLVerification bool) *ZipDownloader {
 	tlsConfig := &tls.Config{
-		RootCAs:            SystemCerts(),
+		RootCAs:            systemcerts.SystemRootsPool().AsX509CertPool(),
 		InsecureSkipVerify: skipSSLVerification,
 	}
 
