@@ -1,7 +1,6 @@
-package profile_test
+package main_test
 
 import (
-	"runtime"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
@@ -11,9 +10,9 @@ import (
 
 var getenv string
 
-func TestProfile(t *testing.T) {
+func TestGetEnv(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Buildpack-Lifecycle-Launcher-Profile Suite")
+	RunSpecs(t, "Getenv")
 }
 
 var _ = SynchronizedBeforeSuite(func() []byte {
@@ -21,9 +20,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	Expect(err).NotTo(HaveOccurred())
 	return []byte(getenvPath)
 }, func(getenvExe []byte) {
-	if runtime.GOOS == "windows" {
-		getenv = string(getenvExe)
-	}
+	getenv = string(getenvExe)
 })
 
 var _ = SynchronizedAfterSuite(func() {
