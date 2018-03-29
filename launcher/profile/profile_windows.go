@@ -48,7 +48,7 @@ func ProfileEnv(appDir, tempDir, getenvPath string, stdout io.Writer, stderr io.
 
 	cleanedVars := []string{}
 	if err := json.Unmarshal(out, &cleanedVars); err != nil {
-		panic(err)
+		return []string{}, fmt.Errorf("cannot unmarshal environmental variables: %s", err.Error())
 	}
 
 	return cleanedVars, nil
