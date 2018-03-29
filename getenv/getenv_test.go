@@ -27,28 +27,56 @@ var _ = Describe("Getenv", func() {
 		fileEnv = filepath.Join(outputDir, "file.env")
 
 		cmd = exec.Command(getenv, "-output", fileEnv)
-		cmd.Env = append(os.Environ(), "FOO=bar")
 	})
 
 	AfterEach(func() {
 		Expect(os.RemoveAll(outputDir)).To(Succeed())
 	})
 
-	It("writes the current environment variables to a file", func() {
-		session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-		Expect(err).NotTo(HaveOccurred())
-		Eventually(session).Should(gexec.Exit(0))
+	Context("when there is a valid environmental variable", func() {
+		BeforeEach(func() {
+			cmd.Env = append(os.Environ(), "FOO=bar")
+		})
 
-		Expect(fileEnv).To(BeAnExistingFile())
+		It("writes the current environment variables to a file", func() {
+			session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(session).Should(gexec.Exit(0))
 
-		envs, err := ioutil.ReadFile(fileEnv)
-		Expect(err).NotTo(HaveOccurred())
+			Expect(fileEnv).To(BeAnExistingFile())
 
-		cleanedVars := []string{}
-		err = json.Unmarshal(envs, &cleanedVars)
-		Expect(err).NotTo(HaveOccurred())
+			envs, err := ioutil.ReadFile(fileEnv)
+			Expect(err).NotTo(HaveOccurred())
 
-		Expect(cleanedVars).To(ContainElement("FOO=bar"))
+			cleanedVars := []string{}
+			err = json.Unmarshal(envs, &cleanedVars)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(cleanedVars).To(ContainElement("FOO=bar"))
+		})
+	})
+
+	Context("when there is an environmental variable of length 0", func() {
+		BeforeEach(func() {
+			cmd.Env = append(os.Environ(), `=C:=C:\Users\vagrant`)
+		})
+
+		It("does not write out that variable", func() {
+			session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(session).Should(gexec.Exit(0))
+
+			Expect(fileEnv).To(BeAnExistingFile())
+
+			envs, err := ioutil.ReadFile(fileEnv)
+			Expect(err).NotTo(HaveOccurred())
+
+			cleanedVars := []string{}
+			err = json.Unmarshal(envs, &cleanedVars)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(cleanedVars).NotTo(ContainElement(`=C:=C:\Users\vagrant`))
+		})
 	})
 
 	Context("when no output flag is passed", func() {

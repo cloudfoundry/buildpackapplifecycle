@@ -33,7 +33,8 @@ func main() {
 
 	bytes, err := json.Marshal(cleanedEnviron)
 	if err != nil {
-		panic(err)
+		fmt.Fprintf(os.Stderr, "cannot marshal environmental variables to JSON: %s", cleanedEnviron)
+		os.Exit(1)
 	}
 
 	err = ioutil.WriteFile(outputFile, bytes, 0644)
