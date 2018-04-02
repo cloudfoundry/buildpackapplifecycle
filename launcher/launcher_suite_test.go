@@ -1,6 +1,9 @@
 package main_test
 
 import (
+	"io/ioutil"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -29,11 +32,27 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	Expect(err).NotTo(HaveOccurred())
 
 	launcherPath := buildLauncher()
-	return []byte(helloPath + "^" + launcherPath)
+
+	getenvPath, err := gexec.Build("code.cloudfoundry.org/buildpackapplifecycle/getenv")
+	Expect(err).NotTo(HaveOccurred())
+
+	return []byte(helloPath + "^" + launcherPath + "^" + getenvPath)
 }, func(exePaths []byte) {
 	paths := strings.Split(string(exePaths), "^")
 	hello = paths[0]
 	launcher = paths[1]
+
+	if runtime.GOOS == "windows" {
+		getenv := paths[2]
+
+		launcherDir := filepath.Dir(launcher)
+
+		getenvContents, err := ioutil.ReadFile(getenv)
+		Expect(err).NotTo(HaveOccurred())
+
+		err = ioutil.WriteFile(filepath.Join(launcherDir, "getenv.exe"), getenvContents, 0644)
+		Expect(err).NotTo(HaveOccurred())
+	}
 })
 
 var _ = SynchronizedAfterSuite(func() {
