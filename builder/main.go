@@ -48,6 +48,7 @@ func main() {
 	}
 
 	runner := buildpackrunner.New(&config)
+	defer runner.CleanUp()
 
 	_, err := runner.Run()
 	if err != nil {

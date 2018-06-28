@@ -164,6 +164,13 @@ func (runner *Runner) Run() (string, error) {
 	return infoFilePath, nil
 }
 
+func (runner *Runner) CleanUp() error {
+	if runner.contentsDir == "" {
+		return nil
+	}
+	return os.RemoveAll(runner.contentsDir)
+}
+
 func (runner *Runner) buildpacksMetadata(buildpacks []string) []buildpackapplifecycle.BuildpackMetadata {
 	data := make([]buildpackapplifecycle.BuildpackMetadata, len(buildpacks))
 	for i, key := range buildpacks {
