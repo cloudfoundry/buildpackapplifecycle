@@ -3,6 +3,7 @@
 package profile
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -13,7 +14,7 @@ import (
 	"strings"
 )
 
-func ProfileEnv(appDir, tempDir string, stdout io.Writer, stderr io.Writer) ([]string, error) {
+func ProfileEnv(appDir, tempDir, getenvPath string, stdout io.Writer, stderr io.Writer) ([]string, error) {
 	fi, err := os.Stat(tempDir)
 	if err != nil {
 		return nil, fmt.Errorf("invalid temp dir: %s", err.Error())
@@ -30,7 +31,7 @@ func ProfileEnv(appDir, tempDir string, stdout io.Writer, stderr io.Writer) ([]s
 		`(for /r %i in (..\profile.d\*) do %i)`,
 		`(for /r %i in (.profile.d\*) do %i)`,
 		`(if exist .profile.bat ( .profile.bat ))`,
-		fmt.Sprintf("set > %s", envOutputFile),
+		fmt.Sprintf("%s -output %s", getenvPath, envOutputFile),
 	}
 
 	cmd := exec.Command("cmd", "/c", strings.Join(batchFileLines, " & "))
@@ -46,11 +47,8 @@ func ProfileEnv(appDir, tempDir string, stdout io.Writer, stderr io.Writer) ([]s
 	}
 
 	cleanedVars := []string{}
-	vars := strings.Split(string(out), "\n")
-	for _, v := range vars {
-		if v != "" {
-			cleanedVars = append(cleanedVars, strings.TrimSpace(v))
-		}
+	if err := json.Unmarshal(out, &cleanedVars); err != nil {
+		return []string{}, fmt.Errorf("cannot unmarshal environmental variables: %s", err.Error())
 	}
 
 	return cleanedVars, nil

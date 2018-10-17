@@ -32,7 +32,7 @@ var _ = Describe("credhub", func() {
 				tlsConnectionState := req.TLS
 				Expect(tlsConnectionState).NotTo(BeNil())
 				Expect(tlsConnectionState.PeerCertificates).NotTo(BeEmpty())
-				Expect(tlsConnectionState.PeerCertificates[0].Subject.CommonName).To(Equal("example.com"))
+				Expect(tlsConnectionState.PeerCertificates[0].Subject.CommonName).To(Equal("client"))
 			}
 		}
 
@@ -56,12 +56,12 @@ var _ = Describe("credhub", func() {
 
 			server = ghttp.NewUnstartedServer()
 
-			cert, err := tls.LoadX509KeyPair(filepath.Join(fixturesSslDir, "certs", "server-tls.crt"), filepath.Join(fixturesSslDir, "certs", "server-tls.key"))
+			cert, err := tls.LoadX509KeyPair(filepath.Join(fixturesSslDir, "certs", "server.crt"), filepath.Join(fixturesSslDir, "certs", "server.key"))
 			Expect(err).NotTo(HaveOccurred())
 
 			caCerts := x509.NewCertPool()
 
-			caCertBytes, err := ioutil.ReadFile(filepath.Join(fixturesSslDir, "cacerts", "client-tls-ca.crt"))
+			caCertBytes, err := ioutil.ReadFile(filepath.Join(fixturesSslDir, "cacerts", "CA.crt"))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(caCerts.AppendCertsFromPEM(caCertBytes)).To(BeTrue())
 
@@ -75,12 +75,12 @@ var _ = Describe("credhub", func() {
 			cpath := containerpath.New(fixturesSslDir)
 			fakeOs.Setenv("USERPROFILE", fixturesSslDir)
 			if cpath.For("/") == fixturesSslDir {
-				fakeOs.Setenv("CF_INSTANCE_CERT", filepath.Join("/certs", "client-tls.crt"))
-				fakeOs.Setenv("CF_INSTANCE_KEY", filepath.Join("/certs", "client-tls.key"))
+				fakeOs.Setenv("CF_INSTANCE_CERT", filepath.Join("/certs", "client.crt"))
+				fakeOs.Setenv("CF_INSTANCE_KEY", filepath.Join("/certs", "client.key"))
 				fakeOs.Setenv("CF_SYSTEM_CERT_PATH", "/cacerts")
 			} else {
-				fakeOs.Setenv("CF_INSTANCE_CERT", filepath.Join(fixturesSslDir, "certs", "client-tls.crt"))
-				fakeOs.Setenv("CF_INSTANCE_KEY", filepath.Join(fixturesSslDir, "certs", "client-tls.key"))
+				fakeOs.Setenv("CF_INSTANCE_CERT", filepath.Join(fixturesSslDir, "certs", "client.crt"))
+				fakeOs.Setenv("CF_INSTANCE_KEY", filepath.Join(fixturesSslDir, "certs", "client.key"))
 				fakeOs.Setenv("CF_SYSTEM_CERT_PATH", filepath.Join(fixturesSslDir, "cacerts"))
 			}
 

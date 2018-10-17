@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"path/filepath"
 	"syscall"
 	"unicode/utf16"
 	"unsafe"
@@ -37,7 +38,9 @@ func runProcess(dir, command string) {
 		handleErr("creating TMPDIR", err)
 	}
 
-	envs, err := profile.ProfileEnv(dir, tmpDir, os.Stdout, os.Stderr)
+	getenvPath, err := getenvPath()
+	handleErr("getting getenv path failed", err)
+	envs, err := profile.ProfileEnv(dir, tmpDir, getenvPath, os.Stdout, os.Stderr)
 	handleErr("getting environment failed", err)
 
 	p, _ := syscall.GetCurrentProcess()
@@ -124,4 +127,15 @@ func createEnvBlock(envv []string) *uint16 {
 	copy(b[i:i+1], []byte{0})
 
 	return &utf16.Encode([]rune(string(b)))[0]
+}
+
+func getenvPath() (string, error) {
+	executable, err := os.Executable()
+	if err != nil {
+		return "", err
+	}
+
+	executableDir := filepath.Dir(executable)
+
+	return filepath.Join(executableDir, "getenv.exe"), nil
 }

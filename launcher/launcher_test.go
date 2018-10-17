@@ -393,7 +393,7 @@ var _ = Describe("Launcher", func() {
 				tlsConnectionState := req.TLS
 				Expect(tlsConnectionState).NotTo(BeNil())
 				Expect(tlsConnectionState.PeerCertificates).NotTo(BeEmpty())
-				Expect(tlsConnectionState.PeerCertificates[0].Subject.CommonName).To(Equal("example.com"))
+				Expect(tlsConnectionState.PeerCertificates[0].Subject.CommonName).To(Equal("client"))
 			}
 		}
 
@@ -403,12 +403,12 @@ var _ = Describe("Launcher", func() {
 
 			server = ghttp.NewUnstartedServer()
 
-			cert, err := tls.LoadX509KeyPair(filepath.Join(fixturesSslDir, "certs", "server-tls.crt"), filepath.Join(fixturesSslDir, "certs", "server-tls.key"))
+			cert, err := tls.LoadX509KeyPair(filepath.Join(fixturesSslDir, "certs", "server.crt"), filepath.Join(fixturesSslDir, "certs", "server.key"))
 			Expect(err).NotTo(HaveOccurred())
 
 			caCerts := x509.NewCertPool()
 
-			caCertBytes, err := ioutil.ReadFile(filepath.Join(fixturesSslDir, "cacerts", "client-tls-ca.crt"))
+			caCertBytes, err := ioutil.ReadFile(filepath.Join(fixturesSslDir, "cacerts", "CA.crt"))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(caCerts.AppendCertsFromPEM(caCertBytes)).To(BeTrue())
 
@@ -423,12 +423,12 @@ var _ = Describe("Launcher", func() {
 			launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("USERPROFILE=%s", fixturesSslDir))
 			cpath := containerpath.New(fixturesSslDir)
 			if cpath.For("/") == fixturesSslDir {
-				launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_INSTANCE_CERT=%s", filepath.Join("/certs", "client-tls.crt")))
-				launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_INSTANCE_KEY=%s", filepath.Join("/certs", "client-tls.key")))
+				launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_INSTANCE_CERT=%s", filepath.Join("/certs", "client.crt")))
+				launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_INSTANCE_KEY=%s", filepath.Join("/certs", "client.key")))
 				launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_SYSTEM_CERT_PATH=%s", "/cacerts"))
 			} else {
-				launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_INSTANCE_CERT=%s", filepath.Join(fixturesSslDir, "certs", "client-tls.crt")))
-				launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_INSTANCE_KEY=%s", filepath.Join(fixturesSslDir, "certs", "client-tls.key")))
+				launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_INSTANCE_CERT=%s", filepath.Join(fixturesSslDir, "certs", "client.crt")))
+				launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_INSTANCE_KEY=%s", filepath.Join(fixturesSslDir, "certs", "client.key")))
 				launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("CF_SYSTEM_CERT_PATH=%s", filepath.Join(fixturesSslDir, "cacerts")))
 			}
 

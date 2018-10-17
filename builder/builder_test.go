@@ -157,7 +157,7 @@ var _ = Describe("Building", func() {
 				tlsConnectionState := req.TLS
 				Expect(tlsConnectionState).NotTo(BeNil())
 				Expect(tlsConnectionState.PeerCertificates).NotTo(BeEmpty())
-				Expect(tlsConnectionState.PeerCertificates[0].Subject.CommonName).To(Equal("example.com"))
+				Expect(tlsConnectionState.PeerCertificates[0].Subject.CommonName).To(Equal("client"))
 			}
 		}
 
@@ -167,12 +167,15 @@ var _ = Describe("Building", func() {
 
 			server = ghttp.NewUnstartedServer()
 
-			cert, err := tls.LoadX509KeyPair(filepath.Join(fixturesSslDir, "certs", "server-tls.crt"), filepath.Join(fixturesSslDir, "certs", "server-tls.key"))
+			cert, err := tls.LoadX509KeyPair(
+				filepath.Join(fixturesSslDir, "certs", "server.crt"),
+				filepath.Join(fixturesSslDir, "certs", "server.key"),
+			)
 			Expect(err).NotTo(HaveOccurred())
 
 			caCerts := x509.NewCertPool()
 
-			caCertBytes, err := ioutil.ReadFile(filepath.Join(fixturesSslDir, "cacerts", "client-tls-ca.crt"))
+			caCertBytes, err := ioutil.ReadFile(filepath.Join(fixturesSslDir, "cacerts", "CA.crt"))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(caCerts.AppendCertsFromPEM(caCertBytes)).To(BeTrue())
 
@@ -187,13 +190,13 @@ var _ = Describe("Building", func() {
 			sessionSetEnv("USERPROFILE", fixturesSslDir)
 			if cpath.For("/") == fixturesSslDir {
 				// windows2012
-				sessionSetEnv("CF_INSTANCE_CERT", filepath.Join("/", "certs", "client-tls.crt"))
-				sessionSetEnv("CF_INSTANCE_KEY", filepath.Join("/", "certs", "client-tls.key"))
+				sessionSetEnv("CF_INSTANCE_CERT", filepath.Join("/", "certs", "client.crt"))
+				sessionSetEnv("CF_INSTANCE_KEY", filepath.Join("/", "certs", "client.key"))
 				sessionSetEnv("CF_SYSTEM_CERT_PATH", filepath.Join("/", "cacerts"))
 			} else {
 				// all others
-				sessionSetEnv("CF_INSTANCE_CERT", filepath.Join(fixturesSslDir, "certs", "client-tls.crt"))
-				sessionSetEnv("CF_INSTANCE_KEY", filepath.Join(fixturesSslDir, "certs", "client-tls.key"))
+				sessionSetEnv("CF_INSTANCE_CERT", filepath.Join(fixturesSslDir, "certs", "client.crt"))
+				sessionSetEnv("CF_INSTANCE_KEY", filepath.Join(fixturesSslDir, "certs", "client.key"))
 				sessionSetEnv("CF_SYSTEM_CERT_PATH", filepath.Join(fixturesSslDir, "cacerts"))
 			}
 
