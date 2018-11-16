@@ -55,8 +55,6 @@ func main() {
 		println(err.Error())
 		os.Exit(buildpackapplifecycle.ExitCodeFromError(err))
 	}
-
-	os.Exit(0)
 }
 
 func usage() {
