@@ -8,8 +8,6 @@ type PlatformOptions struct {
 	CredhubURI string `json:"credhub-uri"`
 }
 
-var cachedPlatformOptions *PlatformOptions
-
 func Get(jsonPlatformOptions string) (*PlatformOptions, error) {
 	if jsonPlatformOptions != "" {
 		platformOptions := PlatformOptions{}
