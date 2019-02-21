@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-
 	"testing"
 
 	. "github.com/onsi/ginkgo"
@@ -20,7 +19,6 @@ func TestBuildpackrunner(t *testing.T) {
 	RunSpecs(t, "Buildpackrunner Suite")
 }
 
-var buildpackDir string
 var fileGitUrl url.URL
 var gitUrl url.URL
 var httpServer *httptest.Server
