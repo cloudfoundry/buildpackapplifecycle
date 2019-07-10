@@ -500,6 +500,13 @@ var _ = Describe("Building", func() {
 								{"key": "always-detects", "name": "Always Matching"}
 							]
 						},
+						"processes": [
+          		{
+            		"Type": "web",
+            		"Command": "the start command"
+          		}
+        		],
+        		"sidecars": null,
 						"execution_metadata": ""
 				}`))
 			})
@@ -520,6 +527,13 @@ var _ = Describe("Building", func() {
 								{ "key": "always-detects", "name": "Always Matching" }
 							]
 						},
+						"processes": [
+          		{
+            		"Type": "web",
+            		"Command": "procfile-provided start-command"
+          		}
+        		],
+        		"sidecars": null,
 						"execution_metadata": ""
 				 }`))
 				})
@@ -541,6 +555,13 @@ var _ = Describe("Building", func() {
 								{ "key": "always-detects", "name": "Always Matching" }
 							]
 						},
+						"processes": [
+          		{
+            		"Type": "web",
+            		"Command": "the start command"
+          		}
+        		],
+        		"sidecars": null,
 						"execution_metadata": ""
 				 }`))
 				})
@@ -584,6 +605,13 @@ var _ = Describe("Building", func() {
 								{ "key": "always-detects", "name": "" }
 						  ]
 						},
+						"processes": [
+          		{
+            		"Type": "web",
+            		"Command": "the start command"
+          		}
+        		],
+        		"sidecars": null,
 						"execution_metadata": ""
 				}`))
 				})
@@ -886,6 +914,13 @@ var _ = Describe("Building", func() {
 							  { "key": "release-without-command", "name": "Release Without Command" }
 						  ]
 						},
+						"processes": [
+          		{
+            		"Type": "web",
+            		"Command": "procfile-provided start-command"
+          		}
+        		],
+        		"sidecars": null,
 						"execution_metadata": ""
 					}`))
 				})
@@ -912,6 +947,13 @@ var _ = Describe("Building", func() {
 							  { "key": "release-without-command", "name": "Release Without Command" }
 						  ]
 						},
+						"processes": [
+          		{
+            		"Type": "spider",
+            		"Command": "bogus command"
+          		}
+        		],
+        		"sidecars": null,
 						"execution_metadata": ""
 					}`))
 				})
@@ -959,6 +1001,13 @@ var _ = Describe("Building", func() {
 							  { "key": "always-detects", "name": "Always Matching" }
 						  ]
 						},
+						"processes": [
+          		{
+            		"Type": "web",
+            		"Command": "procfile-provided start-command"
+          		}
+        		],
+        		"sidecars": null,
 						"execution_metadata": ""
 					}`))
 				})
@@ -985,6 +1034,17 @@ var _ = Describe("Building", func() {
 							  { "key": "always-detects", "name": "Always Matching" }
 						  ]
 						},
+						"processes": [
+          		{
+            		"Type": "web",
+            		"Command": "the start command"
+          		},
+							{
+            		"Type": "spider",
+            		"Command": "bogus command"
+          		}
+        		],
+        		"sidecars": null,
 						"execution_metadata": ""
 					}`))
 				})
@@ -1012,6 +1072,13 @@ var _ = Describe("Building", func() {
 							  { "key": "always-detects", "name": "Always Matching" }
 						  ]
 						},
+						"processes": [
+          		{
+            		"Type": "web",
+            		"Command": "the start command"
+          		}
+        		],
+        		"sidecars": null,
 						"execution_metadata": ""
 					}`))
 			})
@@ -1045,6 +1112,17 @@ var _ = Describe("Building", func() {
                   { "key": "always-detects-non-web", "name": "Always Detects Non-Web" }
               ]
 						},
+						"processes": [
+							{
+            		"Type": "nonweb",
+            		"Command": "start nonweb buildpack"
+          		},
+          		{
+            		"Type": "web",
+            		"Command": "procfile-provided start-command"
+          		}
+        		],
+        		"sidecars": null,
 						"execution_metadata": ""
 					}`))
 				})
@@ -1071,6 +1149,17 @@ var _ = Describe("Building", func() {
                   { "key": "always-detects-non-web", "name": "Always Detects Non-Web" }
               ]
 						},
+						"processes": [
+							{
+            		"Type": "nonweb",
+            		"Command": "start nonweb buildpack"
+          		},
+          		{
+            		"Type": "spider",
+            		"Command": "bogus command"
+          		}
+        		],
+        		"sidecars": null,
 						"execution_metadata": ""
 					}`))
 				})
@@ -1097,6 +1186,13 @@ var _ = Describe("Building", func() {
                   { "key": "always-detects-non-web", "name": "Always Detects Non-Web" }
               ]
 						},
+						"processes": [
+          		{
+            		"Type": "nonweb",
+            		"Command": "start nonweb buildpack"
+          		}
+        		],
+        		"sidecars": null,
 						"execution_metadata": ""
 					}`))
 			})

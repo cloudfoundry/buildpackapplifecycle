@@ -12,12 +12,14 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 
 	"code.cloudfoundry.org/buildpackapplifecycle"
+	"code.cloudfoundry.org/buildpackapplifecycle/buildpackrunner/resources"
 	"code.cloudfoundry.org/bytefmt"
 )
 
@@ -59,61 +61,134 @@ func New(config *buildpackapplifecycle.LifecycleBuilderConfig) *Runner {
 	}
 }
 
-func (runner *Runner) Run() (string, error) {
-	//set up the world
-	err := runner.makeDirectories()
-	if err != nil {
-		return "", newDescriptiveError(err, "Failed to set up filesystem when generating droplet")
+func (runner *Runner) GetDepsDir() string {
+	return runner.depsDir
+}
+
+func (runner *Runner) GetContentsDir() string {
+	return runner.contentsDir
+}
+
+
+func (runner *Runner) ProcessYML(selectedBuildpacks []string) (resources.LaunchData, error) {
+	var launchYML resources.LaunchData
+	var err error
+
+	for index := range selectedBuildpacks {
+		if launchYML, err = runner.MergeLaunchYML(index, launchYML); err != nil{
+			return resources.LaunchData{}, err
+		}
 	}
+	return launchYML, nil
+}
 
-	err = runner.downloadBuildpacks()
-	if err != nil {
-		return "", err
-	}
+func (runner *Runner) MergeLaunchYML(buildpackIndex int, procMap resources.LaunchData) (resources.LaunchData, error) {
+	if runner.launchYMLExists(buildpackIndex) {
+		launchYMLPath := filepath.Join(runner.depsDir, strconv.Itoa(buildpackIndex), "launch.yml")
 
-	//detect, compile, release
-	var detectedBuildpack, detectOutput, detectedBuildpackDir string
-	var ok bool
-
-	err = runner.cleanCacheDir()
-	if err != nil {
-		return "", err
-	}
-
-	if runner.config.SkipDetect() {
-		detectedBuildpack, detectedBuildpackDir, err = runner.runSupplyBuildpacks()
+		data, err := ioutil.ReadFile(launchYMLPath)
 		if err != nil {
-			return "", err
+			return resources.LaunchData{}, err
+		}
+
+		var buildPackLaunchYML resources.LaunchData
+		if err := yaml.Unmarshal(data, &buildPackLaunchYML); err != nil {
+			return resources.LaunchData{}, err
+		}
+
+		procMap.Processes = resources.MergeProcesses(procMap.Processes, buildPackLaunchYML.Processes)
+	}
+	return procMap, nil
+}
+
+func (runner *Runner) ProcessFinalBuildpack(detectedBuildpack, detectedBuildpackDir string, procMap resources.LaunchData) (resources.LaunchData, error) {
+
+	buildpackIndex := len(runner.config.BuildpackOrder()) - 1
+
+	if runner.launchYMLExists(buildpackIndex){
+		var err error
+		if procMap, err = runner.MergeLaunchYML(buildpackIndex, procMap); err != nil {
+			return resources.LaunchData{}, err
 		}
 	} else {
-		detectedBuildpack, detectedBuildpackDir, detectOutput, ok = runner.detect()
-		if !ok {
-			return "", newDescriptiveError(nil, buildpackapplifecycle.DetectFailMsg)
+		releaseInfo, err := runner.release(detectedBuildpackDir, map[string]string{})
+		if err != nil {
+			return resources.LaunchData{}, newDescriptiveError(err, buildpackapplifecycle.ReleaseFailMsg)
 		}
-	}
 
-	if err := runner.runFinalize(detectedBuildpackDir); err != nil {
-		return "", newDescriptiveError(err, buildpackapplifecycle.CompileFailMsg)
+		procMap.Processes = resources.MergeProcesses(
+			procMap.Processes,
+			resources.ProcDataToProcesses(releaseInfo.DefaultProcessTypes),
+		)
 	}
 
 	startCommands, err := runner.readProcfile()
 	if err != nil {
-		return "", newDescriptiveError(err, "Failed to read command from Procfile")
+		return resources.LaunchData{}, newDescriptiveError(err, "Failed to read command from Procfile")
 	}
 
-	releaseInfo, err := runner.release(detectedBuildpackDir, startCommands)
+	procMap.Processes = resources.MergeProcesses(
+		procMap.Processes,
+		resources.ProcDataToProcesses(startCommands),
+	)
+
+	return procMap, nil
+}
+
+func (runner *Runner) WriteStagingInfoYML(resultData buildpackapplifecycle.StagingResult, buildpacks []buildpackapplifecycle.BuildpackMetadata) (string, error) {
+	stagingInfoYML := filepath.Join(runner.contentsDir, "staging_info.yml")
+	stagingInfoFile, err := os.Create(stagingInfoYML)
 	if err != nil {
-		return "", newDescriptiveError(err, buildpackapplifecycle.ReleaseFailMsg)
+		return "",err
+	}
+	defer stagingInfoFile.Close()
+
+	var lastBuildpack buildpackapplifecycle.BuildpackMetadata
+	if len(buildpacks) > 0 {
+		lastBuildpack = buildpacks[len(buildpacks)-1]
 	}
 
-	if releaseInfo.DefaultProcessTypes["web"] == "" {
-		printError("No start command specified by buildpack or via Procfile.")
-		printError("App will not start unless a command is provided at runtime.")
-	}
-
-	tarPath, err := runner.findTar()
+	err = json.NewEncoder(stagingInfoFile).Encode(DeaStagingInfo{
+		DetectedBuildpack: lastBuildpack.Name,
+		StartCommand:      resultData.ProcessTypes["web"],
+	})
 	if err != nil {
 		return "", err
+	}
+	return stagingInfoYML, nil
+}
+
+func (runner *Runner) WriteResultJSON(resultData buildpackapplifecycle.StagingResult, buildpacks []buildpackapplifecycle.BuildpackMetadata) (string, error) {
+	var lastBuildpack buildpackapplifecycle.BuildpackMetadata
+	if len(buildpacks) > 0 {
+		lastBuildpack = buildpacks[len(buildpacks)-1]
+	}
+
+	resultData = buildpackapplifecycle.UpdateStagingResult(resultData, buildpackapplifecycle.LifecycleMetadata{
+		BuildpackKey:      lastBuildpack.Key,
+		DetectedBuildpack: lastBuildpack.Name,
+		Buildpacks:        buildpacks,
+	},)
+
+	resultPath := runner.config.OutputMetadata()
+	resultFile, err := os.Create(resultPath)
+	if err != nil {
+		return "",err
+	}
+	defer resultFile.Close()
+
+	if err := json.NewEncoder(resultFile).Encode(resultData); err != nil {
+		return "", err
+	}
+	return resultPath, nil
+}
+
+func (runner *Runner) WriteStartCommands(detectedBuildpackDir, detectedBuildpack, detectOutput string, procMap resources.LaunchData) (string, string, error) {
+	resultData := resources.ConvertToResult(procMap)
+
+	if resultData.ProcessTypes["web"] == "" {
+		printError("No start command specified by buildpack or via Procfile.")
+		printError("App will not start unless a command is provided at runtime.")
 	}
 
 	var buildpacks []buildpackapplifecycle.BuildpackMetadata
@@ -126,42 +201,108 @@ func (runner *Runner) Run() (string, error) {
 		}
 	}
 
-	//generate staging_info.yml and result json file
-	infoFilePath := filepath.Join(runner.contentsDir, "staging_info.yml")
-	err = runner.saveInfo(infoFilePath, buildpacks, releaseInfo)
+	stagingInfoPath, err := runner.WriteStagingInfoYML(resultData, buildpacks)
 	if err != nil {
-		return "", newDescriptiveError(err, "Failed to encode generated metadata")
+		return "", "", err
+	}
+
+	resultDataPath, err := runner.WriteResultJSON(resultData, buildpacks)
+	if err != nil {
+		return "", "", err
+	}
+	return resultDataPath, stagingInfoPath, nil
+}
+
+func (runner *Runner) Setup() error {
+	if err := runner.makeDirectories(); err != nil {
+		return newDescriptiveError(err, "Failed to set up filesystem when generating droplet")
+	}
+
+	if err := runner.downloadBuildpacks(); err != nil {
+		return err
+	}
+	return runner.cleanCacheDir()
+}
+
+func (runner *Runner) GoLikeLightning() (string, string, error) {
+	var detectedBuildpack, detectOutput, detectedBuildpackDir string
+	var ok bool
+	var err error
+
+	if runner.config.SkipDetect() {
+		detectedBuildpack, detectedBuildpackDir, err = runner.runSupplyBuildpacks()
+		if err != nil {
+			return "","", err
+		}
+	} else {
+		detectedBuildpack, detectedBuildpackDir, detectOutput, ok = runner.detect()
+		if !ok {
+			return "","", newDescriptiveError(nil, buildpackapplifecycle.DetectFailMsg)
+		}
+	}
+
+	if err := runner.runFinalize(detectedBuildpackDir); err != nil {
+		return "","", newDescriptiveError(err, buildpackapplifecycle.CompileFailMsg)
+	}
+
+	procMap, err := runner.ProcessYML(runner.config.SupplyBuildpacks())
+	if err != nil {
+		return "", "", err
+	}
+
+	procMap, err = runner.ProcessFinalBuildpack(detectedBuildpack, detectedBuildpackDir, procMap)
+	if err != nil {
+		return "", "", err
+	}
+
+	resultJSONPath, stagingInfoYMLPath, err := runner.WriteStartCommands(detectedBuildpackDir, detectedBuildpack, detectOutput, procMap)
+	if err != nil {
+		return "", "", err
+	}
+
+	tarPath, err := runner.findTar()
+	if err != nil {
+		return "", "", err
 	}
 
 	for _, name := range []string{"tmp", "logs"} {
 		if err := os.MkdirAll(filepath.Join(runner.contentsDir, name), 0755); err != nil {
-			return "", newDescriptiveError(err, "Failed to set up droplet filesystem")
+			return "", "", newDescriptiveError(err, "Failed to set up droplet filesystem")
 		}
 	}
 
 	appDir := filepath.Join(runner.contentsDir, "app")
 	err = runner.copyApp(runner.config.BuildDir(), appDir)
 	if err != nil {
-		return "", newDescriptiveError(err, "Failed to copy compiled droplet")
+		return "", "", newDescriptiveError(err, "Failed to copy compiled droplet")
 	}
 
 	err = exec.Command(tarPath, "-czf", runner.config.OutputDroplet(), "-C", runner.contentsDir, ".").Run()
 	if err != nil {
-		return "", newDescriptiveError(err, "Failed to compress droplet filesystem")
+		return "", "", newDescriptiveError(err, "Failed to compress droplet filesystem")
 	}
 
 	//prepare the build artifacts cache output directory
 	err = os.MkdirAll(filepath.Dir(runner.config.OutputBuildArtifactsCache()), 0755)
 	if err != nil {
-		return "", newDescriptiveError(err, "Failed to create output build artifacts cache dir")
+		return "", "", newDescriptiveError(err, "Failed to create output build artifacts cache dir")
 	}
 
 	err = exec.Command(tarPath, "-czf", runner.config.OutputBuildArtifactsCache(), "-C", runner.config.BuildArtifactsCacheDir(), ".").Run()
 	if err != nil {
-		return "", newDescriptiveError(err, "Failed to compress build artifacts")
+		return "", "", newDescriptiveError(err, "Failed to compress build artifacts")
 	}
 
-	return infoFilePath, nil
+	return resultJSONPath ,stagingInfoYMLPath, nil
+}
+
+func (runner *Runner) Run() (string, error) {
+	if err := runner.Setup(); err != nil {
+		return "", err
+	}
+
+	_, stagingInfo, err := runner.GoLikeLightning()
+	return stagingInfo, err
 }
 
 func (runner *Runner) CleanUp() error {
@@ -169,6 +310,23 @@ func (runner *Runner) CleanUp() error {
 		return nil
 	}
 	return os.RemoveAll(runner.contentsDir)
+}
+
+func (runner *Runner) launchYMLExists(index int) bool {
+	launchYMLPath := filepath.Join(runner.depsDir, strconv.Itoa(index), "launch.yml")
+	if _, err := os.Stat(launchYMLPath); err == nil {
+		return true
+	}
+	return false
+}
+
+func (runner *Runner) hasLaunchYML(selectedBuildpacks []string) bool {
+	for index := range selectedBuildpacks {
+		if runner.launchYMLExists(index) {
+			return true
+		}
+	}
+	return false
 }
 
 func (runner *Runner) buildpacksMetadata(buildpacks []string) []buildpackapplifecycle.BuildpackMetadata {
@@ -486,10 +644,11 @@ func (runner *Runner) release(buildpackDir string, startCommands map[string]stri
 		return Release{}, newDescriptiveError(err, "buildpack's release output invalid")
 	}
 
-	if len(startCommands) > 0 {
-		if len(parsedRelease.DefaultProcessTypes) == 0 {
-			parsedRelease.DefaultProcessTypes = startCommands
-		} else {
+
+	if len(startCommands) > 0 { // passed in a start command from the procfile
+		if len(parsedRelease.DefaultProcessTypes) == 0 { // if there are no default processes
+			parsedRelease.DefaultProcessTypes = startCommands // just use procfile start commands object
+		} else { // otherwise overwrite default start commands of the same type with ones from the procfile
 			for k, v := range startCommands {
 				parsedRelease.DefaultProcessTypes[k] = v
 			}
@@ -499,6 +658,7 @@ func (runner *Runner) release(buildpackDir string, startCommands map[string]stri
 	return parsedRelease, nil
 }
 
+// Writes both results.json file and staging_info.yaml
 func (runner *Runner) saveInfo(infoFilePath string, buildpacks []buildpackapplifecycle.BuildpackMetadata, releaseInfo Release) error {
 	deaInfoFile, err := os.Create(infoFilePath)
 	if err != nil {
@@ -511,7 +671,6 @@ func (runner *Runner) saveInfo(infoFilePath string, buildpacks []buildpackapplif
 		lastBuildpack = buildpacks[len(buildpacks)-1]
 	}
 
-	// JSON ⊂ YAML
 	err = json.NewEncoder(deaInfoFile).Encode(DeaStagingInfo{
 		DetectedBuildpack: lastBuildpack.Name,
 		StartCommand:      releaseInfo.DefaultProcessTypes["web"],
