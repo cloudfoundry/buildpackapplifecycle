@@ -12,11 +12,6 @@ import (
 	"strconv"
 )
 
-
-// When (there is at least one launch.yml)
-
-// When (there are NO launch.yml files)
-
 var _ = Describe("Runner", func() {
 	Context("StartCommand", func() {
 
@@ -425,7 +420,12 @@ func genFakeBuildpack(bpRoot string) (error) {
 	if err != nil {
 		return err
 	}
-	err = helper.CopyDirectory(filepath.Join("testdata", "bin"), filepath.Join(bpRoot, "bin"))
+	if runtime.GOOS == "windows"{
+		err = helper.CopyDirectory(filepath.Join("testdata", "fake_windows_bp", "bin"), filepath.Join(bpRoot, "bin"))
+	} else {
+		err = helper.CopyDirectory(filepath.Join("testdata", "fake_unix_bp", "bin"), filepath.Join(bpRoot, "bin"))
+	}
+
 	if err != nil {
 		return err
 	}
