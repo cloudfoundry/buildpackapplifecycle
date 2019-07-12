@@ -29,13 +29,14 @@ var _ = Describe("Runner", func() {
 			}
 
 			runner = buildpackrunner.New(&builderConfig)
-			appDir = filepath.Join(os.TempDir(), "app")
+			Expect(runner.Setup()).To(Succeed())
+
+			appDir = filepath.Join(builderConfig.BuildDir())
 			Expect(os.MkdirAll(appDir, os.ModePerm)).ToNot(HaveOccurred())
 		})
 
 		When("There is NO procfile and NO launch.yml file", func() {
 			It("should use the default start command", func() {
-				Expect(runner.Setup()).To(Succeed())
 
 				resultsJSON, stagingInfo, err := runner.GoLikeLightning()
 
@@ -81,7 +82,6 @@ var _ = Describe("Runner", func() {
 
 		When("A launch.yml is present and there is NO procfile", func() {
 			It("Should use the start command from launch.yml", func() {
-				Expect(runner.Setup()).To(Succeed())
 
 				Expect(os.MkdirAll(runner.GetDepsDir(), os.ModePerm)).To(Succeed())
 				defer os.RemoveAll(runner.GetDepsDir())
@@ -186,14 +186,12 @@ processes:
 			})
 		})
 
-
 		When("A procfile is present and there is NO launch.yml", func() {
 			It("Should always use the start command from the procfile", func() {
 				procFilePath := filepath.Join(appDir, "Procfile")
 				Expect(ioutil.WriteFile(procFilePath, []byte("web: gunicorn server:app"), os.ModePerm)).To(Succeed())
 				defer os.Remove(procFilePath)
 
-				Expect(runner.Setup()).To(Succeed())
 				_, output, err := runner.GoLikeLightning()
 
 				Expect(err).NotTo(HaveOccurred())
@@ -209,7 +207,6 @@ processes:
 
 		When("there is NO procfile present and there is launch.yml provided by supply buildpacks", func() {
 			It("Should always use the start command from the bin/release", func() {
-				Expect(runner.Setup()).To(Succeed())
 
 				launchContents := `
 processes:
@@ -225,12 +222,10 @@ processes:
     cloudfoundry:
       sidecar_for: [ "web" ]`
 
-
 				depsIdxPath := filepath.Join(runner.GetDepsDir(), strconv.Itoa(0))
 				Expect(os.MkdirAll(depsIdxPath, os.ModePerm)).To(Succeed())
 				launchPath := filepath.Join(depsIdxPath, "launch.yml")
 				Expect(ioutil.WriteFile(launchPath, []byte(launchContents), os.ModePerm)).To(Succeed())
-
 
 				resultsJSON, stagingInfo, err := runner.GoLikeLightning()
 
@@ -298,14 +293,11 @@ processes:
 			})
 		})
 
-
 		When("A procfile is present and there is launch.yml provided by all buildpacks", func() {
 			It("Should always use the start command from the procfile", func() {
 				procFilePath := filepath.Join(appDir, "Procfile")
 				Expect(ioutil.WriteFile(procFilePath, []byte("web: gunicorn server:app"), os.ModePerm)).To(Succeed())
 				defer os.Remove(procFilePath)
-
-				Expect(runner.Setup()).To(Succeed())
 
 				launchContent := []string{`
 processes:
@@ -421,7 +413,7 @@ func genFakeBuildpack(bpRoot string) (error) {
 	if err != nil {
 		return err
 	}
-	if runtime.GOOS == "windows"{
+	if runtime.GOOS == "windows" {
 		err = helper.CopyDirectory(filepath.Join("testdata", "fake_windows_bp", "bin"), filepath.Join(bpRoot, "bin"))
 	} else {
 		err = helper.CopyDirectory(filepath.Join("testdata", "fake_unix_bp", "bin"), filepath.Join(bpRoot, "bin"))
