@@ -69,13 +69,12 @@ func (runner *Runner) GetContentsDir() string {
 	return runner.contentsDir
 }
 
-
 func (runner *Runner) ProcessYML(selectedBuildpacks []string) (resources.LaunchData, error) {
 	var launchYML resources.LaunchData
 	var err error
 
 	for index := range selectedBuildpacks {
-		if launchYML, err = runner.MergeLaunchYML(index, launchYML); err != nil{
+		if launchYML, err = runner.MergeLaunchYML(index, launchYML); err != nil {
 			return resources.LaunchData{}, err
 		}
 	}
@@ -105,7 +104,7 @@ func (runner *Runner) ProcessFinalBuildpack(detectedBuildpack, detectedBuildpack
 
 	buildpackIndex := len(runner.config.BuildpackOrder()) - 1
 
-	if runner.launchYMLExists(buildpackIndex){
+	if runner.launchYMLExists(buildpackIndex) {
 		var err error
 		if procMap, err = runner.MergeLaunchYML(buildpackIndex, procMap); err != nil {
 			return resources.LaunchData{}, err
@@ -139,7 +138,7 @@ func (runner *Runner) WriteStagingInfoYML(resultData buildpackapplifecycle.Stagi
 	stagingInfoYML := filepath.Join(runner.contentsDir, "staging_info.yml")
 	stagingInfoFile, err := os.Create(stagingInfoYML)
 	if err != nil {
-		return "",err
+		return "", err
 	}
 	defer stagingInfoFile.Close()
 
@@ -168,12 +167,12 @@ func (runner *Runner) WriteResultJSON(resultData buildpackapplifecycle.StagingRe
 		BuildpackKey:      lastBuildpack.Key,
 		DetectedBuildpack: lastBuildpack.Name,
 		Buildpacks:        buildpacks,
-	},)
+	}, )
 
 	resultPath := runner.config.OutputMetadata()
 	resultFile, err := os.Create(resultPath)
 	if err != nil {
-		return "",err
+		return "", err
 	}
 	defer resultFile.Close()
 
@@ -232,17 +231,17 @@ func (runner *Runner) GoLikeLightning() (string, string, error) {
 	if runner.config.SkipDetect() {
 		detectedBuildpack, detectedBuildpackDir, err = runner.runSupplyBuildpacks()
 		if err != nil {
-			return "","", err
+			return "", "", err
 		}
 	} else {
 		detectedBuildpack, detectedBuildpackDir, detectOutput, ok = runner.detect()
 		if !ok {
-			return "","", newDescriptiveError(nil, buildpackapplifecycle.DetectFailMsg)
+			return "", "", newDescriptiveError(nil, buildpackapplifecycle.DetectFailMsg)
 		}
 	}
 
 	if err := runner.runFinalize(detectedBuildpackDir); err != nil {
-		return "","", newDescriptiveError(err, buildpackapplifecycle.CompileFailMsg)
+		return "", "", newDescriptiveError(err, buildpackapplifecycle.CompileFailMsg)
 	}
 
 	procMap, err := runner.ProcessYML(runner.config.SupplyBuildpacks())
@@ -260,11 +259,6 @@ func (runner *Runner) GoLikeLightning() (string, string, error) {
 		return "", "", err
 	}
 
-	tarPath, err := runner.findTar()
-	if err != nil {
-		return "", "", err
-	}
-
 	for _, name := range []string{"tmp", "logs"} {
 		if err := os.MkdirAll(filepath.Join(runner.contentsDir, name), 0755); err != nil {
 			return "", "", newDescriptiveError(err, "Failed to set up droplet filesystem")
@@ -275,6 +269,11 @@ func (runner *Runner) GoLikeLightning() (string, string, error) {
 	err = runner.copyApp(runner.config.BuildDir(), appDir)
 	if err != nil {
 		return "", "", newDescriptiveError(err, "Failed to copy compiled droplet")
+	}
+
+	tarPath, err := runner.findTar()
+	if err != nil {
+		return "", "", newDescriptiveError(err, "Unable to find tar executable")
 	}
 
 	err = exec.Command(tarPath, "-czf", runner.config.OutputDroplet(), "-C", runner.contentsDir, ".").Run()
@@ -293,7 +292,7 @@ func (runner *Runner) GoLikeLightning() (string, string, error) {
 		return "", "", newDescriptiveError(err, "Failed to compress build artifacts")
 	}
 
-	return resultJSONPath ,stagingInfoYMLPath, nil
+	return resultJSONPath, stagingInfoYMLPath, nil
 }
 
 func (runner *Runner) Run() (string, error) {
@@ -643,7 +642,6 @@ func (runner *Runner) release(buildpackDir string, startCommands map[string]stri
 	if err != nil {
 		return Release{}, newDescriptiveError(err, "buildpack's release output invalid")
 	}
-
 
 	if len(startCommands) > 0 { // passed in a start command from the procfile
 		if len(parsedRelease.DefaultProcessTypes) == 0 { // if there are no default processes

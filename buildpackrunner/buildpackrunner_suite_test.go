@@ -1,6 +1,7 @@
 package buildpackrunner_test
 
 import (
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -8,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
@@ -23,6 +25,7 @@ var fileGitUrl url.URL
 var gitUrl url.URL
 var httpServer *httptest.Server
 var tmpDir string
+var tmpTarPath string
 
 var _ = SynchronizedBeforeSuite(func() []byte {
 	gitPath, err := exec.LookPath("git")
@@ -67,6 +70,10 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	execute(buildpackDir, gitPath, "checkout", "master")
 	execute(buildpackDir, gitPath, "update-server-info")
 
+	if runtime.GOOS == "windows" {
+		tmpTarPath = downloadTar()
+	}
+
 	return []byte(string(tmpDir))
 
 }, func(data []byte) {
@@ -102,4 +109,27 @@ func writeFile(filepath, content string) {
 	err := ioutil.WriteFile(filepath,
 		[]byte(content), os.ModePerm)
 	Expect(err).NotTo(HaveOccurred())
+}
+
+func downloadTar() string {
+	tarUrl := os.Getenv("TAR_URL")
+	Expect(tarUrl).NotTo(BeEmpty(), "TAR_URL environment variable must be set")
+
+	resp, err := http.Get(tarUrl)
+	Expect(err).NotTo(HaveOccurred())
+
+	defer resp.Body.Close()
+
+	tmpDir, err := ioutil.TempDir("", "tar")
+	Expect(err).NotTo(HaveOccurred())
+
+	tarExePath := filepath.Join(tmpDir, "tar.exe")
+	f, err := os.OpenFile(tarExePath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
+	Expect(err).NotTo(HaveOccurred())
+	defer f.Close()
+
+	_, err = io.Copy(f, resp.Body)
+	Expect(err).NotTo(HaveOccurred())
+
+	return tarExePath
 }

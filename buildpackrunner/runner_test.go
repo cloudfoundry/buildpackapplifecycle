@@ -31,6 +31,13 @@ var _ = Describe("Runner", func() {
 			runner = buildpackrunner.New(&builderConfig)
 			Expect(runner.Setup()).To(Succeed())
 
+			if runtime.GOOS == "windows" {
+				Expect(helper.CopyFile(
+					tmpTarPath,
+					filepath.Join(filepath.Dir(builderConfig.Path()), "tar.exe"))).To(Succeed())
+			}
+
+
 			appDir = filepath.Join(builderConfig.BuildDir())
 			Expect(os.MkdirAll(appDir, os.ModePerm)).ToNot(HaveOccurred())
 		})
