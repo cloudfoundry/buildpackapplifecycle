@@ -1,10 +1,6 @@
 package buildpackrunner_test
 
 import (
-	"code.cloudfoundry.org/buildpackapplifecycle"
-	"code.cloudfoundry.org/buildpackapplifecycle/buildpackrunner"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 	"io"
 	"io/ioutil"
 	"os"
@@ -12,6 +8,11 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
+
+	"code.cloudfoundry.org/buildpackapplifecycle"
+	"code.cloudfoundry.org/buildpackapplifecycle/buildpackrunner"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Runner", func() {
@@ -20,10 +21,20 @@ var _ = Describe("Runner", func() {
 		var runner *buildpackrunner.Runner
 		var appDir string
 		var buildpacks = []string{"haskell-buildpack", "bash-buildpack"}
+		var outputMetadata = "outputMetadata"
+		var buildDir = "buildDir"
 
 		BeforeEach(func() {
 			skipDetect := true
 			builderConfig := buildpackapplifecycle.NewLifecycleBuilderConfig(buildpacks, skipDetect, false)
+			outputMetadataPath, err := ioutil.TempDir(os.TempDir(), "results")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(builderConfig.Set(outputMetadata, filepath.Join(outputMetadataPath, "results.json"))).To(Succeed())
+
+			buildDirPath, err := ioutil.TempDir(os.TempDir(), "app")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(builderConfig.Set(buildDir, buildDirPath)).To(Succeed())
+
 			for _, bp := range buildpacks {
 				bpPath := builderConfig.BuildpackPath(bp)
 				Expect(genFakeBuildpack(bpPath)).To(Succeed())
@@ -33,7 +44,7 @@ var _ = Describe("Runner", func() {
 			Expect(runner.Setup()).To(Succeed())
 
 			if runtime.GOOS == "windows" {
-				copyDst := filepath.Join(filepath.Dir(builderConfig.Path()),"tar.exe")
+				copyDst := filepath.Join(filepath.Dir(builderConfig.Path()), "tar.exe")
 				CopyFileWindows(tmpTarPath, copyDst)
 			}
 
@@ -88,7 +99,6 @@ var _ = Describe("Runner", func() {
 
 		When("A launch.yml is present and there is NO procfile", func() {
 			It("Should use the start command from launch.yml", func() {
-
 				Expect(os.MkdirAll(runner.GetDepsDir(), os.ModePerm)).To(Succeed())
 				defer os.RemoveAll(runner.GetDepsDir())
 
@@ -198,13 +208,13 @@ processes:
 				Expect(ioutil.WriteFile(procFilePath, []byte("web: gunicorn server:app"), os.ModePerm)).To(Succeed())
 				defer os.Remove(procFilePath)
 
-				_, output, err := runner.GoLikeLightning()
+				_, stagingInfo, err := runner.GoLikeLightning()
 
 				Expect(err).NotTo(HaveOccurred())
-				Expect(output).To(ContainSubstring("staging_info.yml"))
-				Expect(output).To(BeAnExistingFile())
+				Expect(stagingInfo).To(ContainSubstring("staging_info.yml"))
+				Expect(stagingInfo).To(BeAnExistingFile())
 
-				contents, err := ioutil.ReadFile(output)
+				contents, err := ioutil.ReadFile(stagingInfo)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(string(contents)).To(ContainSubstring(`{"detected_buildpack":"","start_command":"gunicorn server:app"}`))
 
@@ -414,7 +424,7 @@ processes:
 	})
 })
 
-func genFakeBuildpack(bpRoot string) (error) {
+func genFakeBuildpack(bpRoot string) error {
 	err := os.MkdirAll(filepath.Join(bpRoot, "bin"), os.ModePerm)
 	if err != nil {
 		return err
@@ -436,10 +446,8 @@ func CopyFileWindows(src string, dst string) {
 	i, err := s.Stat()
 	Expect(err).ToNot(HaveOccurred())
 
-
 	err = os.MkdirAll(filepath.Dir(dst), 0755)
 	Expect(err).ToNot(HaveOccurred())
-
 
 	f, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, i.Mode())
 	Expect(err).ToNot(HaveOccurred())
