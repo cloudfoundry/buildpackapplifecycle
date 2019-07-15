@@ -3,11 +3,12 @@ package buildpackrunner_test
 import (
 	"code.cloudfoundry.org/buildpackapplifecycle"
 	"code.cloudfoundry.org/buildpackapplifecycle/buildpackrunner"
-	"github.com/cloudfoundry/libcfbuildpack/helper"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"io"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -32,11 +33,9 @@ var _ = Describe("Runner", func() {
 			Expect(runner.Setup()).To(Succeed())
 
 			if runtime.GOOS == "windows" {
-				Expect(helper.CopyFile(
-					tmpTarPath,
-					filepath.Join(filepath.Dir(builderConfig.Path()), "tar.exe"))).To(Succeed())
+				copyDst := filepath.Join(filepath.Dir(builderConfig.Path()),"tar.exe")
+				CopyFileWindows(tmpTarPath, copyDst)
 			}
-
 
 			appDir = filepath.Join(builderConfig.BuildDir())
 			Expect(os.MkdirAll(appDir, os.ModePerm)).ToNot(HaveOccurred())
@@ -421,13 +420,43 @@ func genFakeBuildpack(bpRoot string) (error) {
 		return err
 	}
 	if runtime.GOOS == "windows" {
-		err = helper.CopyDirectory(filepath.Join("testdata", "fake_windows_bp", "bin"), filepath.Join(bpRoot, "bin"))
+		CopyDirectory(filepath.Join("testdata", "fake_windows_bp", "bin", "*"), filepath.Join(bpRoot, "bin"))
 	} else {
-		err = helper.CopyDirectory(filepath.Join("testdata", "fake_unix_bp", "bin"), filepath.Join(bpRoot, "bin"))
-	}
-
-	if err != nil {
-		return err
+		CopyDirectory(filepath.Join("testdata", "fake_unix_bp", "bin"), filepath.Join(bpRoot))
 	}
 	return nil
+}
+
+func CopyFileWindows(src string, dst string) {
+	s, err := os.Open(src)
+	Expect(err).ToNot(HaveOccurred())
+
+	defer s.Close()
+
+	i, err := s.Stat()
+	Expect(err).ToNot(HaveOccurred())
+
+
+	err = os.MkdirAll(filepath.Dir(dst), 0755)
+	Expect(err).ToNot(HaveOccurred())
+
+
+	f, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, i.Mode())
+	Expect(err).ToNot(HaveOccurred())
+
+	defer f.Close()
+
+	_, err = io.Copy(f, s)
+	Expect(err).ToNot(HaveOccurred())
+
+}
+
+func CopyDirectory(src string, dst string) {
+	if runtime.GOOS == "windows" {
+		err := exec.Command("powershell", "-Command", "Copy-Item", "-Recurse", "-Force", src, dst).Run()
+		Expect(err).ToNot(HaveOccurred())
+	} else {
+		err := exec.Command("cp", "-a", "-R", src, dst).Run()
+		Expect(err).NotTo(HaveOccurred())
+	}
 }
