@@ -13,6 +13,7 @@ import (
 	"code.cloudfoundry.org/buildpackapplifecycle/buildpackrunner"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gexec"
 )
 
 var _ = Describe("Runner", func() {
@@ -23,6 +24,7 @@ var _ = Describe("Runner", func() {
 		var buildpacks = []string{"haskell-buildpack", "bash-buildpack"}
 		var outputMetadata = "outputMetadata"
 		var buildDir = "buildDir"
+		var buildpacksDir = "buildpacksDir"
 
 		BeforeEach(func() {
 			skipDetect := true
@@ -34,6 +36,10 @@ var _ = Describe("Runner", func() {
 			buildDirPath, err := ioutil.TempDir(os.TempDir(), "app")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(builderConfig.Set(buildDir, buildDirPath)).To(Succeed())
+
+			buildpacksDirPath, err := ioutil.TempDir(os.TempDir(), "buildpack")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(builderConfig.Set(buildpacksDir, buildpacksDirPath)).To(Succeed())
 
 			for _, bp := range buildpacks {
 				bpPath := builderConfig.BuildpackPath(bp)
@@ -460,11 +466,15 @@ func CopyFileWindows(src string, dst string) {
 }
 
 func CopyDirectory(src string, dst string) {
+	var command *exec.Cmd
 	if runtime.GOOS == "windows" {
-		err := exec.Command("powershell", "-Command", "Copy-Item", "-Recurse", "-Force", src, dst).Run()
-		Expect(err).ToNot(HaveOccurred())
+		command = exec.Command("powershell", "-Command", "Copy-Item", "-Recurse", "-Force", src, dst)
 	} else {
-		err := exec.Command("cp", "-a", "-R", src, dst).Run()
-		Expect(err).NotTo(HaveOccurred())
+		command = exec.Command("cp", "-a", "-R", src, dst)
 	}
+
+	session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
+	Expect(err).NotTo(HaveOccurred())
+	session.Wait()
+	Expect(session).Should(gexec.Exit())
 }
