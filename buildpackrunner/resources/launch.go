@@ -9,13 +9,13 @@ type LaunchData struct {
 }
 
 type Process struct {
-	Type      string `yaml:"type"`
-	Command   string `yaml:"command"`
+	Type      string `yaml:"type" json:"type"`
+	Command   string `yaml:"command" json:"command"`
 	Platforms struct {
 		Cloudfoundry struct {
-			SidecarFor []string `yaml:"sidecar_for"`
-		} `yaml:"cloudfoundry"`
-	} `yaml:"platforms"`
+			SidecarFor []string `yaml:"sidecar_for" json:"sidecar_for"`
+		} `yaml:"cloudfoundry" json:"cloudfoundry"`
+	} `yaml:"platforms" json:"platforms"`
 }
 
 func (p *Process) Replaceable(otherProc Process) bool {

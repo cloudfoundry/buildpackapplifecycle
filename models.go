@@ -52,14 +52,14 @@ type BuildpackMetadata struct {
 type ProcessTypes map[string]string
 
 type Sidecars struct {
-	Name         string   `yaml:"name"`
-	ProcessTypes []string `yaml:"process_types"`
-	Command      string   `yaml:"command"`
+	Name         string   `yaml:"name" json:"name"`
+	ProcessTypes []string `yaml:"process_types" json:"process_types"`
+	Command      string   `yaml:"command" json:"command"`
 }
 
 type Process struct {
-	Type    string `yaml:"type"`
-	Command string `yaml:"command"`
+	Type    string `yaml:"type" json:"type"`
+	Command string `yaml:"command" json:"command"`
 }
 
 type StagingResult struct {

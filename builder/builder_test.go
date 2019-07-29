@@ -502,8 +502,8 @@ var _ = Describe("Building", func() {
 						},
 						"processes": [
           		{
-            		"Type": "web",
-            		"Command": "the start command"
+            		"type": "web",
+            		"command": "the start command"
           		}
         		],
         		"sidecars": null,
@@ -529,8 +529,8 @@ var _ = Describe("Building", func() {
 						},
 						"processes": [
           		{
-            		"Type": "web",
-            		"Command": "procfile-provided start-command"
+            		"type": "web",
+            		"command": "procfile-provided start-command"
           		}
         		],
         		"sidecars": null,
@@ -557,8 +557,8 @@ var _ = Describe("Building", func() {
 						},
 						"processes": [
           		{
-            		"Type": "web",
-            		"Command": "the start command"
+            		"type": "web",
+            		"command": "the start command"
           		}
         		],
         		"sidecars": null,
@@ -607,8 +607,8 @@ var _ = Describe("Building", func() {
 						},
 						"processes": [
           		{
-            		"Type": "web",
-            		"Command": "the start command"
+            		"type": "web",
+            		"command": "the start command"
           		}
         		],
         		"sidecars": null,
@@ -916,8 +916,8 @@ var _ = Describe("Building", func() {
 						},
 						"processes": [
           		{
-            		"Type": "web",
-            		"Command": "procfile-provided start-command"
+            		"type": "web",
+            		"command": "procfile-provided start-command"
           		}
         		],
         		"sidecars": null,
@@ -949,8 +949,8 @@ var _ = Describe("Building", func() {
 						},
 						"processes": [
           		{
-            		"Type": "spider",
-            		"Command": "bogus command"
+            		"type": "spider",
+            		"command": "bogus command"
           		}
         		],
         		"sidecars": null,
@@ -1003,8 +1003,8 @@ var _ = Describe("Building", func() {
 						},
 						"processes": [
           		{
-            		"Type": "web",
-            		"Command": "procfile-provided start-command"
+            		"type": "web",
+            		"command": "procfile-provided start-command"
           		}
         		],
         		"sidecars": null,
@@ -1036,12 +1036,12 @@ var _ = Describe("Building", func() {
 						},
 						"processes": [
           		{
-            		"Type": "web",
-            		"Command": "the start command"
+            		"type": "web",
+            		"command": "the start command"
           		},
 							{
-            		"Type": "spider",
-            		"Command": "bogus command"
+            		"type": "spider",
+            		"command": "bogus command"
           		}
         		],
         		"sidecars": null,
@@ -1074,8 +1074,8 @@ var _ = Describe("Building", func() {
 						},
 						"processes": [
           		{
-            		"Type": "web",
-            		"Command": "the start command"
+            		"type": "web",
+            		"command": "the start command"
           		}
         		],
         		"sidecars": null,
@@ -1114,12 +1114,12 @@ var _ = Describe("Building", func() {
 						},
 						"processes": [
 							{
-            		"Type": "nonweb",
-            		"Command": "start nonweb buildpack"
+            		"type": "nonweb",
+            		"command": "start nonweb buildpack"
           		},
           		{
-            		"Type": "web",
-            		"Command": "procfile-provided start-command"
+            		"type": "web",
+            		"command": "procfile-provided start-command"
           		}
         		],
         		"sidecars": null,
@@ -1151,12 +1151,12 @@ var _ = Describe("Building", func() {
 						},
 						"processes": [
 							{
-            		"Type": "nonweb",
-            		"Command": "start nonweb buildpack"
+            		"type": "nonweb",
+            		"command": "start nonweb buildpack"
           		},
           		{
-            		"Type": "spider",
-            		"Command": "bogus command"
+            		"type": "spider",
+            		"command": "bogus command"
           		}
         		],
         		"sidecars": null,
@@ -1188,8 +1188,8 @@ var _ = Describe("Building", func() {
 						},
 						"processes": [
           		{
-            		"Type": "nonweb",
-            		"Command": "start nonweb buildpack"
+            		"type": "nonweb",
+            		"command": "start nonweb buildpack"
           		}
         		],
         		"sidecars": null,

@@ -92,8 +92,8 @@ var _ = Describe("Runner", func() {
         },
         "processes": [
           {
-            "Type": "web",
-            "Command": "I wish I was a baller"
+            "type": "web",
+            "command": "I wish I was a baller"
           }
         ],
         "sidecars": null,
@@ -169,37 +169,36 @@ processes:
         },
         "processes": [
           {
-            "Type": "web",
-            "Command": "do something else forever"
+            "type": "web",
+            "command": "do something else forever"
           },
           {
-            "Type": "worker",
-            "Command": "do something and then quit"
+            "type": "worker",
+            "command": "do something and then quit"
           },
           {
-            "Type": "newrelic",
-            "Command": "run new relic"
+            "type": "newrelic",
+            "command": "run new relic"
           },
 					{
-            "Type": "oldrelic",
-            "Command": "run new relic"
+            "type": "oldrelic",
+            "command": "run new relic"
           }
         ],
         "sidecars": [
           {
-            "Name": "newrelic",
-            "ProcessTypes": [
-              "web",
-							"worker"
+            "name": "newrelic",
+            "process_types": [
+              "web", "worker"
             ],
-            "Command": "run new relic"
+            "command": "run new relic"
           },
 					{
-            "Name": "oldrelic",
-            "ProcessTypes": [
+            "name": "oldrelic",
+            "process_types": [
               "web"
             ],
-            "Command": "run new relic"
+            "command": "run new relic"
           }
         ],
         "execution_metadata": "",
@@ -283,29 +282,29 @@ processes:
         },
         "processes": [
           {
-            "Type": "web",
-            "Command": "I wish I was a baller"
+            "type": "web",
+            "command": "I wish I was a baller"
           },
           {
-            "Type": "worker",
-            "Command": "do something and then quit"
+            "type": "worker",
+            "command": "do something and then quit"
           },
           {
-            "Type": "lightning",
-            "Command": "go forth"
+            "type": "lightning",
+            "command": "go forth"
           },
           {
-            "Type": "newrelic",
-            "Command": "run new relic"
+            "type": "newrelic",
+            "command": "run new relic"
           }
         ],
         "sidecars": [
           {
-            "Name": "newrelic",
-            "ProcessTypes": [
+            "name": "newrelic",
+            "process_types": [
               "web"
             ],
-            "Command": "run new relic"
+            "command": "run new relic"
           }
         ],
         "execution_metadata": "",
@@ -385,40 +384,40 @@ processes:
         },
         "processes": [
           {
-            "Type": "web",
-            "Command": "gunicorn server:app"
+            "type": "web",
+            "command": "gunicorn server:app"
           },
           {
-            "Type": "worker",
-            "Command": "do something else forever"
+            "type": "worker",
+            "command": "do something else forever"
           },
           {
-            "Type": "lightning",
-            "Command": "go forth"
+            "type": "lightning",
+            "command": "go forth"
           },
           {
-            "Type": "newrelic",
-            "Command": "run new relic"
+            "type": "newrelic",
+            "command": "run new relic"
           },
           {
-            "Type": "oldrelic",
-            "Command": "run new relic"
+            "type": "oldrelic",
+            "command": "run new relic"
           }
         ],
         "sidecars": [
           {
-            "Name": "newrelic",
-            "ProcessTypes": [
+            "name": "newrelic",
+            "process_types": [
               "web"
             ],
-            "Command": "run new relic"
+            "command": "run new relic"
           },
           {
-            "Name": "oldrelic",
-            "ProcessTypes": [
+            "name": "oldrelic",
+            "process_types": [
               "worker"
             ],
-            "Command": "run new relic"
+            "command": "run new relic"
           }
         ],
         "execution_metadata": "",
