@@ -162,8 +162,6 @@ processes:
           ]
         },
         "process_types": {
-          "newrelic": "run new relic",
-          "oldrelic": "run new relic",
           "web": "do something else forever",
           "worker": "do something and then quit"
         },
@@ -175,14 +173,6 @@ processes:
           {
             "type": "worker",
             "command": "do something and then quit"
-          },
-          {
-            "type": "newrelic",
-            "command": "run new relic"
-          },
-					{
-            "type": "oldrelic",
-            "command": "run new relic"
           }
         ],
         "sidecars": [
@@ -276,7 +266,6 @@ processes:
         },
         "process_types": {
           "lightning": "go forth",
-          "newrelic": "run new relic",
           "web": "I wish I was a baller",
           "worker": "do something and then quit"
         },
@@ -292,10 +281,6 @@ processes:
           {
             "type": "lightning",
             "command": "go forth"
-          },
-          {
-            "type": "newrelic",
-            "command": "run new relic"
           }
         ],
         "sidecars": [
@@ -377,8 +362,6 @@ processes:
         },
         "process_types": {
           "lightning": "go forth",
-          "newrelic": "run new relic",
-          "oldrelic": "run new relic",
           "web": "gunicorn server:app",
           "worker": "do something else forever"
         },
@@ -394,14 +377,6 @@ processes:
           {
             "type": "lightning",
             "command": "go forth"
-          },
-          {
-            "type": "newrelic",
-            "command": "run new relic"
-          },
-          {
-            "type": "oldrelic",
-            "command": "run new relic"
           }
         ],
         "sidecars": [

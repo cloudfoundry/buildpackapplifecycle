@@ -54,21 +54,24 @@ func ConvertToResult(data LaunchData) buildpackapplifecycle.StagingResult {
 	result := buildpackapplifecycle.StagingResult{}
 	result.ProcessTypes = map[string]string{}
 	for _, process := range data.Processes {
-		result.ProcessList = append(result.ProcessList, buildpackapplifecycle.Process{
-			Type:    process.Type,
-			Command: process.Command,
-		})
-
-		result.ProcessTypes[process.Type] = process.Command
 
 		sidecarTargets := process.Platforms.Cloudfoundry.SidecarFor
-		if len(sidecarTargets) > 0 {
+
+		if len(sidecarTargets) == 0 {
+			result.ProcessList = append(result.ProcessList, buildpackapplifecycle.Process{
+				Type:    process.Type,
+				Command: process.Command,
+			})
+
+			result.ProcessTypes[process.Type] = process.Command
+		}else{
 			result.Sidecars = append(result.Sidecars, buildpackapplifecycle.Sidecars{
 				Name:         process.Type,
 				ProcessTypes: sidecarTargets,
 				Command:      process.Command,
 			})
 		}
+
 	}
 	return result
 }
