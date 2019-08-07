@@ -189,5 +189,26 @@ var _ = Describe("credhub", func() {
 				Expect(fakeOs.Getenv("VCAP_SERVICES")).To(Equal(vcapServicesValue))
 			})
 		})
+
+		Context("when credhub skip interpolation is set", func() {
+			var originalVCAPServices string
+
+			BeforeEach(func() {
+				originalVCAPServices = fakeOs.Getenv("VCAP_SERVICES")
+				fakeOs.Setenv("CREDHUB_SKIP_INTERPOLATION", "true")
+				server.AppendHandlers(
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("POST", "/api/v1/interpolate"),
+						ghttp.VerifyBody([]byte(vcapServicesValue)),
+						VerifyClientCerts(),
+						ghttp.RespondWith(http.StatusOK, "JSON_RESPONSE"),
+					))
+			})
+
+			It("does not change VCAP_SERVICES", func() {
+				Expect(err).NotTo(HaveOccurred())
+				Expect(fakeOs.Getenv("VCAP_SERVICES")).To(Equal(originalVCAPServices))
+			})
+		})
 	})
 })

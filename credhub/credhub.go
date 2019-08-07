@@ -24,6 +24,9 @@ func New(os osshim.Os) *Credhub {
 }
 
 func (c *Credhub) InterpolateServiceRefs(credhubURI string) error {
+	if c.os.Getenv("CREDHUB_SKIP_INTERPOLATION") != "" {
+		return nil
+	}
 	if !strings.Contains(c.os.Getenv("VCAP_SERVICES"), `"credhub-ref"`) {
 		return nil
 	}
