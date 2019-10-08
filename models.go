@@ -51,7 +51,7 @@ type BuildpackMetadata struct {
 
 type ProcessTypes map[string]string
 
-type Sidecars struct {
+type Sidecar struct {
 	Name         string   `yaml:"name" json:"name"`
 	ProcessTypes []string `yaml:"process_types" json:"process_types"`
 	Command      string   `yaml:"command" json:"command"`
@@ -66,11 +66,10 @@ type StagingResult struct {
 	LifecycleMetadata `json:"lifecycle_metadata"`
 	ProcessTypes      `json:"process_types"`
 	ProcessList       []Process `json:"processes, omitempty"`
-	Sidecars          []Sidecars  `json:"sidecars, omitempty"`
-	ExecutionMetadata string      `json:"execution_metadata"`
-	LifecycleType     string      `json:"lifecycle_type"`
+	Sidecars          []Sidecar `json:"sidecars, omitempty"`
+	ExecutionMetadata string    `json:"execution_metadata"`
+	LifecycleType     string    `json:"lifecycle_type"`
 }
-
 
 func UpdateStagingResult(result StagingResult, lifeMeta LifecycleMetadata) StagingResult {
 	result.LifecycleMetadata = lifeMeta

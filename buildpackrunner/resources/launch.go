@@ -64,8 +64,8 @@ func ConvertToResult(data LaunchData) buildpackapplifecycle.StagingResult {
 			})
 
 			result.ProcessTypes[process.Type] = process.Command
-		}else{
-			result.Sidecars = append(result.Sidecars, buildpackapplifecycle.Sidecars{
+		} else {
+			result.Sidecars = append(result.Sidecars, buildpackapplifecycle.Sidecar{
 				Name:         process.Type,
 				ProcessTypes: sidecarTargets,
 				Command:      process.Command,
