@@ -16,6 +16,9 @@ type Process struct {
 			SidecarFor []string `yaml:"sidecar_for" json:"sidecar_for"`
 		} `yaml:"cloudfoundry" json:"cloudfoundry"`
 	} `yaml:"platforms" json:"platforms"`
+	Limits struct {
+		Memory int `yaml:"memory" json:"memory"`
+	} `yaml:"limits" json:"limits"`
 }
 
 func (p *Process) Replaceable(otherProc Process) bool {
@@ -69,6 +72,7 @@ func ConvertToResult(data LaunchData) buildpackapplifecycle.StagingResult {
 				Name:         process.Type,
 				ProcessTypes: sidecarTargets,
 				Command:      process.Command,
+				Memory:       process.Limits.Memory,
 			})
 		}
 
