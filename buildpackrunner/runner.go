@@ -167,7 +167,7 @@ func (runner *Runner) WriteResultJSON(resultData buildpackapplifecycle.StagingRe
 		BuildpackKey:      lastBuildpack.Key,
 		DetectedBuildpack: lastBuildpack.Name,
 		Buildpacks:        buildpacks,
-	}, )
+	})
 
 	resultPath := runner.config.OutputMetadata()
 	resultFile, err := os.Create(resultPath)

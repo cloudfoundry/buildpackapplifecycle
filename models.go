@@ -55,6 +55,7 @@ type Sidecar struct {
 	Name         string   `yaml:"name" json:"name"`
 	ProcessTypes []string `yaml:"process_types" json:"process_types"`
 	Command      string   `yaml:"command" json:"command"`
+	Memory       int      `yaml:"memory,omitempty" json:"memory,omitempty"`
 }
 
 type Process struct {

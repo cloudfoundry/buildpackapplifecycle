@@ -124,6 +124,8 @@ processes:
   command: "do something else forever"
 - type: "oldrelic"
   command: "run new relic"
+  limits:
+    memory: 10
   platforms:
     cloudfoundry:
       sidecar_for: [ "web" ] `}
@@ -185,6 +187,7 @@ processes:
           },
 					{
             "name": "oldrelic",
+						"memory": 10,
             "process_types": [
               "web"
             ],
@@ -323,6 +326,8 @@ processes:
   command: "do something else forever"
 - type: "oldrelic"
   command: "run new relic"
+  limits:
+    memory: 10
   platforms:
     cloudfoundry:
       sidecar_for: [ "worker" ] `}
@@ -389,6 +394,7 @@ processes:
           },
           {
             "name": "oldrelic",
+						"memory": 10,
             "process_types": [
               "worker"
             ],
