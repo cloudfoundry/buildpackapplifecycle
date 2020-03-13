@@ -38,7 +38,9 @@ func (c *Credhub) InterpolateServiceRefs(credhubURI string) error {
 	if err != nil {
 		return fmt.Errorf("Unable to interpolate credhub references: %v", err)
 	}
-	c.os.Setenv("VCAP_SERVICES", interpolatedServices)
+	if err := c.os.Setenv("VCAP_SERVICES", interpolatedServices); err != nil {
+		return fmt.Errorf("Unable to update VCAP_SERVICES with interpolated credhub references: %v", err)
+	}
 	return nil
 }
 

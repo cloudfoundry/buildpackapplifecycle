@@ -3,6 +3,7 @@ package credhub_test
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
@@ -130,6 +131,18 @@ var _ = Describe("credhub", func() {
 			It("updates VCAP_SERVICES with the interpolated content and runs the process without VCAP_PLATFORM_OPTIONS", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(fakeOs.Getenv("VCAP_SERVICES")).To(Equal("INTERPOLATED_JSON"))
+			})
+
+			Context("when updating VCAP_SERVICES fails", func() {
+				BeforeEach(func() {
+					fakeOs.SetenvStub = func(key, value string) error {
+						return fmt.Errorf("Setenv: setting %s failed", key)
+					}
+				})
+
+				It("returns an error", func() {
+					Expect(err).To(MatchError(MatchRegexp("Unable to update VCAP_SERVICES with interpolated credhub references")))
+				})
 			})
 		})
 
