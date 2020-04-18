@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"code.cloudfoundry.org/buildpackapplifecycle/containerpath"
+	api "code.cloudfoundry.org/credhub-cli/credhub"
 	"code.cloudfoundry.org/goshims/osshim"
-	api "github.com/cloudfoundry-incubator/credhub-cli/credhub"
 )
 
 type Credhub struct {
