@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -29,6 +30,8 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	paths := strings.Split(string(exePaths), "^")
 	builderPath = paths[0]
 	tarPath = paths[1]
+
+	SetDefaultEventuallyTimeout(10 * time.Second)
 })
 
 var _ = SynchronizedAfterSuite(func() {
