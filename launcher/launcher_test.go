@@ -175,9 +175,9 @@ var _ = Describe("Launcher", func() {
 					Eventually(session).Should(gbytes.Say("sourcing b.sh"))
 					Eventually(session).Should(gbytes.Say("sourcing .profile"))
 				}
-				Eventually(session).Should(gbytes.Say("B=1"))
-				Eventually(session).Should(gbytes.Say("C=11"))
-				Eventually(session).Should(gbytes.Say("running app"))
+				Eventually(string(session.Out.Contents())).Should(ContainSubstring("B=1"))
+				Eventually(string(session.Out.Contents())).Should(ContainSubstring("C=11"))
+				Eventually(string(session.Out.Contents())).Should(ContainSubstring("running app"))
 			})
 
 			Context("hello is on path", func() {
@@ -191,7 +191,7 @@ var _ = Describe("Launcher", func() {
 
 					destDir := filepath.Join(appDir, "tmp")
 					Expect(os.MkdirAll(destDir, 0777)).To(Succeed())
-					Expect(copyExe(destDir, hello)).To(Succeed())
+					Expect(copyExe(destDir, hello, "hello")).To(Succeed())
 
 					if runtime.GOOS == "windows" {
 						err = ioutil.WriteFile(filepath.Join(profileDir, "a.bat"), []byte(fmt.Sprintf("@echo off\necho sourcing a.bat\nset PATH=%%PATH%%;%s\n", destDir)), 0644)
@@ -274,10 +274,10 @@ var _ = Describe("Launcher", func() {
 					Eventually(session).Should(gbytes.Say("sourcing b.sh"))
 					Eventually(session).Should(gbytes.Say("sourcing c.sh"))
 				}
-				Eventually(session).Should(gbytes.Say("A=1"))
-				Eventually(session).Should(gbytes.Say("B=1"))
-				Eventually(session).Should(gbytes.Say("C=11"))
-				Eventually(session).Should(gbytes.Say("running app"))
+				Eventually(string(session.Out.Contents())).Should(ContainSubstring("A=1"))
+				Eventually(string(session.Out.Contents())).Should(ContainSubstring("B=1"))
+				Eventually(string(session.Out.Contents())).Should(ContainSubstring("C=11"))
+				Eventually(string(session.Out.Contents())).Should(ContainSubstring("running app"))
 			})
 		})
 
@@ -302,7 +302,7 @@ var _ = Describe("Launcher", func() {
 
 	Context("the app executable is in vcap/app", func() {
 		BeforeEach(func() {
-			Expect(copyExe(appDir, hello)).To(Succeed())
+			Expect(copyExe(appDir, hello, "hello")).To(Succeed())
 
 			var executable string
 			if runtime.GOOS == "windows" {
@@ -332,7 +332,7 @@ var _ = Describe("Launcher", func() {
 
 			appDirWithSpaces := filepath.Join(appDir, "space dir")
 			Expect(os.MkdirAll(appDirWithSpaces, 0755)).To(Succeed())
-			Expect(copyExe(appDirWithSpaces, hello)).To(Succeed())
+			Expect(copyExe(appDirWithSpaces, hello, "hello")).To(Succeed())
 
 			launcherCmd.Args = []string{
 				"launcher",
@@ -730,14 +730,13 @@ func writeStagingInfo(extractDir, stagingInfo string) {
 	Expect(err).NotTo(HaveOccurred())
 }
 
-func copyExe(dstDir, src string) error {
+func copyExe(dstDir, src, exeName string) error {
 	in, err := os.Open(src)
 	if err != nil {
 		return err
 	}
 	defer in.Close()
 
-	exeName := filepath.Base(src)
 	dst := filepath.Join(dstDir, exeName)
 	out, err := os.OpenFile(dst, os.O_RDWR|os.O_CREATE, 0755)
 	if err != nil {
