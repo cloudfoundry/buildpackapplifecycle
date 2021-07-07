@@ -276,9 +276,8 @@ func (runner *Runner) GoLikeLightning() (string, string, error) {
 		return "", "", newDescriptiveError(err, "Unable to find tar executable")
 	}
 
-	err = exec.Command(tarPath, "-czf", runner.config.OutputDroplet(), "-C", runner.contentsDir, ".").Run()
-	if err != nil {
-		return "", "", newDescriptiveError(err, "Failed to compress droplet filesystem")
+	if output, err := exec.Command(tarPath, "-czf", runner.config.OutputDroplet(), "-C", runner.contentsDir, ".").CombinedOutput(); err != nil {
+		return "", "", newDescriptiveError(err, "Failed to compress droplet filesystem: %s", string(output))
 	}
 
 	//prepare the build artifacts cache output directory
@@ -287,9 +286,8 @@ func (runner *Runner) GoLikeLightning() (string, string, error) {
 		return "", "", newDescriptiveError(err, "Failed to create output build artifacts cache dir")
 	}
 
-	err = exec.Command(tarPath, "-czf", runner.config.OutputBuildArtifactsCache(), "-C", runner.config.BuildArtifactsCacheDir(), ".").Run()
-	if err != nil {
-		return "", "", newDescriptiveError(err, "Failed to compress build artifacts")
+	if output, err := exec.Command(tarPath, "-czf", runner.config.OutputBuildArtifactsCache(), "-C", runner.config.BuildArtifactsCacheDir(), ".").CombinedOutput(); err != nil {
+		return "", "", newDescriptiveError(err, "Failed to compress build artifacts: %s", string(output))
 	}
 
 	return resultJSONPath, stagingInfoYMLPath, nil
