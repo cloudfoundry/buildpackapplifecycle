@@ -145,7 +145,7 @@ func downloadTar() string {
 }
 
 func fileExists(filePath string) bool {
-	if _, err := os.Stat(filePath); os.IsNotExist(err){
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		return false
 	}
 	return true
