@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
@@ -34,6 +35,9 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 
 	tmpDir, err = ioutil.TempDir("", "tmpDir")
 	Expect(err).NotTo(HaveOccurred())
+
+	httpServer = httptest.NewServer(http.FileServer(http.Dir(tmpDir)))
+
 	buildpackDir := filepath.Join(tmpDir, "fake-buildpack")
 	err = os.MkdirAll(buildpackDir, os.ModePerm)
 	Expect(err).NotTo(HaveOccurred())
@@ -57,8 +61,10 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	execute(submoduleDir, gitPath, "commit", "-am", "first commit")
 	writeFile(filepath.Join(submoduleDir, "README"), "2nd commit")
 	execute(submoduleDir, gitPath, "commit", "-am", "second commit")
+	execute(submoduleDir, gitPath, "update-server-info")
 
-	execute(buildpackDir, gitPath, "submodule", "add", "file://"+submoduleDir, "sub")
+	execute(buildpackDir, gitPath, "submodule", "add", fmt.Sprintf("http://%s/submodule/.git", httpServer.Listener.Addr().String()), "sub")
+
 	execute(buildpackDir+"/sub", gitPath, "checkout", "HEAD^")
 	execute(buildpackDir, gitPath, "add", "-A")
 	execute(buildpackDir, gitPath, "commit", "-m", "fake commit")
@@ -75,15 +81,16 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 		tmpTarPath = downloadTar()
 	}
 
-	return []byte(string(tmpDir))
+	return []byte(string(tmpDir + "|" + httpServer.Listener.Addr().String()))
 
 }, func(data []byte) {
-	tmpDir = string(data)
-	httpServer = httptest.NewServer(http.FileServer(http.Dir(tmpDir)))
+	synchronizedData := strings.Split(string(data), "|")
+	tmpDir := synchronizedData[0]
+	gitUrlHost := synchronizedData[1]
 
 	gitUrl = url.URL{
 		Scheme: "http",
-		Host:   httpServer.Listener.Addr().String(),
+		Host:   gitUrlHost,
 		Path:   "/fake-buildpack/.git",
 	}
 
