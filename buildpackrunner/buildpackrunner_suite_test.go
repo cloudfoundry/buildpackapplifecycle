@@ -95,7 +95,9 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 
 var _ = SynchronizedAfterSuite(func() {
 }, func() {
-	httpServer.Close()
+	if httpServer != nil {
+		httpServer.Close()
+	}
 	Expect(os.RemoveAll(tmpDir)).To(Succeed())
 })
 
