@@ -1,6 +1,7 @@
 package buildpackrunner_test
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -101,8 +102,8 @@ var _ = SynchronizedAfterSuite(func() {
 func execute(dir string, execCmd string, args ...string) {
 	cmd := exec.Command(execCmd, args...)
 	cmd.Dir = dir
-	err := cmd.Run()
-	Expect(err).NotTo(HaveOccurred())
+	output, err := cmd.CombinedOutput()
+	ExpectWithOffset(1, err).NotTo(HaveOccurred(), fmt.Sprintf("Command failed: '%s' in directory '%s'.\nError output:\n%s\n", execCmd, dir, output))
 }
 
 func writeFile(filepath, content string) {
