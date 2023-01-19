@@ -656,48 +656,6 @@ func (runner *Runner) release(buildpackDir string, startCommands map[string]stri
 	return parsedRelease, nil
 }
 
-// Writes both results.json file and staging_info.yaml
-func (runner *Runner) saveInfo(infoFilePath string, buildpacks []buildpackapplifecycle.BuildpackMetadata, releaseInfo Release) error {
-	deaInfoFile, err := os.Create(infoFilePath)
-	if err != nil {
-		return err
-	}
-	defer deaInfoFile.Close()
-
-	var lastBuildpack buildpackapplifecycle.BuildpackMetadata
-	if len(buildpacks) > 0 {
-		lastBuildpack = buildpacks[len(buildpacks)-1]
-	}
-
-	err = json.NewEncoder(deaInfoFile).Encode(DeaStagingInfo{
-		DetectedBuildpack: lastBuildpack.Name,
-		StartCommand:      releaseInfo.DefaultProcessTypes["web"],
-	})
-	if err != nil {
-		return err
-	}
-
-	resultFile, err := os.Create(runner.config.OutputMetadata())
-	if err != nil {
-		return err
-	}
-	defer resultFile.Close()
-
-	err = json.NewEncoder(resultFile).Encode(buildpackapplifecycle.NewStagingResult(
-		releaseInfo.DefaultProcessTypes,
-		buildpackapplifecycle.LifecycleMetadata{
-			BuildpackKey:      lastBuildpack.Key,
-			DetectedBuildpack: lastBuildpack.Name,
-			Buildpacks:        buildpacks,
-		},
-	))
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (runner *Runner) run(cmd *exec.Cmd, output io.Writer) error {
 	cmd.Stdout = output
 	cmd.Stderr = os.Stderr
