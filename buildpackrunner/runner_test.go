@@ -2,6 +2,7 @@ package buildpackrunner_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -24,6 +25,8 @@ var _ = Describe("Runner", func() {
 		var buildpacks = []string{"haskell-buildpack", "bash-buildpack"}
 		var builderConfig buildpackapplifecycle.LifecycleBuilderConfig
 
+		var defaultStartCommandFromFixtures = "This is the start command for the 'web' default process type in testdata/fake_{unix,windows}_bp/bin/release{,.bat}"
+
 		BeforeEach(func() {
 			builderConfig = makeBuilderConfig(buildpacks)
 			runner = buildpackrunner.New(&builderConfig)
@@ -40,7 +43,7 @@ var _ = Describe("Runner", func() {
 
 				stagingInfoContents, err := ioutil.ReadFile(stagingInfo)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(string(stagingInfoContents)).To(ContainSubstring(`{"detected_buildpack":"","start_command":"I wish I was a baller"}`))
+				Expect(string(stagingInfoContents)).To(ContainSubstring(fmt.Sprintf(`{"detected_buildpack":"","start_command":"%s"}`, defaultStartCommandFromFixtures)))
 
 				resultsJSONContents, err := os.ReadFile(resultsJSON)
 				Expect(err).ToNot(HaveOccurred())
@@ -48,9 +51,8 @@ var _ = Describe("Runner", func() {
 				actualStagingResult := buildpackapplifecycle.StagingResult{}
 				Expect(json.Unmarshal(resultsJSONContents, &actualStagingResult)).To(Succeed())
 
-				Expect(actualStagingResult.ProcessTypes).To(Equal(buildpackapplifecycle.ProcessTypes{"web": "I wish I was a baller"}))
-				Expect(actualStagingResult.ProcessList).To(Equal([]buildpackapplifecycle.Process{{Type: "web", Command: "I wish I was a baller"}}))
-				//TODO: Find the origin of the default start command "I wish I was a baller"
+				Expect(actualStagingResult.ProcessTypes).To(Equal(buildpackapplifecycle.ProcessTypes{"web": defaultStartCommandFromFixtures}))
+				Expect(actualStagingResult.ProcessList).To(Equal([]buildpackapplifecycle.Process{{Type: "web", Command: defaultStartCommandFromFixtures}}))
 			})
 		})
 
@@ -191,7 +193,7 @@ processes:
 
 				stagingInfoContents, err := ioutil.ReadFile(stagingInfo)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(string(stagingInfoContents)).To(ContainSubstring(`{"detected_buildpack":"","start_command":"I wish I was a baller"}`))
+				Expect(string(stagingInfoContents)).To(ContainSubstring(fmt.Sprintf(`{"detected_buildpack":"","start_command":"%s"}`, defaultStartCommandFromFixtures)))
 
 				resultsJSONContents, err := ioutil.ReadFile(resultsJSON)
 				Expect(err).ToNot(HaveOccurred())
@@ -201,12 +203,12 @@ processes:
 
 				Expect(actualStagingResult.ProcessTypes).To(Equal(buildpackapplifecycle.ProcessTypes{
 					"lightning": "go forth",
-					"web":       "I wish I was a baller",
+					"web":       defaultStartCommandFromFixtures,
 					"worker":    "do something and then quit",
 				}))
 
 				Expect(actualStagingResult.ProcessList).To(Equal([]buildpackapplifecycle.Process{
-					{Type: "web", Command: "I wish I was a baller"},
+					{Type: "web", Command: defaultStartCommandFromFixtures},
 					{Type: "worker", Command: "do something and then quit"},
 					{Type: "lightning", Command: "go forth"},
 				}))
