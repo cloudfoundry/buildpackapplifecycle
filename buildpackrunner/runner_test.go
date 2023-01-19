@@ -30,21 +30,7 @@ var _ = Describe("Runner", func() {
 		})
 
 		When("There is NO procfile and NO launch.yml file", func() {
-			It("should use the default start command", func() {
-
-				resultsJSON, stagingInfo, err := runner.GoLikeLightning()
-
-				Expect(err).NotTo(HaveOccurred())
-				Expect(stagingInfo).To(ContainSubstring("staging_info.yml"))
-				Expect(stagingInfo).To(BeAnExistingFile())
-
-				stagingInfoContents, err := ioutil.ReadFile(stagingInfo)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(string(stagingInfoContents)).To(ContainSubstring(`{"detected_buildpack":"","start_command":"I wish I was a baller"}`))
-
-				resultsJSONContents, err := ioutil.ReadFile(resultsJSON)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(string(resultsJSONContents)).To(MatchJSON(`{
+			var expectedResultsJson = `{
         "lifecycle_metadata": {
           "buildpack_key": "bash-buildpack",
           "detected_buildpack": "",
@@ -71,16 +57,27 @@ var _ = Describe("Runner", func() {
         "sidecars": null,
         "execution_metadata": "",
         "lifecycle_type": "buildpack"
-				}`))
+				}`
+
+			It("should use the default start command", func() {
+				resultsJSON, stagingInfo, err := runner.GoLikeLightning()
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(stagingInfo).To(ContainSubstring("staging_info.yml"))
+				Expect(stagingInfo).To(BeAnExistingFile())
+
+				stagingInfoContents, err := ioutil.ReadFile(stagingInfo)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(stagingInfoContents)).To(ContainSubstring(`{"detected_buildpack":"","start_command":"I wish I was a baller"}`))
+
+				resultsJSONContents, err := ioutil.ReadFile(resultsJSON)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(resultsJSONContents)).To(MatchJSON(expectedResultsJson))
 			})
 		})
 
 		When("A launch.yml is present and there is NO procfile", func() {
-			It("Should use the start command from launch.yml", func() {
-				Expect(os.MkdirAll(runner.GetDepsDir(), os.ModePerm)).To(Succeed())
-				defer os.RemoveAll(runner.GetDepsDir())
-
-				launchContent := []string{`
+			var launchContent = []string{`
 processes:
 - type: "web"
   command: "do something forever"
@@ -102,26 +99,7 @@ processes:
     cloudfoundry:
       sidecar_for: [ "web" ] `}
 
-				for index := range buildpacks {
-					depsIdxPath := filepath.Join(runner.GetDepsDir(), strconv.Itoa(index))
-					Expect(os.MkdirAll(depsIdxPath, os.ModePerm)).To(Succeed())
-					launchPath := filepath.Join(depsIdxPath, "launch.yml")
-					Expect(ioutil.WriteFile(launchPath, []byte(launchContent[index]), os.ModePerm)).To(Succeed())
-				}
-
-				resultsJSON, stagingInfo, err := runner.GoLikeLightning()
-
-				Expect(err).NotTo(HaveOccurred())
-				Expect(stagingInfo).To(ContainSubstring("staging_info.yml"))
-				Expect(stagingInfo).To(BeAnExistingFile())
-
-				stagingInfoContents, err := ioutil.ReadFile(stagingInfo)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(string(stagingInfoContents)).To(ContainSubstring(`{"detected_buildpack":"","start_command":"do something else forever"}`))
-
-				resultsJSONContents, err := ioutil.ReadFile(resultsJSON)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(string(resultsJSONContents)).To(MatchJSON(`{
+			var expectedResultsJson = `{
         "lifecycle_metadata": {
           "buildpack_key": "bash-buildpack",
           "detected_buildpack": "",
@@ -169,16 +147,52 @@ processes:
         ],
         "execution_metadata": "",
         "lifecycle_type": "buildpack"
-      }`))
+      }`
+
+			BeforeEach(func() {
+				Expect(os.MkdirAll(runner.GetDepsDir(), os.ModePerm)).To(Succeed())
+
+				for index := range buildpacks {
+					depsIdxPath := filepath.Join(runner.GetDepsDir(), strconv.Itoa(index))
+					Expect(os.MkdirAll(depsIdxPath, os.ModePerm)).To(Succeed())
+					launchPath := filepath.Join(depsIdxPath, "launch.yml")
+					Expect(ioutil.WriteFile(launchPath, []byte(launchContent[index]), os.ModePerm)).To(Succeed())
+				}
+			})
+
+			AfterEach(func() {
+				os.RemoveAll(runner.GetDepsDir())
+			})
+
+			It("Should use the start command from launch.yml", func() {
+				resultsJSON, stagingInfo, err := runner.GoLikeLightning()
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(stagingInfo).To(ContainSubstring("staging_info.yml"))
+				Expect(stagingInfo).To(BeAnExistingFile())
+
+				stagingInfoContents, err := ioutil.ReadFile(stagingInfo)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(stagingInfoContents)).To(ContainSubstring(`{"detected_buildpack":"","start_command":"do something else forever"}`))
+
+				resultsJSONContents, err := ioutil.ReadFile(resultsJSON)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(resultsJSONContents)).To(MatchJSON(expectedResultsJson))
 			})
 		})
 
 		When("A procfile is present and there is NO launch.yml", func() {
-			It("Should always use the start command from the procfile", func() {
-				procFilePath := filepath.Join(builderConfig.BuildDir(), "Procfile")
+			var procFilePath string
+			BeforeEach(func() {
+				procFilePath = filepath.Join(builderConfig.BuildDir(), "Procfile")
 				Expect(ioutil.WriteFile(procFilePath, []byte("web: gunicorn server:app"), os.ModePerm)).To(Succeed())
-				defer os.Remove(procFilePath)
+			})
 
+			AfterEach(func() {
+				os.Remove(procFilePath)
+			})
+
+			It("Should always use the start command from the procfile", func() {
 				_, stagingInfo, err := runner.GoLikeLightning()
 
 				Expect(err).NotTo(HaveOccurred())
@@ -188,14 +202,11 @@ processes:
 				contents, err := ioutil.ReadFile(stagingInfo)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(string(contents)).To(ContainSubstring(`{"detected_buildpack":"","start_command":"gunicorn server:app"}`))
-
 			})
 		})
 
 		When("there is NO procfile present and there is launch.yml provided by supply buildpacks", func() {
-			It("Should always use the start command from the bin/release", func() {
-
-				launchContents := `
+			var launchContents = `
 processes:
 - type: "web"
   command: "do something forever"
@@ -209,24 +220,7 @@ processes:
     cloudfoundry:
       sidecar_for: [ "web" ]`
 
-				depsIdxPath := filepath.Join(runner.GetDepsDir(), strconv.Itoa(0))
-				Expect(os.MkdirAll(depsIdxPath, os.ModePerm)).To(Succeed())
-				launchPath := filepath.Join(depsIdxPath, "launch.yml")
-				Expect(ioutil.WriteFile(launchPath, []byte(launchContents), os.ModePerm)).To(Succeed())
-
-				resultsJSON, stagingInfo, err := runner.GoLikeLightning()
-
-				Expect(err).NotTo(HaveOccurred())
-				Expect(stagingInfo).To(ContainSubstring("staging_info.yml"))
-				Expect(stagingInfo).To(BeAnExistingFile())
-
-				stagingInfoContents, err := ioutil.ReadFile(stagingInfo)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(string(stagingInfoContents)).To(ContainSubstring(`{"detected_buildpack":"","start_command":"I wish I was a baller"}`))
-
-				resultsJSONContents, err := ioutil.ReadFile(resultsJSON)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(string(resultsJSONContents)).To(MatchJSON(`{
+			var expectedResultsJson = `{
         "lifecycle_metadata": {
           "buildpack_key": "bash-buildpack",
           "detected_buildpack": "",
@@ -271,18 +265,35 @@ processes:
         ],
         "execution_metadata": "",
         "lifecycle_type": "buildpack"
-      }`))
+      }`
 
+			BeforeEach(func() {
+				depsIdxPath := filepath.Join(runner.GetDepsDir(), strconv.Itoa(0))
+				Expect(os.MkdirAll(depsIdxPath, os.ModePerm)).To(Succeed())
+				launchPath := filepath.Join(depsIdxPath, "launch.yml")
+				Expect(ioutil.WriteFile(launchPath, []byte(launchContents), os.ModePerm)).To(Succeed())
+			})
+
+			It("Should always use the start command from the bin/release", func() {
+				resultsJSON, stagingInfo, err := runner.GoLikeLightning()
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(stagingInfo).To(ContainSubstring("staging_info.yml"))
+				Expect(stagingInfo).To(BeAnExistingFile())
+
+				stagingInfoContents, err := ioutil.ReadFile(stagingInfo)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(stagingInfoContents)).To(ContainSubstring(`{"detected_buildpack":"","start_command":"I wish I was a baller"}`))
+
+				resultsJSONContents, err := ioutil.ReadFile(resultsJSON)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(resultsJSONContents)).To(MatchJSON(expectedResultsJson))
 			})
 		})
 
 		When("A procfile is present and there is launch.yml provided by all buildpacks", func() {
-			It("Should always use the start command from the procfile", func() {
-				procFilePath := filepath.Join(builderConfig.BuildDir(), "Procfile")
-				Expect(ioutil.WriteFile(procFilePath, []byte("web: gunicorn server:app"), os.ModePerm)).To(Succeed())
-				defer os.Remove(procFilePath)
-
-				launchContent := []string{`
+			var procFilePath string
+			var launchContent = []string{`
 processes:
 - type: "web"
   command: "do something forever"
@@ -306,26 +317,7 @@ processes:
     cloudfoundry:
       sidecar_for: [ "worker" ] `}
 
-				for index := range buildpacks {
-					depsIdxPath := filepath.Join(runner.GetDepsDir(), strconv.Itoa(index))
-					Expect(os.MkdirAll(depsIdxPath, os.ModePerm)).To(Succeed())
-					launchPath := filepath.Join(depsIdxPath, "launch.yml")
-					Expect(ioutil.WriteFile(launchPath, []byte(launchContent[index]), os.ModePerm)).To(Succeed())
-				}
-
-				resultsJSON, stagingInfo, err := runner.GoLikeLightning()
-
-				Expect(err).NotTo(HaveOccurred())
-				Expect(stagingInfo).To(ContainSubstring("staging_info.yml"))
-				Expect(stagingInfo).To(BeAnExistingFile())
-
-				stagingInfoContents, err := ioutil.ReadFile(stagingInfo)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(string(stagingInfoContents)).To(ContainSubstring(`{"detected_buildpack":"","start_command":"gunicorn server:app"}`))
-
-				resultsJSONContents, err := ioutil.ReadFile(resultsJSON)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(string(resultsJSONContents)).To(MatchJSON(`{
+			var expectedResultsJson = `{
         "lifecycle_metadata": {
           "buildpack_key": "bash-buildpack",
           "detected_buildpack": "",
@@ -378,8 +370,38 @@ processes:
         ],
         "execution_metadata": "",
         "lifecycle_type": "buildpack"
-      }`))
+      }`
 
+			BeforeEach(func() {
+				procFilePath := filepath.Join(builderConfig.BuildDir(), "Procfile")
+				Expect(ioutil.WriteFile(procFilePath, []byte("web: gunicorn server:app"), os.ModePerm)).To(Succeed())
+
+				for index := range buildpacks {
+					depsIdxPath := filepath.Join(runner.GetDepsDir(), strconv.Itoa(index))
+					Expect(os.MkdirAll(depsIdxPath, os.ModePerm)).To(Succeed())
+					launchPath := filepath.Join(depsIdxPath, "launch.yml")
+					Expect(ioutil.WriteFile(launchPath, []byte(launchContent[index]), os.ModePerm)).To(Succeed())
+				}
+			})
+
+			AfterEach(func() {
+				os.Remove(procFilePath)
+			})
+
+			It("Should always use the start command from the procfile", func() {
+				resultsJSON, stagingInfo, err := runner.GoLikeLightning()
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(stagingInfo).To(ContainSubstring("staging_info.yml"))
+				Expect(stagingInfo).To(BeAnExistingFile())
+
+				stagingInfoContents, err := ioutil.ReadFile(stagingInfo)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(stagingInfoContents)).To(ContainSubstring(`{"detected_buildpack":"","start_command":"gunicorn server:app"}`))
+
+				resultsJSONContents, err := ioutil.ReadFile(resultsJSON)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(resultsJSONContents)).To(MatchJSON(expectedResultsJson))
 			})
 		})
 	})
