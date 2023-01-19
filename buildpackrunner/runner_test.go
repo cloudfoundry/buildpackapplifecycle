@@ -20,42 +20,13 @@ var _ = Describe("Runner", func() {
 	Context("StartCommand", func() {
 
 		var runner *buildpackrunner.Runner
-		var appDir string
 		var buildpacks = []string{"haskell-buildpack", "bash-buildpack"}
-		var outputMetadata = "outputMetadata"
-		var buildDir = "buildDir"
-		var buildpacksDir = "buildpacksDir"
+		var builderConfig buildpackapplifecycle.LifecycleBuilderConfig
 
 		BeforeEach(func() {
-			skipDetect := true
-			builderConfig := buildpackapplifecycle.NewLifecycleBuilderConfig(buildpacks, skipDetect, false)
-			outputMetadataPath, err := ioutil.TempDir(os.TempDir(), "results")
-			Expect(err).ToNot(HaveOccurred())
-			Expect(builderConfig.Set(outputMetadata, filepath.Join(outputMetadataPath, "results.json"))).To(Succeed())
-
-			buildDirPath, err := ioutil.TempDir(os.TempDir(), "app")
-			Expect(err).ToNot(HaveOccurred())
-			Expect(builderConfig.Set(buildDir, buildDirPath)).To(Succeed())
-
-			buildpacksDirPath, err := ioutil.TempDir(os.TempDir(), "buildpack")
-			Expect(err).ToNot(HaveOccurred())
-			Expect(builderConfig.Set(buildpacksDir, buildpacksDirPath)).To(Succeed())
-
-			for _, bp := range buildpacks {
-				bpPath := builderConfig.BuildpackPath(bp)
-				Expect(genFakeBuildpack(bpPath)).To(Succeed())
-			}
-
+			builderConfig = makeBuilderConfig(buildpacks)
 			runner = buildpackrunner.New(&builderConfig)
 			Expect(runner.Setup()).To(Succeed())
-
-			if runtime.GOOS == "windows" {
-				copyDst := filepath.Join(filepath.Dir(builderConfig.Path()), "tar.exe")
-				CopyFileWindows(tmpTarPath, copyDst)
-			}
-
-			appDir = filepath.Join(builderConfig.BuildDir())
-			Expect(os.MkdirAll(appDir, os.ModePerm)).ToNot(HaveOccurred())
 		})
 
 		When("There is NO procfile and NO launch.yml file", func() {
@@ -72,6 +43,7 @@ var _ = Describe("Runner", func() {
 				Expect(string(stagingInfoContents)).To(ContainSubstring(`{"detected_buildpack":"","start_command":"I wish I was a baller"}`))
 
 				resultsJSONContents, err := ioutil.ReadFile(resultsJSON)
+				Expect(err).ToNot(HaveOccurred())
 				Expect(string(resultsJSONContents)).To(MatchJSON(`{
         "lifecycle_metadata": {
           "buildpack_key": "bash-buildpack",
@@ -148,6 +120,7 @@ processes:
 				Expect(string(stagingInfoContents)).To(ContainSubstring(`{"detected_buildpack":"","start_command":"do something else forever"}`))
 
 				resultsJSONContents, err := ioutil.ReadFile(resultsJSON)
+				Expect(err).ToNot(HaveOccurred())
 				Expect(string(resultsJSONContents)).To(MatchJSON(`{
         "lifecycle_metadata": {
           "buildpack_key": "bash-buildpack",
@@ -202,7 +175,7 @@ processes:
 
 		When("A procfile is present and there is NO launch.yml", func() {
 			It("Should always use the start command from the procfile", func() {
-				procFilePath := filepath.Join(appDir, "Procfile")
+				procFilePath := filepath.Join(builderConfig.BuildDir(), "Procfile")
 				Expect(ioutil.WriteFile(procFilePath, []byte("web: gunicorn server:app"), os.ModePerm)).To(Succeed())
 				defer os.Remove(procFilePath)
 
@@ -252,6 +225,7 @@ processes:
 				Expect(string(stagingInfoContents)).To(ContainSubstring(`{"detected_buildpack":"","start_command":"I wish I was a baller"}`))
 
 				resultsJSONContents, err := ioutil.ReadFile(resultsJSON)
+				Expect(err).ToNot(HaveOccurred())
 				Expect(string(resultsJSONContents)).To(MatchJSON(`{
         "lifecycle_metadata": {
           "buildpack_key": "bash-buildpack",
@@ -304,7 +278,7 @@ processes:
 
 		When("A procfile is present and there is launch.yml provided by all buildpacks", func() {
 			It("Should always use the start command from the procfile", func() {
-				procFilePath := filepath.Join(appDir, "Procfile")
+				procFilePath := filepath.Join(builderConfig.BuildDir(), "Procfile")
 				Expect(ioutil.WriteFile(procFilePath, []byte("web: gunicorn server:app"), os.ModePerm)).To(Succeed())
 				defer os.Remove(procFilePath)
 
@@ -350,6 +324,7 @@ processes:
 				Expect(string(stagingInfoContents)).To(ContainSubstring(`{"detected_buildpack":"","start_command":"gunicorn server:app"}`))
 
 				resultsJSONContents, err := ioutil.ReadFile(resultsJSON)
+				Expect(err).ToNot(HaveOccurred())
 				Expect(string(resultsJSONContents)).To(MatchJSON(`{
         "lifecycle_metadata": {
           "buildpack_key": "bash-buildpack",
@@ -409,6 +384,37 @@ processes:
 		})
 	})
 })
+
+func makeBuilderConfig(buildpacks []string) buildpackapplifecycle.LifecycleBuilderConfig {
+	skipDetect := true
+	builderConfig := buildpackapplifecycle.NewLifecycleBuilderConfig(buildpacks, skipDetect, false)
+	outputMetadataPath, err := ioutil.TempDir(os.TempDir(), "results")
+	Expect(err).ToNot(HaveOccurred())
+	Expect(builderConfig.Set("outputMetadata", filepath.Join(outputMetadataPath, "results.json"))).To(Succeed())
+
+	buildDirPath, err := ioutil.TempDir(os.TempDir(), "app")
+	Expect(err).ToNot(HaveOccurred())
+	Expect(builderConfig.Set("buildDir", buildDirPath)).To(Succeed())
+
+	buildpacksDirPath, err := ioutil.TempDir(os.TempDir(), "buildpack")
+	Expect(err).ToNot(HaveOccurred())
+	Expect(builderConfig.Set("buildpacksDir", buildpacksDirPath)).To(Succeed())
+
+	for _, bp := range buildpacks {
+		bpPath := builderConfig.BuildpackPath(bp)
+		Expect(genFakeBuildpack(bpPath)).To(Succeed())
+	}
+
+	err = os.MkdirAll(builderConfig.BuildDir(), os.ModePerm)
+	Expect(err).ToNot(HaveOccurred())
+
+	if runtime.GOOS == "windows" {
+		copyDst := filepath.Join(filepath.Dir(builderConfig.Path()), "tar.exe")
+		CopyFileWindows(tmpTarPath, copyDst)
+	}
+
+	return builderConfig
+}
 
 func genFakeBuildpack(bpRoot string) error {
 	err := os.MkdirAll(filepath.Join(bpRoot, "bin"), os.ModePerm)
