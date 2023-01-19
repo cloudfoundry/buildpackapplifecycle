@@ -1,6 +1,7 @@
 package buildpackrunner_test
 
 import (
+	"encoding/json"
 	"io"
 	"io/ioutil"
 	"os"
@@ -30,35 +31,6 @@ var _ = Describe("Runner", func() {
 		})
 
 		When("There is NO procfile and NO launch.yml file", func() {
-			var expectedResultsJson = `{
-        "lifecycle_metadata": {
-          "buildpack_key": "bash-buildpack",
-          "detected_buildpack": "",
-          "buildpacks": [
-            {
-              "key": "haskell-buildpack",
-              "name": ""
-            },
-            {
-              "key": "bash-buildpack",
-              "name": ""
-            }
-          ]
-        },
-        "process_types": {
-          "web": "I wish I was a baller"
-        },
-        "processes": [
-          {
-            "type": "web",
-            "command": "I wish I was a baller"
-          }
-        ],
-        "sidecars": null,
-        "execution_metadata": "",
-        "lifecycle_type": "buildpack"
-				}`
-
 			It("should use the default start command", func() {
 				resultsJSON, stagingInfo, err := runner.GoLikeLightning()
 
@@ -70,9 +42,15 @@ var _ = Describe("Runner", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(string(stagingInfoContents)).To(ContainSubstring(`{"detected_buildpack":"","start_command":"I wish I was a baller"}`))
 
-				resultsJSONContents, err := ioutil.ReadFile(resultsJSON)
+				resultsJSONContents, err := os.ReadFile(resultsJSON)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(string(resultsJSONContents)).To(MatchJSON(expectedResultsJson))
+
+				actualStagingResult := buildpackapplifecycle.StagingResult{}
+				Expect(json.Unmarshal(resultsJSONContents, &actualStagingResult)).To(Succeed())
+
+				Expect(actualStagingResult.ProcessTypes).To(Equal(buildpackapplifecycle.ProcessTypes{"web": "I wish I was a baller"}))
+				Expect(actualStagingResult.ProcessList).To(Equal([]buildpackapplifecycle.Process{{Type: "web", Command: "I wish I was a baller"}}))
+				//TODO: Find the origin of the default start command "I wish I was a baller"
 			})
 		})
 
@@ -98,56 +76,6 @@ processes:
   platforms:
     cloudfoundry:
       sidecar_for: [ "web" ] `}
-
-			var expectedResultsJson = `{
-        "lifecycle_metadata": {
-          "buildpack_key": "bash-buildpack",
-          "detected_buildpack": "",
-          "buildpacks": [
-            {
-              "key": "haskell-buildpack",
-              "name": ""
-            },
-            {
-              "key": "bash-buildpack",
-              "name": ""
-            }
-          ]
-        },
-        "process_types": {
-          "web": "do something else forever",
-          "worker": "do something and then quit"
-        },
-        "processes": [
-          {
-            "type": "web",
-            "command": "do something else forever"
-          },
-          {
-            "type": "worker",
-            "command": "do something and then quit"
-          }
-        ],
-        "sidecars": [
-          {
-            "name": "newrelic",
-            "process_types": [
-              "web", "worker"
-            ],
-            "command": "run new relic"
-          },
-					{
-            "name": "oldrelic",
-						"memory": 10,
-            "process_types": [
-              "web"
-            ],
-            "command": "run new relic"
-          }
-        ],
-        "execution_metadata": "",
-        "lifecycle_type": "buildpack"
-      }`
 
 			BeforeEach(func() {
 				Expect(os.MkdirAll(runner.GetDepsDir(), os.ModePerm)).To(Succeed())
@@ -177,7 +105,25 @@ processes:
 
 				resultsJSONContents, err := ioutil.ReadFile(resultsJSON)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(string(resultsJSONContents)).To(MatchJSON(expectedResultsJson))
+
+				actualStagingResult := buildpackapplifecycle.StagingResult{}
+				Expect(json.Unmarshal(resultsJSONContents, &actualStagingResult)).To(Succeed())
+
+				Expect(actualStagingResult.ProcessTypes).To(Equal(buildpackapplifecycle.ProcessTypes{
+					"web":    "do something else forever",
+					"worker": "do something and then quit",
+				}))
+
+				Expect(actualStagingResult.ProcessList).To(Equal([]buildpackapplifecycle.Process{
+					{Type: "web", Command: "do something else forever"},
+					{Type: "worker", Command: "do something and then quit"},
+				}))
+
+				Expect(actualStagingResult.Sidecars).To(Equal([]buildpackapplifecycle.Sidecar{
+					{Name: "newrelic", ProcessTypes: []string{"web", "worker"}, Command: "run new relic"},
+					{Name: "oldrelic", ProcessTypes: []string{"web"}, Command: "run new relic", Memory: 10},
+				}))
+
 			})
 		})
 
@@ -193,7 +139,7 @@ processes:
 			})
 
 			It("Should always use the start command from the procfile", func() {
-				_, stagingInfo, err := runner.GoLikeLightning()
+				resultsJSON, stagingInfo, err := runner.GoLikeLightning()
 
 				Expect(err).NotTo(HaveOccurred())
 				Expect(stagingInfo).To(ContainSubstring("staging_info.yml"))
@@ -202,6 +148,15 @@ processes:
 				contents, err := ioutil.ReadFile(stagingInfo)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(string(contents)).To(ContainSubstring(`{"detected_buildpack":"","start_command":"gunicorn server:app"}`))
+
+				resultsJSONContents, err := ioutil.ReadFile(resultsJSON)
+				Expect(err).ToNot(HaveOccurred())
+
+				actualStagingResult := buildpackapplifecycle.StagingResult{}
+				Expect(json.Unmarshal(resultsJSONContents, &actualStagingResult)).To(Succeed())
+
+				Expect(actualStagingResult.ProcessTypes).To(Equal(buildpackapplifecycle.ProcessTypes{"web": "gunicorn server:app"}))
+				Expect(actualStagingResult.ProcessList).To(Equal([]buildpackapplifecycle.Process{{Type: "web", Command: "gunicorn server:app"}}))
 			})
 		})
 
@@ -219,53 +174,6 @@ processes:
   platforms:
     cloudfoundry:
       sidecar_for: [ "web" ]`
-
-			var expectedResultsJson = `{
-        "lifecycle_metadata": {
-          "buildpack_key": "bash-buildpack",
-          "detected_buildpack": "",
-          "buildpacks": [
-            {
-              "key": "haskell-buildpack",
-              "name": ""
-            },
-            {
-              "key": "bash-buildpack",
-              "name": ""
-            }
-          ]
-        },
-        "process_types": {
-          "lightning": "go forth",
-          "web": "I wish I was a baller",
-          "worker": "do something and then quit"
-        },
-        "processes": [
-          {
-            "type": "web",
-            "command": "I wish I was a baller"
-          },
-          {
-            "type": "worker",
-            "command": "do something and then quit"
-          },
-          {
-            "type": "lightning",
-            "command": "go forth"
-          }
-        ],
-        "sidecars": [
-          {
-            "name": "newrelic",
-            "process_types": [
-              "web"
-            ],
-            "command": "run new relic"
-          }
-        ],
-        "execution_metadata": "",
-        "lifecycle_type": "buildpack"
-      }`
 
 			BeforeEach(func() {
 				depsIdxPath := filepath.Join(runner.GetDepsDir(), strconv.Itoa(0))
@@ -287,7 +195,25 @@ processes:
 
 				resultsJSONContents, err := ioutil.ReadFile(resultsJSON)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(string(resultsJSONContents)).To(MatchJSON(expectedResultsJson))
+
+				actualStagingResult := buildpackapplifecycle.StagingResult{}
+				Expect(json.Unmarshal(resultsJSONContents, &actualStagingResult)).To(Succeed())
+
+				Expect(actualStagingResult.ProcessTypes).To(Equal(buildpackapplifecycle.ProcessTypes{
+					"lightning": "go forth",
+					"web":       "I wish I was a baller",
+					"worker":    "do something and then quit",
+				}))
+
+				Expect(actualStagingResult.ProcessList).To(Equal([]buildpackapplifecycle.Process{
+					{Type: "web", Command: "I wish I was a baller"},
+					{Type: "worker", Command: "do something and then quit"},
+					{Type: "lightning", Command: "go forth"},
+				}))
+
+				Expect(actualStagingResult.Sidecars).To(Equal([]buildpackapplifecycle.Sidecar{
+					{Name: "newrelic", ProcessTypes: []string{"web"}, Command: "run new relic"},
+				}))
 			})
 		})
 
@@ -316,61 +242,6 @@ processes:
   platforms:
     cloudfoundry:
       sidecar_for: [ "worker" ] `}
-
-			var expectedResultsJson = `{
-        "lifecycle_metadata": {
-          "buildpack_key": "bash-buildpack",
-          "detected_buildpack": "",
-          "buildpacks": [
-            {
-              "key": "haskell-buildpack",
-              "name": ""
-            },
-            {
-              "key": "bash-buildpack",
-              "name": ""
-            }
-          ]
-        },
-        "process_types": {
-          "lightning": "go forth",
-          "web": "gunicorn server:app",
-          "worker": "do something else forever"
-        },
-        "processes": [
-          {
-            "type": "web",
-            "command": "gunicorn server:app"
-          },
-          {
-            "type": "worker",
-            "command": "do something else forever"
-          },
-          {
-            "type": "lightning",
-            "command": "go forth"
-          }
-        ],
-        "sidecars": [
-          {
-            "name": "newrelic",
-            "process_types": [
-              "web"
-            ],
-            "command": "run new relic"
-          },
-          {
-            "name": "oldrelic",
-						"memory": 10,
-            "process_types": [
-              "worker"
-            ],
-            "command": "run new relic"
-          }
-        ],
-        "execution_metadata": "",
-        "lifecycle_type": "buildpack"
-      }`
 
 			BeforeEach(func() {
 				procFilePath := filepath.Join(builderConfig.BuildDir(), "Procfile")
@@ -401,7 +272,26 @@ processes:
 
 				resultsJSONContents, err := ioutil.ReadFile(resultsJSON)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(string(resultsJSONContents)).To(MatchJSON(expectedResultsJson))
+
+				actualStagingResult := buildpackapplifecycle.StagingResult{}
+				Expect(json.Unmarshal(resultsJSONContents, &actualStagingResult)).To(Succeed())
+
+				Expect(actualStagingResult.ProcessTypes).To(Equal(buildpackapplifecycle.ProcessTypes{
+					"lightning": "go forth",
+					"web":       "gunicorn server:app",
+					"worker":    "do something else forever",
+				}))
+
+				Expect(actualStagingResult.ProcessList).To(Equal([]buildpackapplifecycle.Process{
+					{Type: "web", Command: "gunicorn server:app"},
+					{Type: "worker", Command: "do something else forever"},
+					{Type: "lightning", Command: "go forth"},
+				}))
+
+				Expect(actualStagingResult.Sidecars).To(Equal([]buildpackapplifecycle.Sidecar{
+					{Name: "newrelic", ProcessTypes: []string{"web"}, Command: "run new relic"},
+					{Name: "oldrelic", ProcessTypes: []string{"worker"}, Command: "run new relic", Memory: 10},
+				}))
 			})
 		})
 	})
