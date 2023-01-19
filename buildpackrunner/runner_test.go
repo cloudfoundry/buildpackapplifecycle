@@ -19,45 +19,46 @@ import (
 )
 
 var _ = Describe("Runner", func() {
-	Context("StartCommand", func() {
+	Describe("GoLikeLightning", func() {
+		Describe("writing the start command to results.json and staging_info.yml", func() {
 
-		var runner *buildpackrunner.Runner
-		var buildpacks = []string{"haskell-buildpack", "bash-buildpack"}
-		var builderConfig buildpackapplifecycle.LifecycleBuilderConfig
+			var runner *buildpackrunner.Runner
+			var buildpacks = []string{"haskell-buildpack", "bash-buildpack"}
+			var builderConfig buildpackapplifecycle.LifecycleBuilderConfig
 
-		var defaultStartCommandFromFixtures = "This is the start command for the 'web' default process type in testdata/fake_{unix,windows}_bp/bin/release{,.bat}"
+			var defaultStartCommandFromFixtures = "This is the start command for the 'web' default process type in testdata/fake_{unix,windows}_bp/bin/release{,.bat}"
 
-		BeforeEach(func() {
-			builderConfig = makeBuilderConfig(buildpacks)
-			runner = buildpackrunner.New(&builderConfig)
-			Expect(runner.Setup()).To(Succeed())
-		})
-
-		When("There is NO procfile and NO launch.yml file", func() {
-			It("should use the default start command", func() {
-				resultsJSON, stagingInfo, err := runner.GoLikeLightning()
-
-				Expect(err).NotTo(HaveOccurred())
-				Expect(stagingInfo).To(ContainSubstring("staging_info.yml"))
-				Expect(stagingInfo).To(BeAnExistingFile())
-
-				stagingInfoContents, err := ioutil.ReadFile(stagingInfo)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(string(stagingInfoContents)).To(ContainSubstring(fmt.Sprintf(`{"detected_buildpack":"","start_command":"%s"}`, defaultStartCommandFromFixtures)))
-
-				resultsJSONContents, err := os.ReadFile(resultsJSON)
-				Expect(err).ToNot(HaveOccurred())
-
-				actualStagingResult := buildpackapplifecycle.StagingResult{}
-				Expect(json.Unmarshal(resultsJSONContents, &actualStagingResult)).To(Succeed())
-
-				Expect(actualStagingResult.ProcessTypes).To(Equal(buildpackapplifecycle.ProcessTypes{"web": defaultStartCommandFromFixtures}))
-				Expect(actualStagingResult.ProcessList).To(Equal([]buildpackapplifecycle.Process{{Type: "web", Command: defaultStartCommandFromFixtures}}))
+			BeforeEach(func() {
+				builderConfig = makeBuilderConfig(buildpacks)
+				runner = buildpackrunner.New(&builderConfig)
+				Expect(runner.Setup()).To(Succeed())
 			})
-		})
 
-		When("A launch.yml is present and there is NO procfile", func() {
-			var launchContent = []string{`
+			When("There is NO procfile and NO launch.yml file", func() {
+				It("should use the default start command", func() {
+					resultsJSON, stagingInfo, err := runner.GoLikeLightning()
+
+					Expect(err).NotTo(HaveOccurred())
+					Expect(stagingInfo).To(ContainSubstring("staging_info.yml"))
+					Expect(stagingInfo).To(BeAnExistingFile())
+
+					stagingInfoContents, err := ioutil.ReadFile(stagingInfo)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(string(stagingInfoContents)).To(ContainSubstring(fmt.Sprintf(`{"detected_buildpack":"","start_command":"%s"}`, defaultStartCommandFromFixtures)))
+
+					resultsJSONContents, err := os.ReadFile(resultsJSON)
+					Expect(err).ToNot(HaveOccurred())
+
+					actualStagingResult := buildpackapplifecycle.StagingResult{}
+					Expect(json.Unmarshal(resultsJSONContents, &actualStagingResult)).To(Succeed())
+
+					Expect(actualStagingResult.ProcessTypes).To(Equal(buildpackapplifecycle.ProcessTypes{"web": defaultStartCommandFromFixtures}))
+					Expect(actualStagingResult.ProcessList).To(Equal([]buildpackapplifecycle.Process{{Type: "web", Command: defaultStartCommandFromFixtures}}))
+				})
+			})
+
+			When("A launch.yml is present and there is NO procfile", func() {
+				var launchContent = []string{`
 processes:
 - type: "web"
   command: "do something forever"
@@ -79,91 +80,91 @@ processes:
     cloudfoundry:
       sidecar_for: [ "web" ] `}
 
-			BeforeEach(func() {
-				Expect(os.MkdirAll(runner.GetDepsDir(), os.ModePerm)).To(Succeed())
+				BeforeEach(func() {
+					Expect(os.MkdirAll(runner.GetDepsDir(), os.ModePerm)).To(Succeed())
 
-				for index := range buildpacks {
-					depsIdxPath := filepath.Join(runner.GetDepsDir(), strconv.Itoa(index))
-					Expect(os.MkdirAll(depsIdxPath, os.ModePerm)).To(Succeed())
-					launchPath := filepath.Join(depsIdxPath, "launch.yml")
-					Expect(ioutil.WriteFile(launchPath, []byte(launchContent[index]), os.ModePerm)).To(Succeed())
-				}
+					for index := range buildpacks {
+						depsIdxPath := filepath.Join(runner.GetDepsDir(), strconv.Itoa(index))
+						Expect(os.MkdirAll(depsIdxPath, os.ModePerm)).To(Succeed())
+						launchPath := filepath.Join(depsIdxPath, "launch.yml")
+						Expect(ioutil.WriteFile(launchPath, []byte(launchContent[index]), os.ModePerm)).To(Succeed())
+					}
+				})
+
+				AfterEach(func() {
+					os.RemoveAll(runner.GetDepsDir())
+				})
+
+				It("Should use the start command from launch.yml", func() {
+					resultsJSON, stagingInfo, err := runner.GoLikeLightning()
+
+					Expect(err).NotTo(HaveOccurred())
+					Expect(stagingInfo).To(ContainSubstring("staging_info.yml"))
+					Expect(stagingInfo).To(BeAnExistingFile())
+
+					stagingInfoContents, err := ioutil.ReadFile(stagingInfo)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(string(stagingInfoContents)).To(ContainSubstring(`{"detected_buildpack":"","start_command":"do something else forever"}`))
+
+					resultsJSONContents, err := ioutil.ReadFile(resultsJSON)
+					Expect(err).ToNot(HaveOccurred())
+
+					actualStagingResult := buildpackapplifecycle.StagingResult{}
+					Expect(json.Unmarshal(resultsJSONContents, &actualStagingResult)).To(Succeed())
+
+					Expect(actualStagingResult.ProcessTypes).To(Equal(buildpackapplifecycle.ProcessTypes{
+						"web":    "do something else forever",
+						"worker": "do something and then quit",
+					}))
+
+					Expect(actualStagingResult.ProcessList).To(Equal([]buildpackapplifecycle.Process{
+						{Type: "web", Command: "do something else forever"},
+						{Type: "worker", Command: "do something and then quit"},
+					}))
+
+					Expect(actualStagingResult.Sidecars).To(Equal([]buildpackapplifecycle.Sidecar{
+						{Name: "newrelic", ProcessTypes: []string{"web", "worker"}, Command: "run new relic"},
+						{Name: "oldrelic", ProcessTypes: []string{"web"}, Command: "run new relic", Memory: 10},
+					}))
+
+				})
 			})
 
-			AfterEach(func() {
-				os.RemoveAll(runner.GetDepsDir())
+			When("A procfile is present and there is NO launch.yml", func() {
+				var procFilePath string
+				BeforeEach(func() {
+					procFilePath = filepath.Join(builderConfig.BuildDir(), "Procfile")
+					Expect(ioutil.WriteFile(procFilePath, []byte("web: gunicorn server:app"), os.ModePerm)).To(Succeed())
+				})
+
+				AfterEach(func() {
+					os.Remove(procFilePath)
+				})
+
+				It("Should always use the start command from the procfile", func() {
+					resultsJSON, stagingInfo, err := runner.GoLikeLightning()
+
+					Expect(err).NotTo(HaveOccurred())
+					Expect(stagingInfo).To(ContainSubstring("staging_info.yml"))
+					Expect(stagingInfo).To(BeAnExistingFile())
+
+					contents, err := ioutil.ReadFile(stagingInfo)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(string(contents)).To(ContainSubstring(`{"detected_buildpack":"","start_command":"gunicorn server:app"}`))
+
+					resultsJSONContents, err := ioutil.ReadFile(resultsJSON)
+					Expect(err).ToNot(HaveOccurred())
+
+					actualStagingResult := buildpackapplifecycle.StagingResult{}
+					Expect(json.Unmarshal(resultsJSONContents, &actualStagingResult)).To(Succeed())
+
+					Expect(actualStagingResult.ProcessTypes).To(Equal(buildpackapplifecycle.ProcessTypes{"web": "gunicorn server:app"}))
+					Expect(actualStagingResult.ProcessList).To(Equal([]buildpackapplifecycle.Process{{Type: "web", Command: "gunicorn server:app"}}))
+				})
 			})
 
-			It("Should use the start command from launch.yml", func() {
-				resultsJSON, stagingInfo, err := runner.GoLikeLightning()
-
-				Expect(err).NotTo(HaveOccurred())
-				Expect(stagingInfo).To(ContainSubstring("staging_info.yml"))
-				Expect(stagingInfo).To(BeAnExistingFile())
-
-				stagingInfoContents, err := ioutil.ReadFile(stagingInfo)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(string(stagingInfoContents)).To(ContainSubstring(`{"detected_buildpack":"","start_command":"do something else forever"}`))
-
-				resultsJSONContents, err := ioutil.ReadFile(resultsJSON)
-				Expect(err).ToNot(HaveOccurred())
-
-				actualStagingResult := buildpackapplifecycle.StagingResult{}
-				Expect(json.Unmarshal(resultsJSONContents, &actualStagingResult)).To(Succeed())
-
-				Expect(actualStagingResult.ProcessTypes).To(Equal(buildpackapplifecycle.ProcessTypes{
-					"web":    "do something else forever",
-					"worker": "do something and then quit",
-				}))
-
-				Expect(actualStagingResult.ProcessList).To(Equal([]buildpackapplifecycle.Process{
-					{Type: "web", Command: "do something else forever"},
-					{Type: "worker", Command: "do something and then quit"},
-				}))
-
-				Expect(actualStagingResult.Sidecars).To(Equal([]buildpackapplifecycle.Sidecar{
-					{Name: "newrelic", ProcessTypes: []string{"web", "worker"}, Command: "run new relic"},
-					{Name: "oldrelic", ProcessTypes: []string{"web"}, Command: "run new relic", Memory: 10},
-				}))
-
-			})
-		})
-
-		When("A procfile is present and there is NO launch.yml", func() {
-			var procFilePath string
-			BeforeEach(func() {
-				procFilePath = filepath.Join(builderConfig.BuildDir(), "Procfile")
-				Expect(ioutil.WriteFile(procFilePath, []byte("web: gunicorn server:app"), os.ModePerm)).To(Succeed())
-			})
-
-			AfterEach(func() {
-				os.Remove(procFilePath)
-			})
-
-			It("Should always use the start command from the procfile", func() {
-				resultsJSON, stagingInfo, err := runner.GoLikeLightning()
-
-				Expect(err).NotTo(HaveOccurred())
-				Expect(stagingInfo).To(ContainSubstring("staging_info.yml"))
-				Expect(stagingInfo).To(BeAnExistingFile())
-
-				contents, err := ioutil.ReadFile(stagingInfo)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(string(contents)).To(ContainSubstring(`{"detected_buildpack":"","start_command":"gunicorn server:app"}`))
-
-				resultsJSONContents, err := ioutil.ReadFile(resultsJSON)
-				Expect(err).ToNot(HaveOccurred())
-
-				actualStagingResult := buildpackapplifecycle.StagingResult{}
-				Expect(json.Unmarshal(resultsJSONContents, &actualStagingResult)).To(Succeed())
-
-				Expect(actualStagingResult.ProcessTypes).To(Equal(buildpackapplifecycle.ProcessTypes{"web": "gunicorn server:app"}))
-				Expect(actualStagingResult.ProcessList).To(Equal([]buildpackapplifecycle.Process{{Type: "web", Command: "gunicorn server:app"}}))
-			})
-		})
-
-		When("there is NO procfile present and there is launch.yml provided by supply buildpacks", func() {
-			var launchContents = `
+			When("there is NO procfile present and there is launch.yml provided by supply buildpacks", func() {
+				var launchContents = `
 processes:
 - type: "web"
   command: "do something forever"
@@ -177,51 +178,51 @@ processes:
     cloudfoundry:
       sidecar_for: [ "web" ]`
 
-			BeforeEach(func() {
-				depsIdxPath := filepath.Join(runner.GetDepsDir(), strconv.Itoa(0))
-				Expect(os.MkdirAll(depsIdxPath, os.ModePerm)).To(Succeed())
-				launchPath := filepath.Join(depsIdxPath, "launch.yml")
-				Expect(ioutil.WriteFile(launchPath, []byte(launchContents), os.ModePerm)).To(Succeed())
+				BeforeEach(func() {
+					depsIdxPath := filepath.Join(runner.GetDepsDir(), strconv.Itoa(0))
+					Expect(os.MkdirAll(depsIdxPath, os.ModePerm)).To(Succeed())
+					launchPath := filepath.Join(depsIdxPath, "launch.yml")
+					Expect(ioutil.WriteFile(launchPath, []byte(launchContents), os.ModePerm)).To(Succeed())
+				})
+
+				It("Should always use the start command from the bin/release", func() {
+					resultsJSON, stagingInfo, err := runner.GoLikeLightning()
+
+					Expect(err).NotTo(HaveOccurred())
+					Expect(stagingInfo).To(ContainSubstring("staging_info.yml"))
+					Expect(stagingInfo).To(BeAnExistingFile())
+
+					stagingInfoContents, err := ioutil.ReadFile(stagingInfo)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(string(stagingInfoContents)).To(ContainSubstring(fmt.Sprintf(`{"detected_buildpack":"","start_command":"%s"}`, defaultStartCommandFromFixtures)))
+
+					resultsJSONContents, err := ioutil.ReadFile(resultsJSON)
+					Expect(err).ToNot(HaveOccurred())
+
+					actualStagingResult := buildpackapplifecycle.StagingResult{}
+					Expect(json.Unmarshal(resultsJSONContents, &actualStagingResult)).To(Succeed())
+
+					Expect(actualStagingResult.ProcessTypes).To(Equal(buildpackapplifecycle.ProcessTypes{
+						"lightning": "go forth",
+						"web":       defaultStartCommandFromFixtures,
+						"worker":    "do something and then quit",
+					}))
+
+					Expect(actualStagingResult.ProcessList).To(Equal([]buildpackapplifecycle.Process{
+						{Type: "web", Command: defaultStartCommandFromFixtures},
+						{Type: "worker", Command: "do something and then quit"},
+						{Type: "lightning", Command: "go forth"},
+					}))
+
+					Expect(actualStagingResult.Sidecars).To(Equal([]buildpackapplifecycle.Sidecar{
+						{Name: "newrelic", ProcessTypes: []string{"web"}, Command: "run new relic"},
+					}))
+				})
 			})
 
-			It("Should always use the start command from the bin/release", func() {
-				resultsJSON, stagingInfo, err := runner.GoLikeLightning()
-
-				Expect(err).NotTo(HaveOccurred())
-				Expect(stagingInfo).To(ContainSubstring("staging_info.yml"))
-				Expect(stagingInfo).To(BeAnExistingFile())
-
-				stagingInfoContents, err := ioutil.ReadFile(stagingInfo)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(string(stagingInfoContents)).To(ContainSubstring(fmt.Sprintf(`{"detected_buildpack":"","start_command":"%s"}`, defaultStartCommandFromFixtures)))
-
-				resultsJSONContents, err := ioutil.ReadFile(resultsJSON)
-				Expect(err).ToNot(HaveOccurred())
-
-				actualStagingResult := buildpackapplifecycle.StagingResult{}
-				Expect(json.Unmarshal(resultsJSONContents, &actualStagingResult)).To(Succeed())
-
-				Expect(actualStagingResult.ProcessTypes).To(Equal(buildpackapplifecycle.ProcessTypes{
-					"lightning": "go forth",
-					"web":       defaultStartCommandFromFixtures,
-					"worker":    "do something and then quit",
-				}))
-
-				Expect(actualStagingResult.ProcessList).To(Equal([]buildpackapplifecycle.Process{
-					{Type: "web", Command: defaultStartCommandFromFixtures},
-					{Type: "worker", Command: "do something and then quit"},
-					{Type: "lightning", Command: "go forth"},
-				}))
-
-				Expect(actualStagingResult.Sidecars).To(Equal([]buildpackapplifecycle.Sidecar{
-					{Name: "newrelic", ProcessTypes: []string{"web"}, Command: "run new relic"},
-				}))
-			})
-		})
-
-		When("A procfile is present and there is launch.yml provided by all buildpacks", func() {
-			var procFilePath string
-			var launchContent = []string{`
+			When("A procfile is present and there is launch.yml provided by all buildpacks", func() {
+				var procFilePath string
+				var launchContent = []string{`
 processes:
 - type: "web"
   command: "do something forever"
@@ -245,55 +246,56 @@ processes:
     cloudfoundry:
       sidecar_for: [ "worker" ] `}
 
-			BeforeEach(func() {
-				procFilePath := filepath.Join(builderConfig.BuildDir(), "Procfile")
-				Expect(ioutil.WriteFile(procFilePath, []byte("web: gunicorn server:app"), os.ModePerm)).To(Succeed())
+				BeforeEach(func() {
+					procFilePath := filepath.Join(builderConfig.BuildDir(), "Procfile")
+					Expect(ioutil.WriteFile(procFilePath, []byte("web: gunicorn server:app"), os.ModePerm)).To(Succeed())
 
-				for index := range buildpacks {
-					depsIdxPath := filepath.Join(runner.GetDepsDir(), strconv.Itoa(index))
-					Expect(os.MkdirAll(depsIdxPath, os.ModePerm)).To(Succeed())
-					launchPath := filepath.Join(depsIdxPath, "launch.yml")
-					Expect(ioutil.WriteFile(launchPath, []byte(launchContent[index]), os.ModePerm)).To(Succeed())
-				}
-			})
+					for index := range buildpacks {
+						depsIdxPath := filepath.Join(runner.GetDepsDir(), strconv.Itoa(index))
+						Expect(os.MkdirAll(depsIdxPath, os.ModePerm)).To(Succeed())
+						launchPath := filepath.Join(depsIdxPath, "launch.yml")
+						Expect(ioutil.WriteFile(launchPath, []byte(launchContent[index]), os.ModePerm)).To(Succeed())
+					}
+				})
 
-			AfterEach(func() {
-				os.Remove(procFilePath)
-			})
+				AfterEach(func() {
+					os.Remove(procFilePath)
+				})
 
-			It("Should always use the start command from the procfile", func() {
-				resultsJSON, stagingInfo, err := runner.GoLikeLightning()
+				It("Should always use the start command from the procfile", func() {
+					resultsJSON, stagingInfo, err := runner.GoLikeLightning()
 
-				Expect(err).NotTo(HaveOccurred())
-				Expect(stagingInfo).To(ContainSubstring("staging_info.yml"))
-				Expect(stagingInfo).To(BeAnExistingFile())
+					Expect(err).NotTo(HaveOccurred())
+					Expect(stagingInfo).To(ContainSubstring("staging_info.yml"))
+					Expect(stagingInfo).To(BeAnExistingFile())
 
-				stagingInfoContents, err := ioutil.ReadFile(stagingInfo)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(string(stagingInfoContents)).To(ContainSubstring(`{"detected_buildpack":"","start_command":"gunicorn server:app"}`))
+					stagingInfoContents, err := ioutil.ReadFile(stagingInfo)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(string(stagingInfoContents)).To(ContainSubstring(`{"detected_buildpack":"","start_command":"gunicorn server:app"}`))
 
-				resultsJSONContents, err := ioutil.ReadFile(resultsJSON)
-				Expect(err).ToNot(HaveOccurred())
+					resultsJSONContents, err := ioutil.ReadFile(resultsJSON)
+					Expect(err).ToNot(HaveOccurred())
 
-				actualStagingResult := buildpackapplifecycle.StagingResult{}
-				Expect(json.Unmarshal(resultsJSONContents, &actualStagingResult)).To(Succeed())
+					actualStagingResult := buildpackapplifecycle.StagingResult{}
+					Expect(json.Unmarshal(resultsJSONContents, &actualStagingResult)).To(Succeed())
 
-				Expect(actualStagingResult.ProcessTypes).To(Equal(buildpackapplifecycle.ProcessTypes{
-					"lightning": "go forth",
-					"web":       "gunicorn server:app",
-					"worker":    "do something else forever",
-				}))
+					Expect(actualStagingResult.ProcessTypes).To(Equal(buildpackapplifecycle.ProcessTypes{
+						"lightning": "go forth",
+						"web":       "gunicorn server:app",
+						"worker":    "do something else forever",
+					}))
 
-				Expect(actualStagingResult.ProcessList).To(Equal([]buildpackapplifecycle.Process{
-					{Type: "web", Command: "gunicorn server:app"},
-					{Type: "worker", Command: "do something else forever"},
-					{Type: "lightning", Command: "go forth"},
-				}))
+					Expect(actualStagingResult.ProcessList).To(Equal([]buildpackapplifecycle.Process{
+						{Type: "web", Command: "gunicorn server:app"},
+						{Type: "worker", Command: "do something else forever"},
+						{Type: "lightning", Command: "go forth"},
+					}))
 
-				Expect(actualStagingResult.Sidecars).To(Equal([]buildpackapplifecycle.Sidecar{
-					{Name: "newrelic", ProcessTypes: []string{"web"}, Command: "run new relic"},
-					{Name: "oldrelic", ProcessTypes: []string{"worker"}, Command: "run new relic", Memory: 10},
-				}))
+					Expect(actualStagingResult.Sidecars).To(Equal([]buildpackapplifecycle.Sidecar{
+						{Name: "newrelic", ProcessTypes: []string{"web"}, Command: "run new relic"},
+						{Name: "oldrelic", ProcessTypes: []string{"worker"}, Command: "run new relic", Memory: 10},
+					}))
+				})
 			})
 		})
 	})
