@@ -135,7 +135,7 @@ func (runner *Runner) ProcessFinalBuildpack(detectedBuildpack, detectedBuildpack
 }
 
 func (runner *Runner) WriteStagingInfoYML(resultData buildpackapplifecycle.StagingResult, buildpacks []buildpackapplifecycle.BuildpackMetadata) (string, error) {
-	stagingInfoYML := filepath.Join(runner.contentsDir, "staging_info.yml")
+	stagingInfoYML := filepath.Join(runner.contentsDir, DeaStagingInfoFilename)
 	stagingInfoFile, err := os.Create(stagingInfoYML)
 	if err != nil {
 		return "", err

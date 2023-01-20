@@ -1,13 +1,13 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
 
+	"code.cloudfoundry.org/buildpackapplifecycle/buildpackrunner"
 	"code.cloudfoundry.org/buildpackapplifecycle/env"
 	"code.cloudfoundry.org/goshims/osshim"
 	yaml "gopkg.in/yaml.v2"
@@ -28,15 +28,17 @@ func main() {
 		dir = absDir
 	}
 
+	stagingInfo, err := unmarhsalStagingInfo()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Invalid staging info - %s", err)
+		os.Exit(1)
+	}
+
 	var command string
 	if startCommand != "" {
 		command = startCommand
 	} else {
-		command, err = startCommandFromStagingInfo("staging_info.yml")
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Invalid staging info - %s", err)
-			os.Exit(1)
-		}
+		command = stagingInfo.StartCommand
 	}
 
 	if command == "" {
@@ -50,28 +52,23 @@ func main() {
 	}
 
 	runtime.GOMAXPROCS(1)
-	runProcess(dir, command)
+	runProcess(dir, command, stagingInfo.GetEntrypointPrefix())
 }
 
-type stagingInfo struct {
-	StartCommand string `yaml:"start_command"`
-}
-
-func startCommandFromStagingInfo(stagingInfoPath string) (string, error) {
-	stagingInfoData, err := ioutil.ReadFile(stagingInfoPath)
+func unmarhsalStagingInfo() (buildpackrunner.DeaStagingInfo, error) {
+	stagingInfo := buildpackrunner.DeaStagingInfo{}
+	stagingInfoData, err := ioutil.ReadFile(buildpackrunner.DeaStagingInfoFilename)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return "", nil
+			return stagingInfo, nil
 		}
-		return "", err
+		return stagingInfo, err
 	}
 
-	info := stagingInfo{}
-
-	err = yaml.Unmarshal(stagingInfoData, &info)
+	err = yaml.Unmarshal(stagingInfoData, &stagingInfo)
 	if err != nil {
-		return "", errors.New("invalid YAML")
+		return stagingInfo, fmt.Errorf("failed to unmarshal %s: %w", buildpackrunner.DeaStagingInfoFilename, err)
 	}
 
-	return info.StartCommand, nil
+	return stagingInfo, nil
 }
