@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
@@ -15,6 +14,7 @@ import (
 	"runtime"
 	"strings"
 
+	"code.cloudfoundry.org/buildpackapplifecycle/buildpackrunner"
 	"code.cloudfoundry.org/buildpackapplifecycle/containerpath"
 
 	. "github.com/onsi/ginkgo"
@@ -396,6 +396,100 @@ var _ = Describe("Launcher", func() {
 		})
 
 		ItExecutesTheCommandWithTheRightEnvironment()
+
+		Context("when the staging_info.yml specifies an entrypoint prefix", func() {
+			Context("When running on Windows", func() {
+				BeforeEach(func() {
+					if runtime.GOOS != "windows" {
+						Skip("entrypoint_prefix is supported, skipping windows specific 'anti-tests'")
+					}
+				})
+
+				Context("when the custom entrypoint is an absolute path", func() {
+					BeforeEach(func() {
+						destDir := filepath.Join(appDir, "tmp")
+						Expect(os.MkdirAll(destDir, 0777)).To(Succeed())
+						customEntrypointFile, err := copyExe(destDir, customEntrypoint)
+						Expect(err).NotTo(HaveOccurred())
+
+						writeStagingInfo(extractDir, fmt.Sprintf("config:\n  entrypoint_prefix: %s", filepath.Join(destDir, customEntrypointFile)))
+					})
+
+					It("ignores the custom entrypoint and executes the start command", func() {
+						Eventually(session).Should(gexec.Exit(0))
+						Expect(string(session.Out.Contents())).To(ContainSubstring("app is running"))
+						Expect(string(session.Out.Contents())).NotTo(ContainSubstring("I'm a custom entrypoint"))
+						Expect(string(session.Out.Contents())).NotTo(ContainSubstring(fmt.Sprintf("I was called with: '[%s]'", startCommand)))
+					})
+				})
+			})
+
+			Context("when running on Linux", func() {
+				BeforeEach(func() {
+					if runtime.GOOS != "linux" {
+						Skip("entrypoint_prefix not supported on windows")
+					}
+				})
+
+				Context("when the custom entrypoint is an absolute path", func() {
+					BeforeEach(func() {
+						destDir := filepath.Join(appDir, "tmp")
+						Expect(os.MkdirAll(destDir, 0777)).To(Succeed())
+						customEntrypointFile, err := copyExe(destDir, customEntrypoint)
+						Expect(err).NotTo(HaveOccurred())
+
+						writeStagingInfo(extractDir, fmt.Sprintf("config:\n  entrypoint_prefix: %s", filepath.Join(destDir, customEntrypointFile)))
+					})
+
+					It("invokes the custom entrypoint and passes the start command to it", func() {
+						Eventually(session).Should(gexec.Exit(0))
+						Expect(string(session.Out.Contents())).To(ContainSubstring("I'm a custom entrypoint"))
+						Expect(string(session.Out.Contents())).To(ContainSubstring(fmt.Sprintf("I was called with: '[%s]'", startCommand)))
+					})
+				})
+
+				Context("when the custom entrypoint is on the PATH", func() {
+					BeforeEach(func() {
+						profileDir := filepath.Join(appDir, ".profile.d")
+						Expect(os.MkdirAll(profileDir, 0755)).To(Succeed())
+
+						destDir := filepath.Join(appDir, "tmp")
+						Expect(os.MkdirAll(destDir, 0777)).To(Succeed())
+
+						customEntrypointFile, err := copyExe(destDir, customEntrypoint)
+						Expect(err).NotTo(HaveOccurred())
+
+						writeStagingInfo(extractDir, fmt.Sprintf("config:\n  entrypoint_prefix: %s", customEntrypointFile))
+
+						Expect(os.WriteFile(filepath.Join(profileDir, "set_path.sh"), []byte(fmt.Sprintf("echo Setting path\nexport PATH=$PATH:%s\n", destDir)), 0644)).To(Succeed())
+					})
+
+					It("invokes the custom entrypoint and passes the start command to it", func() {
+						Eventually(session).Should(gexec.Exit(0))
+						Expect(string(session.Out.Contents())).To(ContainSubstring("I'm a custom entrypoint"))
+						Expect(string(session.Out.Contents())).To(ContainSubstring(fmt.Sprintf("I was called with: '[%s]'", startCommand)))
+					})
+				})
+
+				Context("when the custom entrypoint cannot be found", func() {
+					var executableName string
+
+					BeforeEach(func() {
+						executableName = filepath.Base(customEntrypoint)
+						writeStagingInfo(extractDir, fmt.Sprintf("config:\n  entrypoint_prefix: \"%s\"", executableName))
+					})
+
+					It("reports 'command not found' and continues execution of the start command", func() {
+						Eventually(session).Should(gexec.Exit(127))
+
+						Expect(string(session.Err.Contents())).To(ContainSubstring(fmt.Sprintf("exec: %s: not found", executableName)))
+
+						Expect(string(session.Out.Contents())).NotTo(ContainSubstring("I'm a custom entrypoint"))
+						Expect(string(session.Out.Contents())).NotTo(ContainSubstring("I was called with:"))
+					})
+				})
+			})
+		})
 	})
 
 	Describe("interpolation of credhub-ref in VCAP_SERVICES", func() {
@@ -711,8 +805,7 @@ var _ = Describe("Launcher", func() {
 })
 
 func writeStagingInfo(extractDir, stagingInfo string) {
-	err := ioutil.WriteFile(filepath.Join(extractDir, "staging_info.yml"), []byte(stagingInfo), 0644)
-	Expect(err).NotTo(HaveOccurred())
+	Expect(os.WriteFile(filepath.Join(extractDir, buildpackrunner.DeaStagingInfoFilename), []byte(stagingInfo), 0644)).To(Succeed())
 }
 
 func copyExe(dstDir, src string) (string, error) {

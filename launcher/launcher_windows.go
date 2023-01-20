@@ -21,7 +21,7 @@ var (
 	createProcessW = kernel32.NewProc("CreateProcessW")
 )
 
-func runProcess(dir, command string) {
+func runProcess(dir, command, _entrypoint string) {
 	err := createProcessW.Find()
 	handleErr("couldn't find func address", err)
 

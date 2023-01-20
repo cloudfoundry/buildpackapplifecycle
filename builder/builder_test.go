@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/buildpackapplifecycle"
+	"code.cloudfoundry.org/buildpackapplifecycle/buildpackrunner"
 	"code.cloudfoundry.org/buildpackapplifecycle/test_helpers"
 
 	. "github.com/onsi/ginkgo"
@@ -448,7 +449,7 @@ var _ = Describe("Building", func() {
 			})
 
 			It("should contain a staging_info.yml with the detected buildpack", func() {
-				stagingInfo, err := exec.Command("tar", "-xzf", outputDroplet, "-O", "./staging_info.yml").Output()
+				stagingInfo, err := exec.Command("tar", "-xzf", outputDroplet, "-O", fmt.Sprintf("./%s", buildpackrunner.DeaStagingInfoFilename)).Output()
 				Expect(err).NotTo(HaveOccurred())
 
 				expectedYAML := `{"detected_buildpack":"Always Matching","start_command":"the start command"}`
