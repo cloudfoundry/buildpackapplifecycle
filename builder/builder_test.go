@@ -20,6 +20,7 @@ import (
 
 	"code.cloudfoundry.org/buildpackapplifecycle"
 	"code.cloudfoundry.org/buildpackapplifecycle/containerpath"
+	"code.cloudfoundry.org/buildpackapplifecycle/test_helpers"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -66,10 +67,14 @@ var _ = Describe("Building", func() {
 		var err error
 
 		tmpDir, err = ioutil.TempDir("", "building-tmp")
+		Expect(err).NotTo(HaveOccurred())
+
 		buildDir, err = ioutil.TempDir(tmpDir, "building-app")
 		Expect(err).NotTo(HaveOccurred())
 
-		copyTar(filepath.Join(tmpDir, "tmp", "lifecycle"))
+		if runtime.GOOS == "windows" {
+			test_helpers.CopyFile(tarPath, filepath.Join(tmpDir, "tmp", "lifecycle"))
+		}
 
 		buildpacksDir, err = ioutil.TempDir(tmpDir, "building-buildpacks")
 		Expect(err).NotTo(HaveOccurred())

@@ -2,7 +2,6 @@ package buildpackrunner_test
 
 import (
 	"encoding/json"
-	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -12,6 +11,7 @@ import (
 
 	"code.cloudfoundry.org/buildpackapplifecycle"
 	"code.cloudfoundry.org/buildpackapplifecycle/buildpackrunner"
+	"code.cloudfoundry.org/buildpackapplifecycle/test_helpers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
@@ -322,7 +322,7 @@ func makeBuilderConfig(buildpacks []string) buildpackapplifecycle.LifecycleBuild
 
 	if runtime.GOOS == "windows" {
 		copyDst := filepath.Join(filepath.Dir(builderConfig.Path()), "tar.exe")
-		CopyFileWindows(tmpTarPath, copyDst)
+		test_helpers.CopyFile(tmpTarPath, copyDst)
 	}
 
 	return builderConfig
@@ -339,28 +339,6 @@ func genFakeBuildpack(bpRoot string) error {
 		CopyDirectory(filepath.Join("testdata", "fake_unix_bp", "bin"), filepath.Join(bpRoot))
 	}
 	return nil
-}
-
-func CopyFileWindows(src string, dst string) {
-	s, err := os.Open(src)
-	Expect(err).ToNot(HaveOccurred())
-
-	defer s.Close()
-
-	i, err := s.Stat()
-	Expect(err).ToNot(HaveOccurred())
-
-	err = os.MkdirAll(filepath.Dir(dst), 0755)
-	Expect(err).ToNot(HaveOccurred())
-
-	f, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, i.Mode())
-	Expect(err).ToNot(HaveOccurred())
-
-	defer f.Close()
-
-	_, err = io.Copy(f, s)
-	Expect(err).ToNot(HaveOccurred())
-
 }
 
 func CopyDirectory(src string, dst string) {

@@ -3,10 +3,12 @@ package main_test
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
 
+	"code.cloudfoundry.org/buildpackapplifecycle/test_helpers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
@@ -23,9 +25,17 @@ func TestBuildpackLifecycleBuilder(t *testing.T) {
 }
 
 var _ = SynchronizedBeforeSuite(func() []byte {
-	builder := buildBuilder()
-	tar := downloadTar()
-	return []byte(builder + "^" + tar)
+
+	var builderArgs []string
+	var discoveredTarPath string
+	if runtime.GOOS == "windows" {
+		builderArgs = []string{"-tags=windows2012R2"}
+		discoveredTarPath = test_helpers.DownloadOrFindWindowsTar()
+	}
+
+	builder := buildBuilder(builderArgs)
+
+	return []byte(builder + "^" + discoveredTarPath)
 }, func(exePaths []byte) {
 	paths := strings.Split(string(exePaths), "^")
 	builderPath = paths[0]
@@ -38,7 +48,7 @@ var _ = SynchronizedAfterSuite(func() {
 	//noop
 }, func() {
 	gexec.CleanupBuildArtifacts()
-	if tarPath != "" {
+	if test_helpers.GetWindowsTarURL() != "" {
 		Expect(os.RemoveAll(filepath.Dir(tarPath))).To(Succeed())
 	}
 })
