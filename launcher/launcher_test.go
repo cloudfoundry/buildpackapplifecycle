@@ -191,7 +191,9 @@ var _ = Describe("Launcher", func() {
 
 					destDir := filepath.Join(appDir, "tmp")
 					Expect(os.MkdirAll(destDir, 0777)).To(Succeed())
-					Expect(copyExe(destDir, hello, "hello")).To(Succeed())
+
+					helloFilename, err := copyExe(destDir, hello)
+					Expect(err).NotTo(HaveOccurred())
 
 					if runtime.GOOS == "windows" {
 						err = ioutil.WriteFile(filepath.Join(profileDir, "a.bat"), []byte(fmt.Sprintf("@echo off\necho sourcing a.bat\nset PATH=%%PATH%%;%s\n", destDir)), 0644)
@@ -204,13 +206,18 @@ var _ = Describe("Launcher", func() {
 					launcherCmd.Args = []string{
 						"launcher",
 						appDir,
-						"hello",
+						helloFilename,
 						`{ "start_command": "echo should not run this" }`,
 					}
 				})
 
 				It("finds the app executable", func() {
 					Eventually(session).Should(gexec.Exit(0))
+					if runtime.GOOS == "windows" {
+						Eventually(session).Should(gbytes.Say("sourcing a.bat"))
+					} else {
+						Eventually(session).Should(gbytes.Say("sourcing a.sh"))
+					}
 					Expect(string(session.Out.Contents())).To(ContainSubstring("app is running"))
 				})
 			})
@@ -302,13 +309,14 @@ var _ = Describe("Launcher", func() {
 
 	Context("the app executable is in vcap/app", func() {
 		BeforeEach(func() {
-			Expect(copyExe(appDir, hello, "hello")).To(Succeed())
+			helloFilename, err := copyExe(appDir, hello)
+			Expect(err).NotTo(HaveOccurred())
 
 			var executable string
 			if runtime.GOOS == "windows" {
-				executable = ".\\hello"
+				executable = fmt.Sprintf(".\\%s", helloFilename)
 			} else {
-				executable = "./hello"
+				executable = fmt.Sprintf("./%s", helloFilename)
 			}
 			launcherCmd.Args = []string{
 				"launcher",
@@ -332,12 +340,14 @@ var _ = Describe("Launcher", func() {
 
 			appDirWithSpaces := filepath.Join(appDir, "space dir")
 			Expect(os.MkdirAll(appDirWithSpaces, 0755)).To(Succeed())
-			Expect(copyExe(appDirWithSpaces, hello, "hello")).To(Succeed())
+
+			helloFilename, err := copyExe(appDirWithSpaces, hello)
+			Expect(err).NotTo(HaveOccurred())
 
 			launcherCmd.Args = []string{
 				"launcher",
 				appDir,
-				filepath.Join(appDirWithSpaces, "hello"),
+				filepath.Join(appDirWithSpaces, helloFilename),
 				`{ "start_command": "echo should not run this" }`,
 			}
 		})
@@ -730,23 +740,26 @@ func writeStagingInfo(extractDir, stagingInfo string) {
 	Expect(err).NotTo(HaveOccurred())
 }
 
-func copyExe(dstDir, src, exeName string) error {
+func copyExe(dstDir, src string) (string, error) {
 	in, err := os.Open(src)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer in.Close()
+
+	exeName := filepath.Base(src)
 
 	dst := filepath.Join(dstDir, exeName)
 	out, err := os.OpenFile(dst, os.O_RDWR|os.O_CREATE, 0755)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer out.Close()
+
 	_, err = io.Copy(out, in)
-	cerr := out.Close()
 	if err != nil {
-		return err
+		return "", err
 	}
-	return cerr
+
+	return exeName, nil
 }
