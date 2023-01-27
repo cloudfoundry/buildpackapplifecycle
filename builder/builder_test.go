@@ -699,6 +699,21 @@ var _ = Describe("Building", func() {
 						{ "key": "has-finalize", "name": "Finalize" }
 					]`))
 				})
+
+				Context("a supply outputs a config.yml with a `config:` present", func() {
+					BeforeEach(func() {
+						buildpackOrder = "has-buildpack-config"
+
+						cpBuildpack("has-buildpack-config")
+						cp(filepath.Join(appFixtures, "bash-app", "app.sh"), buildDir)
+					})
+
+					It("includes the `config:` stanza in the staging_info.yml", func() {
+						content, err := exec.Command("tar", "-xzOf", outputDroplet, "./staging_info.yml").Output()
+						Expect(err).To(BeNil())
+						Expect(string(content)).To(MatchJSON("{\"detected_buildpack\":\"Has Buildpack Config\",\"start_command\":\"the start command\",\"config\":{\"entrypoint_prefix\":\"custom-entrypoint\"}}"))
+					})
+				})
 			})
 
 			Context("final buildpack only contains finalize ", func() {
