@@ -328,23 +328,21 @@ func (runner *Runner) hasLaunchYML(selectedBuildpacks []string) bool {
 	return false
 }
 
-func (runner *Runner) buildpacksMetadata(buildpacks []string) []buildpackapplifecycle.BuildpackMetadata {
-	data := make([]buildpackapplifecycle.BuildpackMetadata, len(buildpacks))
-	for i, key := range buildpacks {
-		data[i].Key = key
+func (runner *Runner) buildpacksMetadata(buildpackKeyList []string) []buildpackapplifecycle.BuildpackMetadata {
+	buildpacksMetadataList := []buildpackapplifecycle.BuildpackMetadata{}
+
+	for i, key := range buildpackKeyList {
+		metadata := buildpackapplifecycle.BuildpackMetadata{Key: key}
+
 		configPath := filepath.Join(runner.depsDir, runner.config.DepsIndex(i), "config.yml")
 		if contents, err := ioutil.ReadFile(configPath); err == nil {
-			configyaml := struct {
-				Name    string `yaml:"name"`
-				Version string `yaml:"version"`
-			}{}
-			if err := yaml.Unmarshal(contents, &configyaml); err == nil {
-				data[i].Name = configyaml.Name
-				data[i].Version = configyaml.Version
-			}
+			yaml.Unmarshal(contents, &metadata) //nolint:errcheck
 		}
+
+		buildpacksMetadataList = append(buildpacksMetadataList, metadata)
 	}
-	return data
+
+	return buildpacksMetadataList
 }
 
 func (runner *Runner) makeDirectories() error {
