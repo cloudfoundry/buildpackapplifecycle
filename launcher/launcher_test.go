@@ -60,8 +60,7 @@ var _ = Describe("Launcher", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		appDir = filepath.Join(extractDir, "app")
-		err = os.MkdirAll(appDir, 0755)
-		Expect(err).NotTo(HaveOccurred())
+		Expect(os.MkdirAll(appDir, 0755)).To(Succeed())
 
 		launcherCmd = &exec.Cmd{
 			Path: launcher,
@@ -127,8 +126,7 @@ var _ = Describe("Launcher", func() {
 			vcapApplicationBytes := vcapAppPattern.FindSubmatch(session.Out.Contents())[1]
 
 			vcapApplication := map[string]interface{}{}
-			err := json.Unmarshal(vcapApplicationBytes, &vcapApplication)
-			Expect(err).NotTo(HaveOccurred())
+			Expect(json.Unmarshal(vcapApplicationBytes, &vcapApplication)).To(Succeed())
 
 			Expect(vcapApplication["host"]).To(Equal("0.0.0.0"))
 			Expect(vcapApplication["port"]).To(Equal(float64(8080)))
@@ -139,12 +137,9 @@ var _ = Describe("Launcher", func() {
 
 		Context("when the given dir has .profile.d with scripts in it", func() {
 			BeforeEach(func() {
-				var err error
-
 				profileDir := filepath.Join(appDir, ".profile.d")
 
-				err = os.MkdirAll(profileDir, 0755)
-				Expect(err).NotTo(HaveOccurred())
+				Expect(os.MkdirAll(profileDir, 0755)).To(Succeed())
 
 				if runtime.GOOS == "windows" {
 					Expect(os.WriteFile(filepath.Join(profileDir, "a.bat"), []byte("@echo off\necho sourcing a.bat\nset A=1\n"), 0644)).To(Succeed())
@@ -174,13 +169,9 @@ var _ = Describe("Launcher", func() {
 			})
 
 			Context("hello is on path", func() {
-				var err error
-
 				BeforeEach(func() {
 					profileDir := filepath.Join(appDir, ".profile.d")
-
-					err = os.MkdirAll(profileDir, 0755)
-					Expect(err).NotTo(HaveOccurred())
+					Expect(os.MkdirAll(profileDir, 0755)).To(Succeed())
 
 					destDir := filepath.Join(appDir, "tmp")
 					Expect(os.MkdirAll(destDir, 0777)).To(Succeed())
@@ -234,11 +225,9 @@ var _ = Describe("Launcher", func() {
 
 		Context("when the given dir has ../profile.d with scripts in it", func() {
 			BeforeEach(func() {
-				var err error
 				profileDir := filepath.Join(appDir, "..", "profile.d")
 
-				err = os.MkdirAll(profileDir, 0755)
-				Expect(err).NotTo(HaveOccurred())
+				Expect(os.MkdirAll(profileDir, 0755)).To(Succeed())
 
 				if runtime.GOOS == "windows" {
 					Expect(os.WriteFile(filepath.Join(profileDir, "a.bat"), []byte("@echo off\necho sourcing a.bat\nset A=1\n"), 0644)).To(Succeed())
