@@ -32,7 +32,7 @@ var _ = Describe("Launcher", func() {
 	var startCommand string
 
 	removeFromLauncherEnv := func(keys ...string) {
-		newEnv := []string{}
+		var newEnv []string
 		for _, env := range launcherCmd.Env {
 			found := false
 			for _, key := range keys {
