@@ -150,6 +150,7 @@ func (runner *Runner) WriteStagingInfoYML(resultData buildpackapplifecycle.Stagi
 	err = json.NewEncoder(stagingInfoFile).Encode(DeaStagingInfo{
 		DetectedBuildpack: lastBuildpack.Name,
 		StartCommand:      resultData.ProcessTypes["web"],
+		Config:            lastBuildpack.Config,
 	})
 	if err != nil {
 		return "", err

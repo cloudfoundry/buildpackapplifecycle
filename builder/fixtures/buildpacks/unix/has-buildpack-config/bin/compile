@@ -1,0 +1,11 @@
+#!/bin/bash
+# vim: set ft=sh
+
+BUILD_DIR=$1
+CACHE_DIR=$2
+
+echo WOO
+env
+echo has-buildpack-config > $BUILD_DIR/compiled
+echo has-buildpack-config > $CACHE_DIR/compiled
+
