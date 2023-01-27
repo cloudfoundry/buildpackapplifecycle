@@ -1,5 +1,3 @@
-// +build !windows2012R2
-
 package main_test
 
 import (
@@ -7,17 +5,9 @@ import (
 	"github.com/onsi/gomega/gexec"
 )
 
-func buildBuilder() string {
-	builder, err := gexec.Build("code.cloudfoundry.org/buildpackapplifecycle/builder")
+func buildBuilder(additionalFlags []string) string {
+	builder, err := gexec.Build("code.cloudfoundry.org/buildpackapplifecycle/builder", additionalFlags...)
 	Expect(err).NotTo(HaveOccurred())
 
 	return builder
-}
-
-func downloadTar() string {
-	return ""
-}
-
-func copyTar(destDir string) {
-	return
 }

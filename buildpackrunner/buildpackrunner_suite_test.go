@@ -14,6 +14,7 @@ import (
 	"strings"
 	"testing"
 
+	"code.cloudfoundry.org/buildpackapplifecycle/test_helpers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -78,7 +79,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	execute(buildpackDir, gitPath, "update-server-info")
 
 	if runtime.GOOS == "windows" {
-		tmpTarPath = downloadTar()
+		tmpTarPath = test_helpers.DownloadOrFindWindowsTar()
 	}
 
 	return []byte(string(tmpDir + "|" + httpServer.Listener.Addr().String()))

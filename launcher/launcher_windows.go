@@ -94,7 +94,7 @@ func runProcess(dir, command string) {
 		0, 0)
 
 	if r == 0 {
-		handleErr(fmt.Sprintf("CreateProcessW failed %s:%s", dir, command), e)
+		handleErr(fmt.Sprintf("CreateProcessW failed from dir %s: '%s'", dir, command), e)
 	}
 	defer syscall.CloseHandle(syscall.Handle(pi.Thread))
 	defer syscall.CloseHandle(syscall.Handle(pi.Process))
