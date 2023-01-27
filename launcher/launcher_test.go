@@ -418,8 +418,6 @@ var _ = Describe("Launcher", func() {
 			fixturesSslDir, err = filepath.Abs(filepath.Join("..", "fixtures"))
 			Expect(err).NotTo(HaveOccurred())
 
-			server = ghttp.NewUnstartedServer()
-
 			cert, err := tls.LoadX509KeyPair(filepath.Join(fixturesSslDir, "certs", "server.crt"), filepath.Join(fixturesSslDir, "certs", "server.key"))
 			Expect(err).NotTo(HaveOccurred())
 
@@ -429,6 +427,7 @@ var _ = Describe("Launcher", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(caCerts.AppendCertsFromPEM(caCertBytes)).To(BeTrue())
 
+			server = ghttp.NewUnstartedServer()
 			server.HTTPTestServer.TLS = &tls.Config{
 				ClientAuth:   tls.RequireAndVerifyClientCert,
 				Certificates: []tls.Certificate{cert},
@@ -463,6 +462,7 @@ var _ = Describe("Launcher", func() {
 
 		Context("when VCAP_SERVICES contains credhub refs", func() {
 			var vcapServicesValue string
+
 			BeforeEach(func() {
 				vcapServicesValue = `{"my-server":[{"credentials":{"credhub-ref":"(//my-server/creds)"}}]}`
 				launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("VCAP_SERVICES=%s", vcapServicesValue))
@@ -536,6 +536,7 @@ var _ = Describe("Launcher", func() {
 				BeforeEach(func() {
 					launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf(`VCAP_PLATFORM_OPTIONS='{"credhub-uri":"missing quote and brace'`))
 				})
+
 				It("prints an error message", func() {
 					Eventually(session).Should(gexec.Exit(3))
 					Eventually(session.Err).Should(gbytes.Say("Invalid platform options"))
@@ -549,8 +550,10 @@ var _ = Describe("Launcher", func() {
 				Expect(string(session.Out.Contents())).ToNot(ContainSubstring("DATABASE_URL="))
 			})
 		})
+
 		Context("VCAP_SERVICES has an appropriate credential", func() {
 			const databaseURL = "postgres://thing.com/special"
+
 			BeforeEach(func() {
 				vcapServicesValue := `{"my-server":[{"credentials":{"credhub-ref":"(//my-server/creds)"}}]}`
 				launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf(`VCAP_PLATFORM_OPTIONS={ "credhub-uri": "`+server.URL()+`"}`))
@@ -561,10 +564,12 @@ var _ = Describe("Launcher", func() {
 						ghttp.RespondWith(http.StatusOK, `{"my-server":[{"credentials":{"uri":"`+databaseURL+`"}}]}`),
 					))
 			})
+
 			It("sets DATABASE_URL", func() {
 				Eventually(session).Should(gexec.Exit(0))
 				Eventually(string(session.Out.Contents())).Should(ContainSubstring(fmt.Sprintf("DATABASE_URL=%s", databaseURL)))
 			})
+
 			Context("DATABASE_URL was set before running launcher", func() {
 				BeforeEach(func() {
 					launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("DATABASE_URL=%s", "original content"))
@@ -685,9 +690,7 @@ var _ = Describe("Launcher", func() {
 					Eventually(session.Err).Should(gbytes.Say("Invalid staging info"))
 				})
 			})
-
 		})
-
 	})
 
 	Context("when arguments are missing", func() {
