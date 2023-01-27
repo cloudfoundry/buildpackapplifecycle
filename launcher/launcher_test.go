@@ -56,7 +56,7 @@ var _ = Describe("Launcher", func() {
 		}
 
 		var err error
-		extractDir, err = ioutil.TempDir("", "vcap")
+		extractDir, err = os.MkdirTemp("", "vcap")
 		Expect(err).NotTo(HaveOccurred())
 
 		appDir = filepath.Join(extractDir, "app")
@@ -147,21 +147,14 @@ var _ = Describe("Launcher", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				if runtime.GOOS == "windows" {
-					err = ioutil.WriteFile(filepath.Join(profileDir, "a.bat"), []byte("@echo off\necho sourcing a.bat\nset A=1\n"), 0644)
-					Expect(err).NotTo(HaveOccurred())
-					err = ioutil.WriteFile(filepath.Join(profileDir, "b.bat"), []byte("@echo off\necho sourcing b.bat\nset B=1\n"), 0644)
-					Expect(err).NotTo(HaveOccurred())
-					err = ioutil.WriteFile(filepath.Join(appDir, ".profile.bat"), []byte("@echo off\necho sourcing .profile.bat\nset C=%A%%B%\n"), 0644)
-					Expect(err).NotTo(HaveOccurred())
+					Expect(os.WriteFile(filepath.Join(profileDir, "a.bat"), []byte("@echo off\necho sourcing a.bat\nset A=1\n"), 0644)).To(Succeed())
+					Expect(os.WriteFile(filepath.Join(profileDir, "b.bat"), []byte("@echo off\necho sourcing b.bat\nset B=1\n"), 0644)).To(Succeed())
+					Expect(os.WriteFile(filepath.Join(appDir, ".profile.bat"), []byte("@echo off\necho sourcing .profile.bat\nset C=%A%%B%\n"), 0644)).To(Succeed())
 				} else {
-					err = ioutil.WriteFile(filepath.Join(profileDir, "a.sh"), []byte("echo sourcing a.sh\nexport A=1\n"), 0644)
-					Expect(err).NotTo(HaveOccurred())
-					err = ioutil.WriteFile(filepath.Join(profileDir, "b.sh"), []byte("echo sourcing b.sh\nexport B=1\n"), 0644)
-					Expect(err).NotTo(HaveOccurred())
-					err = ioutil.WriteFile(filepath.Join(appDir, ".profile"), []byte("echo sourcing .profile\nexport C=$A$B\n"), 0644)
-					Expect(err).NotTo(HaveOccurred())
+					Expect(os.WriteFile(filepath.Join(profileDir, "a.sh"), []byte("echo sourcing a.sh\nexport A=1\n"), 0644)).To(Succeed())
+					Expect(os.WriteFile(filepath.Join(profileDir, "b.sh"), []byte("echo sourcing b.sh\nexport B=1\n"), 0644)).To(Succeed())
+					Expect(os.WriteFile(filepath.Join(appDir, ".profile"), []byte("echo sourcing .profile\nexport C=$A$B\n"), 0644)).To(Succeed())
 				}
-
 			})
 
 			It("sources them before sourcing .profile and before executing", func() {
@@ -196,11 +189,9 @@ var _ = Describe("Launcher", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					if runtime.GOOS == "windows" {
-						err = ioutil.WriteFile(filepath.Join(profileDir, "a.bat"), []byte(fmt.Sprintf("@echo off\necho sourcing a.bat\nset PATH=%%PATH%%;%s\n", destDir)), 0644)
-						Expect(err).NotTo(HaveOccurred())
+						Expect(os.WriteFile(filepath.Join(profileDir, "a.bat"), []byte(fmt.Sprintf("@echo off\necho sourcing a.bat\nset PATH=%%PATH%%;%s\n", destDir)), 0644)).To(Succeed())
 					} else {
-						err = ioutil.WriteFile(filepath.Join(profileDir, "a.sh"), []byte(fmt.Sprintf("echo sourcing a.sh\nexport PATH=$PATH:%s\n", destDir)), 0644)
-						Expect(err).NotTo(HaveOccurred())
+						Expect(os.WriteFile(filepath.Join(profileDir, "a.sh"), []byte(fmt.Sprintf("echo sourcing a.sh\nexport PATH=$PATH:%s\n", destDir)), 0644)).To(Succeed())
 					}
 
 					launcherCmd.Args = []string{
@@ -250,23 +241,15 @@ var _ = Describe("Launcher", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				if runtime.GOOS == "windows" {
-					err = ioutil.WriteFile(filepath.Join(profileDir, "a.bat"), []byte("@echo off\necho sourcing a.bat\nset A=1\n"), 0644)
-					Expect(err).NotTo(HaveOccurred())
-					err = ioutil.WriteFile(filepath.Join(profileDir, "b.bat"), []byte("@echo off\necho sourcing b.bat\nset B=1\n"), 0644)
-					Expect(err).NotTo(HaveOccurred())
-					err = os.MkdirAll(filepath.Join(appDir, ".profile.d"), 0755)
-					Expect(err).NotTo(HaveOccurred())
-					err = ioutil.WriteFile(filepath.Join(appDir, ".profile.d", "c.bat"), []byte("@echo off\necho sourcing c.bat\nset C=%A%%B%\n"), 0644)
-					Expect(err).NotTo(HaveOccurred())
+					Expect(os.WriteFile(filepath.Join(profileDir, "a.bat"), []byte("@echo off\necho sourcing a.bat\nset A=1\n"), 0644)).To(Succeed())
+					Expect(os.WriteFile(filepath.Join(profileDir, "b.bat"), []byte("@echo off\necho sourcing b.bat\nset B=1\n"), 0644)).To(Succeed())
+					Expect(os.MkdirAll(filepath.Join(appDir, ".profile.d"), 0755)).To(Succeed())
+					Expect(os.WriteFile(filepath.Join(appDir, ".profile.d", "c.bat"), []byte("@echo off\necho sourcing c.bat\nset C=%A%%B%\n"), 0644)).To(Succeed())
 				} else {
-					err = ioutil.WriteFile(filepath.Join(profileDir, "a.sh"), []byte("echo sourcing a.sh\nexport A=1\n"), 0644)
-					Expect(err).NotTo(HaveOccurred())
-					err = ioutil.WriteFile(filepath.Join(profileDir, "b.sh"), []byte("echo sourcing b.sh\nexport B=1\n"), 0644)
-					Expect(err).NotTo(HaveOccurred())
-					err = os.MkdirAll(filepath.Join(appDir, ".profile.d"), 0755)
-					Expect(err).NotTo(HaveOccurred())
-					err = ioutil.WriteFile(filepath.Join(appDir, ".profile.d", "c.sh"), []byte("echo sourcing c.sh\nexport C=$A$B\n"), 0644)
-					Expect(err).NotTo(HaveOccurred())
+					Expect(os.WriteFile(filepath.Join(profileDir, "a.sh"), []byte("echo sourcing a.sh\nexport A=1\n"), 0644)).To(Succeed())
+					Expect(os.WriteFile(filepath.Join(profileDir, "b.sh"), []byte("echo sourcing b.sh\nexport B=1\n"), 0644)).To(Succeed())
+					Expect(os.MkdirAll(filepath.Join(appDir, ".profile.d"), 0755)).To(Succeed())
+					Expect(os.WriteFile(filepath.Join(appDir, ".profile.d", "c.sh"), []byte("echo sourcing c.sh\nexport C=$A$B\n"), 0644)).To(Succeed())
 				}
 			})
 
@@ -453,7 +436,7 @@ var _ = Describe("Launcher", func() {
 
 			caCerts := x509.NewCertPool()
 
-			caCertBytes, err := ioutil.ReadFile(filepath.Join(fixturesSslDir, "cacerts", "CA.crt"))
+			caCertBytes, err := os.ReadFile(filepath.Join(fixturesSslDir, "cacerts", "CA.crt"))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(caCerts.AppendCertsFromPEM(caCertBytes)).To(BeTrue())
 
