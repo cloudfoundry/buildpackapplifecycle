@@ -19,7 +19,6 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/buildpackapplifecycle"
-	"code.cloudfoundry.org/buildpackapplifecycle/containerpath"
 	"code.cloudfoundry.org/buildpackapplifecycle/test_helpers"
 
 	. "github.com/onsi/ginkgo"
@@ -73,7 +72,7 @@ var _ = Describe("Building", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		if runtime.GOOS == "windows" {
-			test_helpers.CopyFile(tarPath, filepath.Join(tmpDir, "tmp", "lifecycle"))
+			test_helpers.CopyFile(tarPath, filepath.Join(tmpDir, "tmp", "lifecycle", "tar.exe"))
 		}
 
 		buildpacksDir, err = ioutil.TempDir(tmpDir, "building-buildpacks")
@@ -191,9 +190,8 @@ var _ = Describe("Building", func() {
 			}
 			server.HTTPTestServer.StartTLS()
 
-			cpath := containerpath.New(fixturesSslDir)
 			sessionSetEnv("USERPROFILE", fixturesSslDir)
-			if cpath.For("/") == fixturesSslDir {
+			if runtime.GOOS == "windows" {
 				// windows2012
 				sessionSetEnv("CF_INSTANCE_CERT", filepath.Join("/", "certs", "client.crt"))
 				sessionSetEnv("CF_INSTANCE_KEY", filepath.Join("/", "certs", "client.key"))
