@@ -73,7 +73,7 @@ var _ = Describe("Building", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		if runtime.GOOS == "windows" {
-			test_helpers.CopyFile(tarPath, filepath.Join(tmpDir, "tmp", "lifecycle"))
+			test_helpers.CopyFile(tarPath, filepath.Join(tmpDir, "tmp", "lifecycle", "tar.exe"))
 		}
 
 		buildpacksDir, err = ioutil.TempDir(tmpDir, "building-buildpacks")
