@@ -44,9 +44,9 @@ type LifecycleMetadata struct {
 }
 
 type BuildpackMetadata struct {
-	Key     string `json:"key"`
-	Name    string `json:"name"`
-	Version string `json:"version,omitempty"`
+	Key     string `json:"key" yaml:"key"`
+	Name    string `json:"name" yaml:"name"`
+	Version string `json:"version,omitempty" yaml:"version,omitempty"`
 }
 
 type ProcessTypes map[string]string

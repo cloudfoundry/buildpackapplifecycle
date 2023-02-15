@@ -32,7 +32,7 @@ var _ = Describe("Launcher", func() {
 	var startCommand string
 
 	removeFromLauncherEnv := func(keys ...string) {
-		newEnv := []string{}
+		var newEnv []string
 		for _, env := range launcherCmd.Env {
 			found := false
 			for _, key := range keys {
@@ -56,12 +56,11 @@ var _ = Describe("Launcher", func() {
 		}
 
 		var err error
-		extractDir, err = ioutil.TempDir("", "vcap")
+		extractDir, err = os.MkdirTemp("", "vcap")
 		Expect(err).NotTo(HaveOccurred())
 
 		appDir = filepath.Join(extractDir, "app")
-		err = os.MkdirAll(appDir, 0755)
-		Expect(err).NotTo(HaveOccurred())
+		Expect(os.MkdirAll(appDir, 0755)).To(Succeed())
 
 		launcherCmd = &exec.Cmd{
 			Path: launcher,
@@ -127,8 +126,7 @@ var _ = Describe("Launcher", func() {
 			vcapApplicationBytes := vcapAppPattern.FindSubmatch(session.Out.Contents())[1]
 
 			vcapApplication := map[string]interface{}{}
-			err := json.Unmarshal(vcapApplicationBytes, &vcapApplication)
-			Expect(err).NotTo(HaveOccurred())
+			Expect(json.Unmarshal(vcapApplicationBytes, &vcapApplication)).To(Succeed())
 
 			Expect(vcapApplication["host"]).To(Equal("0.0.0.0"))
 			Expect(vcapApplication["port"]).To(Equal(float64(8080)))
@@ -139,29 +137,19 @@ var _ = Describe("Launcher", func() {
 
 		Context("when the given dir has .profile.d with scripts in it", func() {
 			BeforeEach(func() {
-				var err error
-
 				profileDir := filepath.Join(appDir, ".profile.d")
 
-				err = os.MkdirAll(profileDir, 0755)
-				Expect(err).NotTo(HaveOccurred())
+				Expect(os.MkdirAll(profileDir, 0755)).To(Succeed())
 
 				if runtime.GOOS == "windows" {
-					err = ioutil.WriteFile(filepath.Join(profileDir, "a.bat"), []byte("@echo off\necho sourcing a.bat\nset A=1\n"), 0644)
-					Expect(err).NotTo(HaveOccurred())
-					err = ioutil.WriteFile(filepath.Join(profileDir, "b.bat"), []byte("@echo off\necho sourcing b.bat\nset B=1\n"), 0644)
-					Expect(err).NotTo(HaveOccurred())
-					err = ioutil.WriteFile(filepath.Join(appDir, ".profile.bat"), []byte("@echo off\necho sourcing .profile.bat\nset C=%A%%B%\n"), 0644)
-					Expect(err).NotTo(HaveOccurred())
+					Expect(os.WriteFile(filepath.Join(profileDir, "a.bat"), []byte("@echo off\necho sourcing a.bat\nset A=1\n"), 0644)).To(Succeed())
+					Expect(os.WriteFile(filepath.Join(profileDir, "b.bat"), []byte("@echo off\necho sourcing b.bat\nset B=1\n"), 0644)).To(Succeed())
+					Expect(os.WriteFile(filepath.Join(appDir, ".profile.bat"), []byte("@echo off\necho sourcing .profile.bat\nset C=%A%%B%\n"), 0644)).To(Succeed())
 				} else {
-					err = ioutil.WriteFile(filepath.Join(profileDir, "a.sh"), []byte("echo sourcing a.sh\nexport A=1\n"), 0644)
-					Expect(err).NotTo(HaveOccurred())
-					err = ioutil.WriteFile(filepath.Join(profileDir, "b.sh"), []byte("echo sourcing b.sh\nexport B=1\n"), 0644)
-					Expect(err).NotTo(HaveOccurred())
-					err = ioutil.WriteFile(filepath.Join(appDir, ".profile"), []byte("echo sourcing .profile\nexport C=$A$B\n"), 0644)
-					Expect(err).NotTo(HaveOccurred())
+					Expect(os.WriteFile(filepath.Join(profileDir, "a.sh"), []byte("echo sourcing a.sh\nexport A=1\n"), 0644)).To(Succeed())
+					Expect(os.WriteFile(filepath.Join(profileDir, "b.sh"), []byte("echo sourcing b.sh\nexport B=1\n"), 0644)).To(Succeed())
+					Expect(os.WriteFile(filepath.Join(appDir, ".profile"), []byte("echo sourcing .profile\nexport C=$A$B\n"), 0644)).To(Succeed())
 				}
-
 			})
 
 			It("sources them before sourcing .profile and before executing", func() {
@@ -181,13 +169,9 @@ var _ = Describe("Launcher", func() {
 			})
 
 			Context("hello is on path", func() {
-				var err error
-
 				BeforeEach(func() {
 					profileDir := filepath.Join(appDir, ".profile.d")
-
-					err = os.MkdirAll(profileDir, 0755)
-					Expect(err).NotTo(HaveOccurred())
+					Expect(os.MkdirAll(profileDir, 0755)).To(Succeed())
 
 					destDir := filepath.Join(appDir, "tmp")
 					Expect(os.MkdirAll(destDir, 0777)).To(Succeed())
@@ -196,11 +180,9 @@ var _ = Describe("Launcher", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					if runtime.GOOS == "windows" {
-						err = ioutil.WriteFile(filepath.Join(profileDir, "a.bat"), []byte(fmt.Sprintf("@echo off\necho sourcing a.bat\nset PATH=%%PATH%%;%s\n", destDir)), 0644)
-						Expect(err).NotTo(HaveOccurred())
+						Expect(os.WriteFile(filepath.Join(profileDir, "a.bat"), []byte(fmt.Sprintf("@echo off\necho sourcing a.bat\nset PATH=%%PATH%%;%s\n", destDir)), 0644)).To(Succeed())
 					} else {
-						err = ioutil.WriteFile(filepath.Join(profileDir, "a.sh"), []byte(fmt.Sprintf("echo sourcing a.sh\nexport PATH=$PATH:%s\n", destDir)), 0644)
-						Expect(err).NotTo(HaveOccurred())
+						Expect(os.WriteFile(filepath.Join(profileDir, "a.sh"), []byte(fmt.Sprintf("echo sourcing a.sh\nexport PATH=$PATH:%s\n", destDir)), 0644)).To(Succeed())
 					}
 
 					launcherCmd.Args = []string{
@@ -243,30 +225,20 @@ var _ = Describe("Launcher", func() {
 
 		Context("when the given dir has ../profile.d with scripts in it", func() {
 			BeforeEach(func() {
-				var err error
 				profileDir := filepath.Join(appDir, "..", "profile.d")
 
-				err = os.MkdirAll(profileDir, 0755)
-				Expect(err).NotTo(HaveOccurred())
+				Expect(os.MkdirAll(profileDir, 0755)).To(Succeed())
 
 				if runtime.GOOS == "windows" {
-					err = ioutil.WriteFile(filepath.Join(profileDir, "a.bat"), []byte("@echo off\necho sourcing a.bat\nset A=1\n"), 0644)
-					Expect(err).NotTo(HaveOccurred())
-					err = ioutil.WriteFile(filepath.Join(profileDir, "b.bat"), []byte("@echo off\necho sourcing b.bat\nset B=1\n"), 0644)
-					Expect(err).NotTo(HaveOccurred())
-					err = os.MkdirAll(filepath.Join(appDir, ".profile.d"), 0755)
-					Expect(err).NotTo(HaveOccurred())
-					err = ioutil.WriteFile(filepath.Join(appDir, ".profile.d", "c.bat"), []byte("@echo off\necho sourcing c.bat\nset C=%A%%B%\n"), 0644)
-					Expect(err).NotTo(HaveOccurred())
+					Expect(os.WriteFile(filepath.Join(profileDir, "a.bat"), []byte("@echo off\necho sourcing a.bat\nset A=1\n"), 0644)).To(Succeed())
+					Expect(os.WriteFile(filepath.Join(profileDir, "b.bat"), []byte("@echo off\necho sourcing b.bat\nset B=1\n"), 0644)).To(Succeed())
+					Expect(os.MkdirAll(filepath.Join(appDir, ".profile.d"), 0755)).To(Succeed())
+					Expect(os.WriteFile(filepath.Join(appDir, ".profile.d", "c.bat"), []byte("@echo off\necho sourcing c.bat\nset C=%A%%B%\n"), 0644)).To(Succeed())
 				} else {
-					err = ioutil.WriteFile(filepath.Join(profileDir, "a.sh"), []byte("echo sourcing a.sh\nexport A=1\n"), 0644)
-					Expect(err).NotTo(HaveOccurred())
-					err = ioutil.WriteFile(filepath.Join(profileDir, "b.sh"), []byte("echo sourcing b.sh\nexport B=1\n"), 0644)
-					Expect(err).NotTo(HaveOccurred())
-					err = os.MkdirAll(filepath.Join(appDir, ".profile.d"), 0755)
-					Expect(err).NotTo(HaveOccurred())
-					err = ioutil.WriteFile(filepath.Join(appDir, ".profile.d", "c.sh"), []byte("echo sourcing c.sh\nexport C=$A$B\n"), 0644)
-					Expect(err).NotTo(HaveOccurred())
+					Expect(os.WriteFile(filepath.Join(profileDir, "a.sh"), []byte("echo sourcing a.sh\nexport A=1\n"), 0644)).To(Succeed())
+					Expect(os.WriteFile(filepath.Join(profileDir, "b.sh"), []byte("echo sourcing b.sh\nexport B=1\n"), 0644)).To(Succeed())
+					Expect(os.MkdirAll(filepath.Join(appDir, ".profile.d"), 0755)).To(Succeed())
+					Expect(os.WriteFile(filepath.Join(appDir, ".profile.d", "c.sh"), []byte("echo sourcing c.sh\nexport C=$A$B\n"), 0644)).To(Succeed())
 				}
 			})
 
@@ -446,17 +418,16 @@ var _ = Describe("Launcher", func() {
 			fixturesSslDir, err = filepath.Abs(filepath.Join("..", "fixtures"))
 			Expect(err).NotTo(HaveOccurred())
 
-			server = ghttp.NewUnstartedServer()
-
 			cert, err := tls.LoadX509KeyPair(filepath.Join(fixturesSslDir, "certs", "server.crt"), filepath.Join(fixturesSslDir, "certs", "server.key"))
 			Expect(err).NotTo(HaveOccurred())
 
 			caCerts := x509.NewCertPool()
 
-			caCertBytes, err := ioutil.ReadFile(filepath.Join(fixturesSslDir, "cacerts", "CA.crt"))
+			caCertBytes, err := os.ReadFile(filepath.Join(fixturesSslDir, "cacerts", "CA.crt"))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(caCerts.AppendCertsFromPEM(caCertBytes)).To(BeTrue())
 
+			server = ghttp.NewUnstartedServer()
 			server.HTTPTestServer.TLS = &tls.Config{
 				ClientAuth:   tls.RequireAndVerifyClientCert,
 				Certificates: []tls.Certificate{cert},
@@ -491,6 +462,7 @@ var _ = Describe("Launcher", func() {
 
 		Context("when VCAP_SERVICES contains credhub refs", func() {
 			var vcapServicesValue string
+
 			BeforeEach(func() {
 				vcapServicesValue = `{"my-server":[{"credentials":{"credhub-ref":"(//my-server/creds)"}}]}`
 				launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("VCAP_SERVICES=%s", vcapServicesValue))
@@ -564,6 +536,7 @@ var _ = Describe("Launcher", func() {
 				BeforeEach(func() {
 					launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf(`VCAP_PLATFORM_OPTIONS='{"credhub-uri":"missing quote and brace'`))
 				})
+
 				It("prints an error message", func() {
 					Eventually(session).Should(gexec.Exit(3))
 					Eventually(session.Err).Should(gbytes.Say("Invalid platform options"))
@@ -577,8 +550,10 @@ var _ = Describe("Launcher", func() {
 				Expect(string(session.Out.Contents())).ToNot(ContainSubstring("DATABASE_URL="))
 			})
 		})
+
 		Context("VCAP_SERVICES has an appropriate credential", func() {
 			const databaseURL = "postgres://thing.com/special"
+
 			BeforeEach(func() {
 				vcapServicesValue := `{"my-server":[{"credentials":{"credhub-ref":"(//my-server/creds)"}}]}`
 				launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf(`VCAP_PLATFORM_OPTIONS={ "credhub-uri": "`+server.URL()+`"}`))
@@ -589,10 +564,12 @@ var _ = Describe("Launcher", func() {
 						ghttp.RespondWith(http.StatusOK, `{"my-server":[{"credentials":{"uri":"`+databaseURL+`"}}]}`),
 					))
 			})
+
 			It("sets DATABASE_URL", func() {
 				Eventually(session).Should(gexec.Exit(0))
 				Eventually(string(session.Out.Contents())).Should(ContainSubstring(fmt.Sprintf("DATABASE_URL=%s", databaseURL)))
 			})
+
 			Context("DATABASE_URL was set before running launcher", func() {
 				BeforeEach(func() {
 					launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("DATABASE_URL=%s", "original content"))
@@ -713,9 +690,7 @@ var _ = Describe("Launcher", func() {
 					Eventually(session.Err).Should(gbytes.Say("Invalid staging info"))
 				})
 			})
-
 		})
-
 	})
 
 	Context("when arguments are missing", func() {
