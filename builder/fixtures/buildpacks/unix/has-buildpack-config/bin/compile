@@ -1,5 +1,4 @@
 #!/bin/bash
-# vim: set ft=sh
 
 BUILD_DIR=$1
 CACHE_DIR=$2
