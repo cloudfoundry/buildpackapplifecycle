@@ -702,6 +702,10 @@ var _ = Describe("Building", func() {
 
 				Context("a supply outputs a config.yml with a `config:` present", func() {
 					BeforeEach(func() {
+						if runtime.GOOS == "windows" {
+							Skip("support for buildpack configs is not supported in Windows")
+						}
+
 						buildpackOrder = "has-buildpack-config"
 
 						cpBuildpack("has-buildpack-config")
