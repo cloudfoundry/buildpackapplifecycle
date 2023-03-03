@@ -1,6 +1,7 @@
 package buildpackrunner_test
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -10,8 +11,10 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
+	"code.cloudfoundry.org/buildpackapplifecycle/test_helpers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -33,6 +36,9 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 
 	tmpDir, err = ioutil.TempDir("", "tmpDir")
 	Expect(err).NotTo(HaveOccurred())
+
+	httpServer = httptest.NewServer(http.FileServer(http.Dir(tmpDir)))
+
 	buildpackDir := filepath.Join(tmpDir, "fake-buildpack")
 	err = os.MkdirAll(buildpackDir, os.ModePerm)
 	Expect(err).NotTo(HaveOccurred())
@@ -56,8 +62,10 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	execute(submoduleDir, gitPath, "commit", "-am", "first commit")
 	writeFile(filepath.Join(submoduleDir, "README"), "2nd commit")
 	execute(submoduleDir, gitPath, "commit", "-am", "second commit")
+	execute(submoduleDir, gitPath, "update-server-info")
 
-	execute(buildpackDir, gitPath, "submodule", "add", "file://"+submoduleDir, "sub")
+	execute(buildpackDir, gitPath, "submodule", "add", fmt.Sprintf("http://%s/submodule/.git", httpServer.Listener.Addr().String()), "sub")
+
 	execute(buildpackDir+"/sub", gitPath, "checkout", "HEAD^")
 	execute(buildpackDir, gitPath, "add", "-A")
 	execute(buildpackDir, gitPath, "commit", "-m", "fake commit")
@@ -71,18 +79,19 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	execute(buildpackDir, gitPath, "update-server-info")
 
 	if runtime.GOOS == "windows" {
-		tmpTarPath = downloadTar()
+		tmpTarPath = test_helpers.DownloadOrFindWindowsTar()
 	}
 
-	return []byte(string(tmpDir))
+	return []byte(string(tmpDir + "|" + httpServer.Listener.Addr().String()))
 
 }, func(data []byte) {
-	tmpDir = string(data)
-	httpServer = httptest.NewServer(http.FileServer(http.Dir(tmpDir)))
+	synchronizedData := strings.Split(string(data), "|")
+	tmpDir := synchronizedData[0]
+	gitUrlHost := synchronizedData[1]
 
 	gitUrl = url.URL{
 		Scheme: "http",
-		Host:   httpServer.Listener.Addr().String(),
+		Host:   gitUrlHost,
 		Path:   "/fake-buildpack/.git",
 	}
 
@@ -94,15 +103,17 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 
 var _ = SynchronizedAfterSuite(func() {
 }, func() {
-	httpServer.Close()
+	if httpServer != nil {
+		httpServer.Close()
+	}
 	Expect(os.RemoveAll(tmpDir)).To(Succeed())
 })
 
 func execute(dir string, execCmd string, args ...string) {
 	cmd := exec.Command(execCmd, args...)
 	cmd.Dir = dir
-	err := cmd.Run()
-	Expect(err).NotTo(HaveOccurred())
+	output, err := cmd.CombinedOutput()
+	ExpectWithOffset(1, err).NotTo(HaveOccurred(), fmt.Sprintf("Command failed: '%s' in directory '%s'.\nError output:\n%s\n", execCmd, dir, output))
 }
 
 func writeFile(filepath, content string) {
@@ -135,7 +146,7 @@ func downloadTar() string {
 }
 
 func fileExists(filePath string) bool {
-	if _, err := os.Stat(filePath); os.IsNotExist(err){
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		return false
 	}
 	return true

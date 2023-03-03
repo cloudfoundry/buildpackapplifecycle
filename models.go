@@ -1,6 +1,8 @@
 package buildpackapplifecycle
 
-import "strings"
+import (
+	"strings"
+)
 
 const (
 	DetectFailMsg          = "None of the buildpacks detected a compatible application"
@@ -44,9 +46,14 @@ type LifecycleMetadata struct {
 }
 
 type BuildpackMetadata struct {
-	Key     string `json:"key"`
-	Name    string `json:"name"`
-	Version string `json:"version,omitempty"`
+	Key     string           `json:"key" yaml:"key"`
+	Name    string           `json:"name" yaml:"name"`
+	Version string           `json:"version,omitempty" yaml:"version,omitempty"`
+	Config  *BuildpackConfig `json:"config,omitempty" yaml:"config,omitempty"`
+}
+
+type BuildpackConfig struct {
+	EntrypointPrefix string `json:"entrypoint_prefix,omitempty" yaml:"entrypoint_prefix,omitempty"`
 }
 
 type ProcessTypes map[string]string

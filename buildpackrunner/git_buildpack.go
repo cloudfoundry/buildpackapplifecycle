@@ -51,5 +51,10 @@ func performGitClone(gitPath string, args []string, branch string) error {
 		args = append(args, "-b", branch)
 	}
 	cmd := exec.Command(gitPath, args...)
-	return cmd.Run()
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		err = fmt.Errorf("git clone failed:\n%s\n%w\n", output, err)
+	}
+
+	return err
 }

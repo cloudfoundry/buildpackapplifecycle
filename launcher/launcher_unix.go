@@ -1,13 +1,19 @@
-// +build !windows
+//go:build !windows
 
 package main
 
 import (
+	"fmt"
 	"os"
 	"syscall"
 )
 
-const launcher = `
+func getLauncher(entrypointPrefix string) string {
+	entryPoint := "bash -c"
+	if entrypointPrefix != "" {
+		entryPoint = entrypointPrefix
+	}
+	return fmt.Sprintf(`
 cd "$1"
 
 if [ -n "$(ls ../profile.d/* 2> /dev/null)" ]; then
@@ -28,14 +34,15 @@ fi
 
 shift
 
-exec bash -c "$@"
-`
+exec %s "$@"
+`, entryPoint)
+}
 
-func runProcess(dir, command string) {
+func runProcess(dir, command, entrypointPrefix string) {
 	syscall.Exec("/bin/bash", []string{
 		"bash",
 		"-c",
-		launcher,
+		getLauncher(entrypointPrefix),
 		os.Args[0],
 		dir,
 		command,

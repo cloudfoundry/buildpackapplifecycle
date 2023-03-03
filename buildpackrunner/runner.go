@@ -135,7 +135,7 @@ func (runner *Runner) ProcessFinalBuildpack(detectedBuildpack, detectedBuildpack
 }
 
 func (runner *Runner) WriteStagingInfoYML(resultData buildpackapplifecycle.StagingResult, buildpacks []buildpackapplifecycle.BuildpackMetadata) (string, error) {
-	stagingInfoYML := filepath.Join(runner.contentsDir, "staging_info.yml")
+	stagingInfoYML := filepath.Join(runner.contentsDir, DeaStagingInfoFilename)
 	stagingInfoFile, err := os.Create(stagingInfoYML)
 	if err != nil {
 		return "", err
@@ -150,6 +150,7 @@ func (runner *Runner) WriteStagingInfoYML(resultData buildpackapplifecycle.Stagi
 	err = json.NewEncoder(stagingInfoFile).Encode(DeaStagingInfo{
 		DetectedBuildpack: lastBuildpack.Name,
 		StartCommand:      resultData.ProcessTypes["web"],
+		Config:            lastBuildpack.Config,
 	})
 	if err != nil {
 		return "", err
@@ -328,23 +329,21 @@ func (runner *Runner) hasLaunchYML(selectedBuildpacks []string) bool {
 	return false
 }
 
-func (runner *Runner) buildpacksMetadata(buildpacks []string) []buildpackapplifecycle.BuildpackMetadata {
-	data := make([]buildpackapplifecycle.BuildpackMetadata, len(buildpacks))
-	for i, key := range buildpacks {
-		data[i].Key = key
+func (runner *Runner) buildpacksMetadata(buildpackKeyList []string) []buildpackapplifecycle.BuildpackMetadata {
+	buildpacksMetadataList := []buildpackapplifecycle.BuildpackMetadata{}
+
+	for i, key := range buildpackKeyList {
+		metadata := buildpackapplifecycle.BuildpackMetadata{Key: key}
+
 		configPath := filepath.Join(runner.depsDir, runner.config.DepsIndex(i), "config.yml")
 		if contents, err := ioutil.ReadFile(configPath); err == nil {
-			configyaml := struct {
-				Name    string `yaml:"name"`
-				Version string `yaml:"version"`
-			}{}
-			if err := yaml.Unmarshal(contents, &configyaml); err == nil {
-				data[i].Name = configyaml.Name
-				data[i].Version = configyaml.Version
-			}
+			yaml.Unmarshal(contents, &metadata) //nolint:errcheck
 		}
+
+		buildpacksMetadataList = append(buildpacksMetadataList, metadata)
 	}
-	return data
+
+	return buildpacksMetadataList
 }
 
 func (runner *Runner) makeDirectories() error {
@@ -654,48 +653,6 @@ func (runner *Runner) release(buildpackDir string, startCommands map[string]stri
 	}
 
 	return parsedRelease, nil
-}
-
-// Writes both results.json file and staging_info.yaml
-func (runner *Runner) saveInfo(infoFilePath string, buildpacks []buildpackapplifecycle.BuildpackMetadata, releaseInfo Release) error {
-	deaInfoFile, err := os.Create(infoFilePath)
-	if err != nil {
-		return err
-	}
-	defer deaInfoFile.Close()
-
-	var lastBuildpack buildpackapplifecycle.BuildpackMetadata
-	if len(buildpacks) > 0 {
-		lastBuildpack = buildpacks[len(buildpacks)-1]
-	}
-
-	err = json.NewEncoder(deaInfoFile).Encode(DeaStagingInfo{
-		DetectedBuildpack: lastBuildpack.Name,
-		StartCommand:      releaseInfo.DefaultProcessTypes["web"],
-	})
-	if err != nil {
-		return err
-	}
-
-	resultFile, err := os.Create(runner.config.OutputMetadata())
-	if err != nil {
-		return err
-	}
-	defer resultFile.Close()
-
-	err = json.NewEncoder(resultFile).Encode(buildpackapplifecycle.NewStagingResult(
-		releaseInfo.DefaultProcessTypes,
-		buildpackapplifecycle.LifecycleMetadata{
-			BuildpackKey:      lastBuildpack.Key,
-			DetectedBuildpack: lastBuildpack.Name,
-			Buildpacks:        buildpacks,
-		},
-	))
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (runner *Runner) run(cmd *exec.Cmd, output io.Writer) error {

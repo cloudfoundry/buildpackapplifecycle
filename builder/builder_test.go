@@ -19,7 +19,8 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/buildpackapplifecycle"
-	"code.cloudfoundry.org/buildpackapplifecycle/containerpath"
+	"code.cloudfoundry.org/buildpackapplifecycle/buildpackrunner"
+	"code.cloudfoundry.org/buildpackapplifecycle/test_helpers"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -66,10 +67,14 @@ var _ = Describe("Building", func() {
 		var err error
 
 		tmpDir, err = ioutil.TempDir("", "building-tmp")
+		Expect(err).NotTo(HaveOccurred())
+
 		buildDir, err = ioutil.TempDir(tmpDir, "building-app")
 		Expect(err).NotTo(HaveOccurred())
 
-		copyTar(filepath.Join(tmpDir, "tmp", "lifecycle"))
+		if runtime.GOOS == "windows" {
+			test_helpers.CopyFile(tarPath, filepath.Join(tmpDir, "tmp", "lifecycle", "tar.exe"))
+		}
 
 		buildpacksDir, err = ioutil.TempDir(tmpDir, "building-buildpacks")
 		Expect(err).NotTo(HaveOccurred())
@@ -186,9 +191,8 @@ var _ = Describe("Building", func() {
 			}
 			server.HTTPTestServer.StartTLS()
 
-			cpath := containerpath.New(fixturesSslDir)
 			sessionSetEnv("USERPROFILE", fixturesSslDir)
-			if cpath.For("/") == fixturesSslDir {
+			if runtime.GOOS == "windows" {
 				// windows2012
 				sessionSetEnv("CF_INSTANCE_CERT", filepath.Join("/", "certs", "client.crt"))
 				sessionSetEnv("CF_INSTANCE_KEY", filepath.Join("/", "certs", "client.key"))
@@ -445,7 +449,7 @@ var _ = Describe("Building", func() {
 			})
 
 			It("should contain a staging_info.yml with the detected buildpack", func() {
-				stagingInfo, err := exec.Command("tar", "-xzf", outputDroplet, "-O", "./staging_info.yml").Output()
+				stagingInfo, err := exec.Command("tar", "-xzf", outputDroplet, "-O", fmt.Sprintf("./%s", buildpackrunner.DeaStagingInfoFilename)).Output()
 				Expect(err).NotTo(HaveOccurred())
 
 				expectedYAML := `{"detected_buildpack":"Always Matching","start_command":"the start command"}`
@@ -694,6 +698,25 @@ var _ = Describe("Building", func() {
 						{ "key": "always-detects", "name": "" },
 						{ "key": "has-finalize", "name": "Finalize" }
 					]`))
+				})
+
+				Context("a supply outputs a config.yml with a `config:` present", func() {
+					BeforeEach(func() {
+						if runtime.GOOS == "windows" {
+							Skip("support for buildpack configs is not supported in Windows")
+						}
+
+						buildpackOrder = "has-buildpack-config"
+
+						cpBuildpack("has-buildpack-config")
+						cp(filepath.Join(appFixtures, "bash-app", "app.sh"), buildDir)
+					})
+
+					It("includes the `config:` stanza in the staging_info.yml", func() {
+						content, err := exec.Command("tar", "-xzOf", outputDroplet, "./staging_info.yml").Output()
+						Expect(err).To(BeNil())
+						Expect(string(content)).To(MatchJSON("{\"detected_buildpack\":\"Has Buildpack Config\",\"start_command\":\"the start command\",\"config\":{\"entrypoint_prefix\":\"custom-entrypoint\"}}"))
+					})
 				})
 			})
 
