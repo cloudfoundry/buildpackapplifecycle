@@ -15,7 +15,7 @@ import (
 	"testing"
 
 	"code.cloudfoundry.org/buildpackapplifecycle/test_helpers"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
