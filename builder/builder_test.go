@@ -510,7 +510,6 @@ var _ = Describe("Building", func() {
             		"command": "the start command"
           		}
         		],
-        		"sidecars": null,
 						"execution_metadata": ""
 				}`))
 			})
@@ -537,7 +536,6 @@ var _ = Describe("Building", func() {
             		"command": "procfile-provided start-command"
           		}
         		],
-        		"sidecars": null,
 						"execution_metadata": ""
 				 }`))
 				})
@@ -565,7 +563,6 @@ var _ = Describe("Building", func() {
             		"command": "the start command"
           		}
         		],
-        		"sidecars": null,
 						"execution_metadata": ""
 				 }`))
 				})
@@ -615,7 +612,6 @@ var _ = Describe("Building", func() {
             		"command": "the start command"
           		}
         		],
-        		"sidecars": null,
 						"execution_metadata": ""
 				}`))
 				})
@@ -939,7 +935,6 @@ var _ = Describe("Building", func() {
             		"command": "procfile-provided start-command"
           		}
         		],
-        		"sidecars": null,
 						"execution_metadata": ""
 					}`))
 				})
@@ -972,7 +967,6 @@ var _ = Describe("Building", func() {
             		"command": "bogus command"
           		}
         		],
-        		"sidecars": null,
 						"execution_metadata": ""
 					}`))
 				})
@@ -1026,7 +1020,6 @@ var _ = Describe("Building", func() {
             		"command": "procfile-provided start-command"
           		}
         		],
-        		"sidecars": null,
 						"execution_metadata": ""
 					}`))
 				})
@@ -1063,7 +1056,6 @@ var _ = Describe("Building", func() {
             		"command": "bogus command"
           		}
         		],
-        		"sidecars": null,
 						"execution_metadata": ""
 					}`))
 				})
@@ -1097,7 +1089,6 @@ var _ = Describe("Building", func() {
             		"command": "the start command"
           		}
         		],
-        		"sidecars": null,
 						"execution_metadata": ""
 					}`))
 			})
@@ -1141,7 +1132,6 @@ var _ = Describe("Building", func() {
             		"command": "procfile-provided start-command"
           		}
         		],
-        		"sidecars": null,
 						"execution_metadata": ""
 					}`))
 				})
@@ -1178,7 +1168,6 @@ var _ = Describe("Building", func() {
             		"command": "bogus command"
           		}
         		],
-        		"sidecars": null,
 						"execution_metadata": ""
 					}`))
 				})
@@ -1211,7 +1200,6 @@ var _ = Describe("Building", func() {
             		"command": "start nonweb buildpack"
           		}
         		],
-        		"sidecars": null,
 						"execution_metadata": ""
 					}`))
 			})

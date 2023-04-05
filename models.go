@@ -73,8 +73,8 @@ type Process struct {
 type StagingResult struct {
 	LifecycleMetadata `json:"lifecycle_metadata"`
 	ProcessTypes      `json:"process_types"`
-	ProcessList       []Process `json:"processes, omitempty"`
-	Sidecars          []Sidecar `json:"sidecars, omitempty"`
+	ProcessList       []Process `json:"processes,omitempty"`
+	Sidecars          []Sidecar `json:"sidecars,omitempty"`
 	ExecutionMetadata string    `json:"execution_metadata"`
 	LifecycleType     string    `json:"lifecycle_type"`
 }
