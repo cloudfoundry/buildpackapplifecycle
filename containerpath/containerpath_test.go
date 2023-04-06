@@ -1,3 +1,4 @@
+//go:build !windows2012R2
 // +build !windows2012R2
 
 package containerpath_test
@@ -7,7 +8,7 @@ import (
 
 	"code.cloudfoundry.org/buildpackapplifecycle/containerpath"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 

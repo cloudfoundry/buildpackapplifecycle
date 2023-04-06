@@ -11,7 +11,7 @@ import (
 	"code.cloudfoundry.org/buildpackapplifecycle/containerpath"
 	"code.cloudfoundry.org/buildpackapplifecycle/credhub"
 	"code.cloudfoundry.org/goshims/osshim/os_fake"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"
 )
