@@ -13,6 +13,9 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
+var preStartMessage = "Invoking pre-start scripts."
+var startMessage = "Invoking start command."
+
 func main() {
 	if len(os.Args) < 4 {
 		fmt.Fprintf(os.Stderr, "%s: received only %d arguments\n", os.Args[0], len(os.Args)-1)

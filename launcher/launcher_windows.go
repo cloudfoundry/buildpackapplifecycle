@@ -41,6 +41,8 @@ func runProcess(dir, command, _entrypoint string) {
 
 	getenvPath, err := getenvPath()
 	handleErr("getting getenv path failed", err)
+
+	fmt.Println(preStartMessage)
 	envs, err := profile.ProfileEnv(dir, tmpDir, getenvPath, os.Stdout, os.Stderr)
 	handleErr("getting environment failed", err)
 
@@ -75,6 +77,7 @@ func runProcess(dir, command, _entrypoint string) {
 	err = os.Chdir(dir)
 	handleErr("couldn't change working directory", err)
 
+	fmt.Println(startMessage)
 	creationFlags := syscall.CREATE_UNICODE_ENVIRONMENT
 	// CreateProcessW docs
 	// https://msdn.microsoft.com/en-us/library/windows/desktop/ms682425(v=vs.85).aspx
