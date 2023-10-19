@@ -16,6 +16,8 @@ func getLauncher(entrypointPrefix string) string {
 	return fmt.Sprintf(`
 cd "$1"
 
+echo '%s'
+
 if [ -n "$(ls ../profile.d/* 2> /dev/null)" ]; then
   for env_file in ../profile.d/*; do
     source $env_file
@@ -34,8 +36,10 @@ fi
 
 shift
 
+echo '%s'
+
 exec %s "$@"
-`, entryPoint)
+`, preStartMessage, startMessage, entryPoint)
 }
 
 func runProcess(dir, command, entrypointPrefix string) {
