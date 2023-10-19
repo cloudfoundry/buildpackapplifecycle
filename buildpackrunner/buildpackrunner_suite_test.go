@@ -78,16 +78,18 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	execute(buildpackDir, gitPath, "checkout", "master")
 	execute(buildpackDir, gitPath, "update-server-info")
 
+	tarPath := ""
 	if runtime.GOOS == "windows" {
-		tmpTarPath = test_helpers.DownloadOrFindWindowsTar()
+		tarPath = test_helpers.DownloadOrFindWindowsTar()
 	}
 
-	return []byte(string(tmpDir + "|" + httpServer.Listener.Addr().String()))
+	return []byte(string(tmpDir+"|"+httpServer.Listener.Addr().String()) + "|" + tarPath)
 
 }, func(data []byte) {
 	synchronizedData := strings.Split(string(data), "|")
 	tmpDir := synchronizedData[0]
 	gitUrlHost := synchronizedData[1]
+	tmpTarPath = synchronizedData[2]
 
 	gitUrl = url.URL{
 		Scheme: "http",
