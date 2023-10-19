@@ -2,7 +2,6 @@ package test_helpers
 
 import (
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
@@ -25,7 +24,7 @@ func DownloadOrFindWindowsTar() string {
 		tarPath, err = exec.LookPath("tar.exe")
 		Expect(err).NotTo(HaveOccurred(), "tar.exe must either be present on the machine or specified via TAR_URL")
 	} else {
-		tmpDir, err := ioutil.TempDir("", "tar")
+		tmpDir, err := os.MkdirTemp("", "tar")
 		Expect(err).NotTo(HaveOccurred())
 		tarPath = filepath.Join(tmpDir, "tar.exe")
 
