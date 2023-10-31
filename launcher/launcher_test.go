@@ -168,11 +168,13 @@ var _ = Describe("Launcher", func() {
 				Eventually(string(session.Out.Contents())).Should(ContainSubstring("running app"))
 			})
 
-			It("prints to the app/task logs when profile scripts are being invoked", func () {
+			It("prints to the app/task logs when profile scripts are being invoked", func() {
+				Eventually(session).Should(gexec.Exit(0))
 				Eventually(session).Should(gbytes.Say("Invoking pre-start scripts."))
 			})
 
-			It("prints to the app/task logs when the entrypoint command is being invoked", func () {
+			It("prints to the app/task logs when the entrypoint command is being invoked", func() {
+				Eventually(session).Should(gexec.Exit(0))
 				Eventually(session).Should(gbytes.Say("Invoking start command."))
 			})
 
