@@ -2,7 +2,7 @@ package buildpackrunner
 
 import (
 	"bytes"
-	"crypto/md5"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -473,7 +473,7 @@ func (runner *Runner) pathHasBinDirectory(pathToTest string) bool {
 }
 
 func (runner *Runner) supplyCachePath(buildpack string) string {
-	return filepath.Join(runner.config.BuildArtifactsCacheDir(), fmt.Sprintf("%x", md5.Sum([]byte(buildpack))))
+	return filepath.Join(runner.config.BuildArtifactsCacheDir(), fmt.Sprintf("%x", sha256.Sum256([]byte(buildpack))))
 }
 
 func fileExists(file string) (bool, error) {

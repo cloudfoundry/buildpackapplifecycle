@@ -2,7 +2,7 @@ package buildpackapplifecycle
 
 import (
 	"bytes"
-	"crypto/md5"
+	"crypto/sha256"
 	"flag"
 	"fmt"
 	"math"
@@ -157,7 +157,7 @@ func (s LifecycleBuilderConfig) BuildpackPath(buildpackName string) string {
 	if err == nil && buildpackURL.IsAbs() {
 		baseDir = s.BuildpacksDownloadDir()
 	}
-	return filepath.Join(baseDir, fmt.Sprintf("%x", md5.Sum([]byte(buildpackName))))
+	return filepath.Join(baseDir, fmt.Sprintf("%x", sha256.Sum256([]byte(buildpackName))))
 }
 
 func (s LifecycleBuilderConfig) BuildpackOrder() []string {

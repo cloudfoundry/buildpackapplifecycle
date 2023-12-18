@@ -98,12 +98,12 @@ var _ = Describe("LifecycleBuilderConfig", func() {
 
 	It("returns the path to a given system buildpack", func() {
 		key := "my-buildpack/key/::"
-		Expect(builderConfig.BuildpackPath(key)).To(Equal(filepath.Join(pathPrefix(), "tmp", "buildpacks", "8b2f72a0702aed614f8b5d8f7f5b431b")))
+		Expect(builderConfig.BuildpackPath(key)).To(Equal(filepath.Join(pathPrefix(), "tmp", "buildpacks", "5761b9ee2bf15281a11bada2d9cfcba15b97ad667da832ee0fa911b4122c1ae7")))
 	})
 
 	It("returns the path to a given downloaded buildpack", func() {
 		key := "https://github.com/cloudfoundry/ruby-buildpack"
-		Expect(builderConfig.BuildpackPath(key)).To(Equal(filepath.Join(pathPrefix(), "tmp", "buildpackdownloads", "21de62d118ecb1f46d868d24f00839ef")))
+		Expect(builderConfig.BuildpackPath(key)).To(Equal(filepath.Join(pathPrefix(), "tmp", "buildpackdownloads", "34ab6bde713ed7544d90edfddddb5862c676f42d2439fb68fe7cbde9d6f71d67")))
 	})
 
 	It("returns the path to the staging metadata", func() {
