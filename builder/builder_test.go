@@ -1,7 +1,7 @@
 package main_test
 
 import (
-	"crypto/md5"
+	"github.com/cespare/xxhash/v2"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
@@ -59,7 +59,7 @@ var _ = Describe("Building", func() {
 	}
 
 	cpBuildpack := func(buildpack string) {
-		hash := fmt.Sprintf("%x", md5.Sum([]byte(buildpack)))
+		hash := fmt.Sprintf("%x", xxhash.Sum64String(buildpack))
 		cp(filepath.Join(buildpackFixtures, buildpack), filepath.Join(buildpacksDir, hash))
 	}
 
@@ -400,7 +400,7 @@ var _ = Describe("Building", func() {
 					Skip("warning is unnecessary on Windows")
 				}
 
-				hash := fmt.Sprintf("%x", md5.Sum([]byte("always-detects")))
+				hash := fmt.Sprintf("%x", xxhash.Sum64String("always-detects"))
 				binDetect := filepath.Join(buildpacksDir, hash, "bin", "detect")
 				Expect(os.Chmod(binDetect, 0644)).To(Succeed())
 			})
@@ -792,11 +792,11 @@ var _ = Describe("Building", func() {
 						Expect(strings.TrimRight(string(content), " \r\n")).To(Equal("also-always-detects-buildpack"))
 					})
 
-					It("the supply buildpacks caches supply output as $CACHE_DIR/<md5sum of buildpack URL>", func() {
-						supplyCacheDir := fmt.Sprintf("%x", md5.Sum([]byte("always-detects-creates-build-artifacts")))
+					It("the supply buildpacks caches supply output as $CACHE_DIR/<xxhash64 of buildpack URL>", func() {
+						supplyCacheDir := fmt.Sprintf("%x", xxhash.Sum64String("always-detects-creates-build-artifacts"))
 						Expect(files).To(ContainElement("./" + supplyCacheDir + "/supplied"))
 
-						supplyCacheDir = fmt.Sprintf("%x", md5.Sum([]byte("always-detects")))
+						supplyCacheDir = fmt.Sprintf("%x", xxhash.Sum64String("always-detects"))
 						Expect(files).To(ContainElement("./" + supplyCacheDir + "/supplied"))
 
 						content, err := exec.Command("tar", "-xzOf", outputBuildArtifactsCache, "./"+supplyCacheDir+"/supplied").Output()
@@ -833,11 +833,11 @@ var _ = Describe("Building", func() {
 						Expect(strings.TrimRight(string(content), " \r\n")).To(Equal("has-finalize-buildpack"))
 					})
 
-					It("the supply buildpacks caches supply output as $CACHE_DIR/<md5sum of buildpack URL>", func() {
-						supplyCacheDir := fmt.Sprintf("%x", md5.Sum([]byte("always-detects-creates-build-artifacts")))
+					It("the supply buildpacks caches supply output as $CACHE_DIR/<xxhash64 of buildpack URL>", func() {
+						supplyCacheDir := fmt.Sprintf("%x", xxhash.Sum64String("always-detects-creates-build-artifacts"))
 						Expect(files).To(ContainElement("./" + supplyCacheDir + "/supplied"))
 
-						supplyCacheDir = fmt.Sprintf("%x", md5.Sum([]byte("always-detects")))
+						supplyCacheDir = fmt.Sprintf("%x", xxhash.Sum64String("always-detects"))
 						Expect(files).To(ContainElement("./" + supplyCacheDir + "/supplied"))
 
 						content, err := exec.Command("tar", "-xzOf", outputBuildArtifactsCache, "./"+supplyCacheDir+"/supplied").Output()
@@ -850,23 +850,23 @@ var _ = Describe("Building", func() {
 			Describe("the buildArtifactsCacheDir contains relevant and old buildpack cache directories", func() {
 				//test setup
 				var (
-					alwaysDetectsMD5       string
-					notInBuildpackOrderMD5 string
-					cachedSupply           string
-					cachedCompile          string
+					alwaysDetectsHash       string
+					notInBuildpackOrderHash string
+					cachedSupply            string
+					cachedCompile           string
 				)
 
 				BeforeEach(func() {
 					rand.Seed(time.Now().UnixNano())
 					cachedSupply = fmt.Sprintf("%d", rand.Int())
-					alwaysDetectsMD5 = fmt.Sprintf("%x", md5.Sum([]byte("always-detects")))
-					err := os.MkdirAll(filepath.Join(buildArtifactsCacheDir, alwaysDetectsMD5), 0755)
+					alwaysDetectsHash = fmt.Sprintf("%x", xxhash.Sum64String("always-detects"))
+					err := os.MkdirAll(filepath.Join(buildArtifactsCacheDir, alwaysDetectsHash), 0755)
 					Expect(err).To(BeNil())
-					err = ioutil.WriteFile(filepath.Join(buildArtifactsCacheDir, alwaysDetectsMD5, "old-supply"), []byte(cachedSupply), 0644)
+					err = ioutil.WriteFile(filepath.Join(buildArtifactsCacheDir, alwaysDetectsHash, "old-supply"), []byte(cachedSupply), 0644)
 					Expect(err).To(BeNil())
 
-					notInBuildpackOrderMD5 = fmt.Sprintf("%x", md5.Sum([]byte("not-in-buildpack-order")))
-					err = os.MkdirAll(filepath.Join(buildArtifactsCacheDir, notInBuildpackOrderMD5), 0755)
+					notInBuildpackOrderHash = fmt.Sprintf("%x", xxhash.Sum64String("not-in-buildpack-order"))
+					err = os.MkdirAll(filepath.Join(buildArtifactsCacheDir, notInBuildpackOrderHash), 0755)
 					Expect(err).To(BeNil())
 
 					cachedCompile = fmt.Sprintf("%d", rand.Int())
@@ -888,15 +888,15 @@ var _ = Describe("Building", func() {
 				})
 
 				It("does not remove the cached contents of buildpacks in buildpack order", func() {
-					Expect(files).To(ContainElement("./" + alwaysDetectsMD5 + "/supplied"))
+					Expect(files).To(ContainElement("./" + alwaysDetectsHash + "/supplied"))
 
-					content, err := exec.Command("tar", "-xzOf", outputBuildArtifactsCache, "./"+alwaysDetectsMD5+"/supplied").Output()
+					content, err := exec.Command("tar", "-xzOf", outputBuildArtifactsCache, "./"+alwaysDetectsHash+"/supplied").Output()
 					Expect(err).To(BeNil())
 					Expect(strings.TrimRight(string(content), " \r\n")).To(Equal(cachedSupply))
 				})
 
 				It("removes the cached contents of buildpacks not in buildpack order", func() {
-					Expect(files).NotTo(ContainElement("./" + notInBuildpackOrderMD5 + "/"))
+					Expect(files).NotTo(ContainElement("./" + notInBuildpackOrderHash + "/"))
 				})
 
 				It("removes any files from pre multi buildpack days", func() {
@@ -1355,12 +1355,50 @@ var _ = Describe("Building", func() {
 		})
 	})
 
-	Context("with a nested buildpack", func() {
+	Context("with a buildpack using an md5 based path", func() {
+		BeforeEach(func() {
+			buildpack := "always-detect-buildpack"
+			buildpackOrder = buildpack
+
+			buildpackHash := "e05b2d8a59b30d5e9552282465253095"
+
+			buildpackDir := filepath.Join(buildpacksDir, buildpackHash)
+
+			cp(filepath.Join(buildpackFixtures, "always-detects"), buildpackDir)
+			cp(filepath.Join(appFixtures, "bash-app", "app.sh"), buildDir)
+		})
+
+		It("should detect the buildpack using an md5 based path", func() {
+			Eventually(builder()).Should(gexec.Exit(0))
+		})
+	})
+
+	Context("with a nested buildpack using an md5 based path", func() {
 		BeforeEach(func() {
 			nestedBuildpack := "nested-buildpack"
 			buildpackOrder = nestedBuildpack
 
 			nestedBuildpackHash := "70d137ae4ee01fbe39058ccdebf48460"
+
+			nestedBuildpackDir := filepath.Join(buildpacksDir, nestedBuildpackHash)
+			err := os.MkdirAll(nestedBuildpackDir, 0777)
+			Expect(err).NotTo(HaveOccurred())
+
+			cp(filepath.Join(buildpackFixtures, "always-detects"), nestedBuildpackDir)
+			cp(filepath.Join(appFixtures, "bash-app", "app.sh"), buildDir)
+		})
+
+		It("should detect the nested buildpack using an md5 based path", func() {
+			Eventually(builder()).Should(gexec.Exit(0))
+		})
+	})
+
+	Context("with a nested buildpack", func() {
+		BeforeEach(func() {
+			nestedBuildpack := "nested-buildpack"
+			buildpackOrder = nestedBuildpack
+
+			nestedBuildpackHash := "ba8ed7547bcbcb08"
 
 			nestedBuildpackDir := filepath.Join(buildpacksDir, nestedBuildpackHash)
 			err := os.MkdirAll(nestedBuildpackDir, 0777)

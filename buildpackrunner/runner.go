@@ -2,7 +2,7 @@ package buildpackrunner
 
 import (
 	"bytes"
-	"crypto/sha256"
+	"github.com/cespare/xxhash/v2"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -451,13 +451,26 @@ func (runner *Runner) buildpackPath(buildpack string) (string, error) {
 		return buildpackPath, nil
 	}
 
-	files, err := ioutil.ReadDir(buildpackPath)
+	legacyBuildpackPath := runner.config.LegacyBuildpackPath(buildpack)
+
+	if runner.pathHasBinDirectory(legacyBuildpackPath) {
+		return legacyBuildpackPath, nil
+	}
+
+	basePath := buildpackPath
+	files, err := ioutil.ReadDir(basePath)
+
+	if len(files) == 0 {
+		basePath = legacyBuildpackPath
+		files, err = ioutil.ReadDir(basePath)
+	}
+
 	if err != nil {
-		return "", newDescriptiveError(nil, "Failed to read buildpack directory '%s' for buildpack '%s'", buildpackPath, buildpack)
+		return "", newDescriptiveError(nil, "Failed to read buildpack directory '%s' for buildpack '%s'", buildpackPath, buildpackPath)
 	}
 
 	if len(files) == 1 {
-		nestedPath := filepath.Join(buildpackPath, files[0].Name())
+		nestedPath := filepath.Join(basePath, files[0].Name())
 
 		if runner.pathHasBinDirectory(nestedPath) {
 			return nestedPath, nil
@@ -473,7 +486,7 @@ func (runner *Runner) pathHasBinDirectory(pathToTest string) bool {
 }
 
 func (runner *Runner) supplyCachePath(buildpack string) string {
-	return filepath.Join(runner.config.BuildArtifactsCacheDir(), fmt.Sprintf("%x", sha256.Sum256([]byte(buildpack))))
+	return filepath.Join(runner.config.BuildArtifactsCacheDir(), fmt.Sprintf("%x", xxhash.Sum64String(buildpack)))
 }
 
 func fileExists(file string) (bool, error) {
