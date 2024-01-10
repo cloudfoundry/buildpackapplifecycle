@@ -3,6 +3,7 @@ package buildpackapplifecycle
 import (
 	"bytes"
 	"crypto/md5"
+	"github.com/cespare/xxhash/v2"
 	"flag"
 	"fmt"
 	"math"
@@ -152,6 +153,15 @@ func (s LifecycleBuilderConfig) BuildDir() string {
 }
 
 func (s LifecycleBuilderConfig) BuildpackPath(buildpackName string) string {
+	baseDir := s.BuildpacksDir()
+	buildpackURL, err := url.Parse(buildpackName)
+	if err == nil && buildpackURL.IsAbs() {
+		baseDir = s.BuildpacksDownloadDir()
+	}
+	return filepath.Join(baseDir, fmt.Sprintf("%x", xxhash.Sum64String(buildpackName)))
+}
+
+func (s LifecycleBuilderConfig) LegacyBuildpackPath(buildpackName string) string {
 	baseDir := s.BuildpacksDir()
 	buildpackURL, err := url.Parse(buildpackName)
 	if err == nil && buildpackURL.IsAbs() {
