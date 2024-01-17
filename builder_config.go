@@ -3,7 +3,6 @@ package buildpackapplifecycle
 import (
 	"bytes"
 	"crypto/md5"
-	"github.com/cespare/xxhash/v2"
 	"flag"
 	"fmt"
 	"math"
@@ -11,6 +10,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/cespare/xxhash/v2"
 )
 
 type LifecycleBuilderConfig struct {

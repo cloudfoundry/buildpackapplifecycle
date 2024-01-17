@@ -1,7 +1,6 @@
 package main_test
 
 import (
-	"github.com/cespare/xxhash/v2"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
@@ -17,6 +16,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/cespare/xxhash/v2"
 
 	"code.cloudfoundry.org/buildpackapplifecycle"
 	"code.cloudfoundry.org/buildpackapplifecycle/buildpackrunner"

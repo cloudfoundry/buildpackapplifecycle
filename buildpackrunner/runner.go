@@ -2,7 +2,6 @@ package buildpackrunner
 
 import (
 	"bytes"
-	"github.com/cespare/xxhash/v2"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -15,6 +14,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/cespare/xxhash/v2"
 
 	"gopkg.in/yaml.v2"
 
