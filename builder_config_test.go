@@ -96,24 +96,36 @@ var _ = Describe("LifecycleBuilderConfig", func() {
 		})
 	})
 
-	It("returns the path to a given system buildpack using legacy md5", func() {
-		key := "my-buildpack/key/::"
-		Expect(builderConfig.LegacyBuildpackPath(key)).To(Equal(filepath.Join(pathPrefix(), "tmp", "buildpacks", "8b2f72a0702aed614f8b5d8f7f5b431b")))
+	Describe("LegacyBuildpackPath", func() {
+		It("returns the path to a given system buildpack using legacy md5", func() {
+			key := "my-buildpack/key/::"
+			Expect(builderConfig.LegacyBuildpackPath(key)).To(Equal(filepath.Join(pathPrefix(), "tmp", "buildpacks", "8b2f72a0702aed614f8b5d8f7f5b431b")))
+		})
+
+		It("returns the path to a given downloaded buildpack using legacy md5", func() {
+			key := "https://github.com/cloudfoundry/ruby-buildpack"
+			Expect(builderConfig.LegacyBuildpackPath(key)).To(Equal(filepath.Join(pathPrefix(), "tmp", "buildpackdownloads", "21de62d118ecb1f46d868d24f00839ef")))
+		})
 	})
 
-	It("returns the path to a given downloaded buildpack using legacy md5", func() {
-		key := "https://github.com/cloudfoundry/ruby-buildpack"
-		Expect(builderConfig.LegacyBuildpackPath(key)).To(Equal(filepath.Join(pathPrefix(), "tmp", "buildpackdownloads", "21de62d118ecb1f46d868d24f00839ef")))
-	})
+	Describe("BuildpackPath", func() {
+		It("returns the path to a given system buildpack", func() {
+			key := "my-buildpack/key/::"
+			Expect(builderConfig.BuildpackPath(key)).To(Equal(filepath.Join(pathPrefix(), "tmp", "buildpacks", "dc91f5556d3ae859")))
+		})
 
-	It("returns the path to a given system buildpack", func() {
-		key := "my-buildpack/key/::"
-		Expect(builderConfig.BuildpackPath(key)).To(Equal(filepath.Join(pathPrefix(), "tmp", "buildpacks", "dc91f5556d3ae859")))
-	})
+		It("returns the path to a given downloaded buildpack", func() {
+			key := "https://github.com/cloudfoundry/ruby-buildpack"
+			Expect(builderConfig.BuildpackPath(key)).To(Equal(filepath.Join(pathPrefix(), "tmp", "buildpackdownloads", "0e1df1251578f504")))
+		})
 
-	It("returns the path to a given downloaded buildpack", func() {
-		key := "https://github.com/cloudfoundry/ruby-buildpack"
-		Expect(builderConfig.BuildpackPath(key)).To(Equal(filepath.Join(pathPrefix(), "tmp", "buildpackdownloads", "e1df1251578f504")))
+		Context("when key generates hash that start with zeros", func() {
+			It("returns the path that contains 16 byte key hash", func() {
+				// xxhash starts with zeros
+				key := "a1b4aa82-e5ae-4736-8284-bdfb013a7121_2845c523cf4f4f1045b331982cc557ef761afde4dc9fc8777831563461309455"
+				Expect(builderConfig.BuildpackPath(key)).To(Equal(filepath.Join(pathPrefix(), "tmp", "buildpacks", "00c84a1da9e0c81e")))
+			})
+		})
 	})
 
 	It("returns the path to the staging metadata", func() {

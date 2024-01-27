@@ -60,8 +60,7 @@ var _ = Describe("Building", func() {
 	}
 
 	cpBuildpack := func(buildpack string) {
-		hash := fmt.Sprintf("%x", xxhash.Sum64String(buildpack))
-		cp(filepath.Join(buildpackFixtures, buildpack), filepath.Join(buildpacksDir, hash))
+		cp(filepath.Join(buildpackFixtures, buildpack), filepath.Join(buildpacksDir, buildpackHash(buildpack)))
 	}
 
 	BeforeEach(func() {
@@ -401,8 +400,7 @@ var _ = Describe("Building", func() {
 					Skip("warning is unnecessary on Windows")
 				}
 
-				hash := fmt.Sprintf("%x", xxhash.Sum64String("always-detects"))
-				binDetect := filepath.Join(buildpacksDir, hash, "bin", "detect")
+				binDetect := filepath.Join(buildpacksDir, buildpackHash("always-detects"), "bin", "detect")
 				Expect(os.Chmod(binDetect, 0644)).To(Succeed())
 			})
 
@@ -794,10 +792,10 @@ var _ = Describe("Building", func() {
 					})
 
 					It("the supply buildpacks caches supply output as $CACHE_DIR/<xxhash64 of buildpack URL>", func() {
-						supplyCacheDir := fmt.Sprintf("%x", xxhash.Sum64String("always-detects-creates-build-artifacts"))
+						supplyCacheDir := buildpackHash("always-detects-creates-build-artifacts")
 						Expect(files).To(ContainElement("./" + supplyCacheDir + "/supplied"))
 
-						supplyCacheDir = fmt.Sprintf("%x", xxhash.Sum64String("always-detects"))
+						supplyCacheDir = buildpackHash("always-detects")
 						Expect(files).To(ContainElement("./" + supplyCacheDir + "/supplied"))
 
 						content, err := exec.Command("tar", "-xzOf", outputBuildArtifactsCache, "./"+supplyCacheDir+"/supplied").Output()
@@ -835,10 +833,10 @@ var _ = Describe("Building", func() {
 					})
 
 					It("the supply buildpacks caches supply output as $CACHE_DIR/<xxhash64 of buildpack URL>", func() {
-						supplyCacheDir := fmt.Sprintf("%x", xxhash.Sum64String("always-detects-creates-build-artifacts"))
+						supplyCacheDir := buildpackHash("always-detects-creates-build-artifacts")
 						Expect(files).To(ContainElement("./" + supplyCacheDir + "/supplied"))
 
-						supplyCacheDir = fmt.Sprintf("%x", xxhash.Sum64String("always-detects"))
+						supplyCacheDir = buildpackHash("always-detects")
 						Expect(files).To(ContainElement("./" + supplyCacheDir + "/supplied"))
 
 						content, err := exec.Command("tar", "-xzOf", outputBuildArtifactsCache, "./"+supplyCacheDir+"/supplied").Output()
@@ -860,13 +858,13 @@ var _ = Describe("Building", func() {
 				BeforeEach(func() {
 					rand.Seed(time.Now().UnixNano())
 					cachedSupply = fmt.Sprintf("%d", rand.Int())
-					alwaysDetectsHash = fmt.Sprintf("%x", xxhash.Sum64String("always-detects"))
+					alwaysDetectsHash = buildpackHash("always-detects")
 					err := os.MkdirAll(filepath.Join(buildArtifactsCacheDir, alwaysDetectsHash), 0755)
 					Expect(err).To(BeNil())
 					err = ioutil.WriteFile(filepath.Join(buildArtifactsCacheDir, alwaysDetectsHash, "old-supply"), []byte(cachedSupply), 0644)
 					Expect(err).To(BeNil())
 
-					notInBuildpackOrderHash = fmt.Sprintf("%x", xxhash.Sum64String("not-in-buildpack-order"))
+					notInBuildpackOrderHash = buildpackHash("not-in-buildpack-order")
 					err = os.MkdirAll(filepath.Join(buildArtifactsCacheDir, notInBuildpackOrderHash), 0755)
 					Expect(err).To(BeNil())
 
@@ -1422,4 +1420,8 @@ func removeTrailingSpace(dirty []string) []string {
 	}
 
 	return clean
+}
+
+func buildpackHash(key string) string {
+	return fmt.Sprintf("%016x", xxhash.Sum64String(key))
 }

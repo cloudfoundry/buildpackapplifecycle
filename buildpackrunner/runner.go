@@ -487,7 +487,7 @@ func (runner *Runner) pathHasBinDirectory(pathToTest string) bool {
 }
 
 func (runner *Runner) supplyCachePath(buildpack string) string {
-	return filepath.Join(runner.config.BuildArtifactsCacheDir(), fmt.Sprintf("%x", xxhash.Sum64String(buildpack)))
+	return filepath.Join(runner.config.BuildArtifactsCacheDir(), fmt.Sprintf("%016x", xxhash.Sum64String(buildpack)))
 }
 
 func fileExists(file string) (bool, error) {

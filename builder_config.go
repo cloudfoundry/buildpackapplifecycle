@@ -159,7 +159,7 @@ func (s LifecycleBuilderConfig) BuildpackPath(buildpackName string) string {
 	if err == nil && buildpackURL.IsAbs() {
 		baseDir = s.BuildpacksDownloadDir()
 	}
-	return filepath.Join(baseDir, fmt.Sprintf("%x", xxhash.Sum64String(buildpackName)))
+	return filepath.Join(baseDir, fmt.Sprintf("%016x", xxhash.Sum64String(buildpackName)))
 }
 
 func (s LifecycleBuilderConfig) LegacyBuildpackPath(buildpackName string) string {
