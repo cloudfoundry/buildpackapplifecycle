@@ -614,7 +614,7 @@ var _ = Describe("Launcher", func() {
 
 			Context("when an empty string is passed for the launcher platform options", func() {
 				BeforeEach(func() {
-					launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf(`VCAP_PLATFORM_OPTIONS=`))
+					launcherCmd.Env = append(launcherCmd.Env, `VCAP_PLATFORM_OPTIONS=`)
 				})
 
 				It("does not attempt to do any credhub interpolation", func() {
@@ -626,7 +626,7 @@ var _ = Describe("Launcher", func() {
 
 			Context("when an empty JSON is passed for the launcher platform options", func() {
 				BeforeEach(func() {
-					launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf(`VCAP_PLATFORM_OPTIONS={}`))
+					launcherCmd.Env = append(launcherCmd.Env, `VCAP_PLATFORM_OPTIONS={}`)
 				})
 
 				It("does not attempt to do any credhub interpolation", func() {
@@ -638,7 +638,7 @@ var _ = Describe("Launcher", func() {
 
 			Context("when invalid JSON is passed for the launcher platform options", func() {
 				BeforeEach(func() {
-					launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf(`VCAP_PLATFORM_OPTIONS='{"credhub-uri":"missing quote and brace'`))
+					launcherCmd.Env = append(launcherCmd.Env, `VCAP_PLATFORM_OPTIONS='{"credhub-uri":"missing quote and brace'`)
 				})
 
 				It("prints an error message", func() {
