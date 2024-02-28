@@ -50,7 +50,7 @@ func main() {
 	}
 
 	if err := env.CalcEnv(&osshim.OsShim{}, dir); err != nil {
-		fmt.Fprintf(os.Stderr, err.Error())
+		fmt.Fprint(os.Stderr, err.Error())
 		os.Exit(3)
 	}
 
