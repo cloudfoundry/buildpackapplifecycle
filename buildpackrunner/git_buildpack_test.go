@@ -1,7 +1,6 @@
 package buildpackrunner_test
 
 import (
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
@@ -18,7 +17,7 @@ var _ = Describe("GitBuildpack", func() {
 		var cloneTarget string
 		BeforeEach(func() {
 			var err error
-			cloneTarget, err = ioutil.TempDir(tmpDir, "clone")
+			cloneTarget, err = os.MkdirTemp(tmpDir, "clone")
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -56,7 +55,7 @@ var _ = Describe("GitBuildpack", func() {
 					err := buildpackrunner.GitClone(branchUrl, cloneTarget)
 					Expect(err).NotTo(HaveOccurred())
 
-					fileContents, _ := ioutil.ReadFile(cloneTarget + "/sub/README")
+					fileContents, _ := os.ReadFile(cloneTarget + "/sub/README")
 					Expect(string(fileContents)).To(Equal("2nd commit"))
 				})
 			})

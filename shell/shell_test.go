@@ -5,7 +5,6 @@ package shell_test
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -41,15 +40,15 @@ var _ = Describe("Shell", func() {
 			shellPath, err := gexec.Build("code.cloudfoundry.org/buildpackapplifecycle/shell/shell", "-race")
 			Expect(err).NotTo(HaveOccurred())
 
-			homeDir, err = ioutil.TempDir("", "vcap")
+			homeDir, err = os.MkdirTemp("", "vcap")
 			Expect(err).NotTo(HaveOccurred())
 			appDir = filepath.Join(homeDir, "app")
 			Expect(os.MkdirAll(appDir, 0755)).To(Succeed())
 			Expect(os.MkdirAll(filepath.Join(homeDir, "profile.d"), 0755)).To(Succeed())
 			Expect(os.MkdirAll(filepath.Join(appDir, ".profile.d"), 0755)).To(Succeed())
-			Expect(ioutil.WriteFile(filepath.Join(homeDir, "profile.d", "stuff"), []byte("echo homedir profile.d sourced\n"), 0644)).To(Succeed())
-			Expect(ioutil.WriteFile(filepath.Join(appDir, ".profile.d", "stuff"), []byte("echo appdir profile.d sourced\n"), 0644)).To(Succeed())
-			Expect(ioutil.WriteFile(filepath.Join(appDir, ".profile"), []byte("echo appdir profile sourced\n"), 0644)).To(Succeed())
+			Expect(os.WriteFile(filepath.Join(homeDir, "profile.d", "stuff"), []byte("echo homedir profile.d sourced\n"), 0644)).To(Succeed())
+			Expect(os.WriteFile(filepath.Join(appDir, ".profile.d", "stuff"), []byte("echo appdir profile.d sourced\n"), 0644)).To(Succeed())
+			Expect(os.WriteFile(filepath.Join(appDir, ".profile"), []byte("echo appdir profile sourced\n"), 0644)).To(Succeed())
 
 			shellCmd := &exec.Cmd{
 				Path: shellPath,

@@ -1,7 +1,7 @@
 package main_test
 
 import (
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -52,10 +52,10 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 
 		launcherDir := filepath.Dir(launcher)
 
-		getenvContents, err := ioutil.ReadFile(getenv)
+		getenvContents, err := os.ReadFile(getenv)
 		Expect(err).NotTo(HaveOccurred())
 
-		err = ioutil.WriteFile(filepath.Join(launcherDir, "getenv.exe"), getenvContents, 0644)
+		err = os.WriteFile(filepath.Join(launcherDir, "getenv.exe"), getenvContents, 0644)
 		Expect(err).NotTo(HaveOccurred())
 	}
 })

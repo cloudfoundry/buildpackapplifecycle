@@ -2,7 +2,7 @@ package buildpackrunner_test
 
 import (
 	"archive/zip"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -20,7 +20,7 @@ var _ = Describe("ZipBuildpack", func() {
 
 	BeforeEach(func() {
 		var err error
-		destination, err = ioutil.TempDir("", "unzipdir")
+		destination, err = os.MkdirTemp("", "unzipdir")
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -57,7 +57,7 @@ var _ = Describe("ZipBuildpack", func() {
 
 			BeforeEach(func() {
 				var err error
-				z, err := ioutil.TempFile("", "zipfile")
+				z, err := os.CreateTemp("", "zipfile")
 				Expect(err).NotTo(HaveOccurred())
 				zipfile = z.Name()
 
@@ -86,7 +86,7 @@ var _ = Describe("ZipBuildpack", func() {
 				Expect(err).NotTo(HaveOccurred())
 				defer file.Close()
 
-				bytes, err := ioutil.ReadAll(file)
+				bytes, err := io.ReadAll(file)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(bytes).To(Equal([]byte("stuff")))
 			})

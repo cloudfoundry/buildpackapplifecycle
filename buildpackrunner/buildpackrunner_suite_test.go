@@ -2,7 +2,6 @@ package buildpackrunner_test
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -33,7 +32,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	gitPath, err := exec.LookPath("git")
 	Expect(err).NotTo(HaveOccurred())
 
-	tmpDir, err = ioutil.TempDir("", "tmpDir")
+	tmpDir, err = os.MkdirTemp("", "tmpDir")
 	Expect(err).NotTo(HaveOccurred())
 
 	httpServer = httptest.NewServer(http.FileServer(http.Dir(tmpDir)))
@@ -118,7 +117,7 @@ func execute(dir string, execCmd string, args ...string) {
 }
 
 func writeFile(filepath, content string) {
-	err := ioutil.WriteFile(filepath,
+	err := os.WriteFile(filepath,
 		[]byte(content), os.ModePerm)
 	Expect(err).NotTo(HaveOccurred())
 }

@@ -3,7 +3,6 @@ package buildpackrunner
 import (
 	"crypto/tls"
 	"fmt"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -33,7 +32,7 @@ func NewZipDownloader(skipSSLVerification bool) *ZipDownloader {
 }
 
 func (z *ZipDownloader) DownloadAndExtract(u *url.URL, destination string) (uint64, error) {
-	zipFile, err := ioutil.TempFile("", filepath.Base(u.Path))
+	zipFile, err := os.CreateTemp("", filepath.Base(u.Path))
 	if err != nil {
 		return 0, fmt.Errorf("Could not create zip file: %s", err.Error())
 	}

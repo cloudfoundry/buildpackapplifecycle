@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 )
@@ -37,7 +36,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	err = ioutil.WriteFile(outputFile, bytes, 0644)
+	err = os.WriteFile(outputFile, bytes, 0644)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "cannot write to output file: '%s'\n", outputFile)
 		os.Exit(1)

@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -60,7 +59,7 @@ func main() {
 
 func unmarhsalStagingInfo() (buildpackrunner.DeaStagingInfo, error) {
 	stagingInfo := buildpackrunner.DeaStagingInfo{}
-	stagingInfoData, err := ioutil.ReadFile(buildpackrunner.DeaStagingInfoFilename)
+	stagingInfoData, err := os.ReadFile(buildpackrunner.DeaStagingInfoFilename)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return stagingInfo, nil

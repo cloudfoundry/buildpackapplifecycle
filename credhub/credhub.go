@@ -2,7 +2,7 @@ package credhub
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -54,13 +54,13 @@ func (c *Credhub) credhubClient(credhubURI string) (*api.CredHub, error) {
 
 	systemCertsPath := c.pathFor(c.os.Getenv("CF_SYSTEM_CERT_PATH"))
 	caCerts := []string{}
-	files, err := ioutil.ReadDir(systemCertsPath)
+	files, err := os.ReadDir(systemCertsPath)
 	if err != nil {
 		return nil, fmt.Errorf("Can't read contents of system cert path: %v", err)
 	}
 	for _, file := range files {
 		if strings.HasSuffix(file.Name(), ".crt") {
-			contents, err := ioutil.ReadFile(filepath.Join(systemCertsPath, file.Name()))
+			contents, err := os.ReadFile(filepath.Join(systemCertsPath, file.Name()))
 			if err != nil {
 				return nil, fmt.Errorf("Can't read contents of cert in system cert path: %v", err)
 			}

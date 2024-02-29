@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"os/exec"
@@ -86,7 +85,7 @@ func (runner *Runner) MergeLaunchYML(buildpackIndex int, procMap resources.Launc
 	if runner.launchYMLExists(buildpackIndex) {
 		launchYMLPath := filepath.Join(runner.depsDir, strconv.Itoa(buildpackIndex), "launch.yml")
 
-		data, err := ioutil.ReadFile(launchYMLPath)
+		data, err := os.ReadFile(launchYMLPath)
 		if err != nil {
 			return resources.LaunchData{}, err
 		}
@@ -326,7 +325,7 @@ func (runner *Runner) buildpacksMetadata(buildpackKeyList []string) []buildpacka
 		metadata := buildpackapplifecycle.BuildpackMetadata{Key: key}
 
 		configPath := filepath.Join(runner.depsDir, runner.config.DepsIndex(i), "config.yml")
-		if contents, err := ioutil.ReadFile(configPath); err == nil {
+		if contents, err := os.ReadFile(configPath); err == nil {
 			yaml.Unmarshal(contents, &metadata) //nolint:errcheck
 		}
 
@@ -356,7 +355,7 @@ func (runner *Runner) makeDirectories() error {
 	}
 
 	var err error
-	runner.contentsDir, err = ioutil.TempDir("", "contents")
+	runner.contentsDir, err = os.MkdirTemp("", "contents")
 	if err != nil {
 		return err
 	}
@@ -419,7 +418,7 @@ func (runner *Runner) cleanCacheDir() error {
 		neededCacheDirs[runner.supplyCachePath(bp)] = true
 	}
 
-	dirs, err := ioutil.ReadDir(runner.config.BuildArtifactsCacheDir())
+	dirs, err := os.ReadDir(runner.config.BuildArtifactsCacheDir())
 	if err != nil {
 		return err
 	}
@@ -450,11 +449,11 @@ func (runner *Runner) buildpackPath(buildpack string) (string, error) {
 	}
 
 	basePath := buildpackPath
-	files, err := ioutil.ReadDir(basePath)
+	files, err := os.ReadDir(basePath)
 
 	if len(files) == 0 {
 		basePath = legacyBuildpackPath
-		files, err = ioutil.ReadDir(basePath)
+		files, err = os.ReadDir(basePath)
 	}
 
 	if err != nil {
@@ -611,7 +610,7 @@ func (runner *Runner) detect() (string, string, string, bool) {
 func (runner *Runner) readProcfile() (map[string]string, error) {
 	processes := map[string]string{}
 
-	procFile, err := ioutil.ReadFile(filepath.Join(runner.config.BuildDir(), "Procfile"))
+	procFile, err := os.ReadFile(filepath.Join(runner.config.BuildDir(), "Procfile"))
 	if err != nil {
 		if os.IsNotExist(err) {
 			// Procfiles are optional
