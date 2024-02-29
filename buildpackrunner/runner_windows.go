@@ -3,7 +3,6 @@ package buildpackrunner
 import (
 	"errors"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 )
@@ -50,7 +49,7 @@ func copyDirectory(srcDir, destDir string) error {
 		return errors.New("destination dir must exist")
 	}
 
-	files, err := ioutil.ReadDir(srcDir)
+	files, err := os.ReadDir(srcDir)
 	if err != nil {
 		return err
 	}

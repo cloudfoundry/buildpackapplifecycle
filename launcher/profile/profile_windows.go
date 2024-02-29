@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -42,7 +41,7 @@ func ProfileEnv(appDir, tempDir, getenvPath string, stdout io.Writer, stderr io.
 	if err := cmd.Run(); err != nil {
 		return []string{}, fmt.Errorf("running profile scripts failed: %s", err.Error())
 	}
-	out, err := ioutil.ReadFile(envOutputFile)
+	out, err := os.ReadFile(envOutputFile)
 	if err != nil {
 		return []string{}, err
 	}

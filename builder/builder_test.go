@@ -5,7 +5,6 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"os"
@@ -66,32 +65,32 @@ var _ = Describe("Building", func() {
 	BeforeEach(func() {
 		var err error
 
-		tmpDir, err = ioutil.TempDir("", "building-tmp")
+		tmpDir, err = os.MkdirTemp("", "building-tmp")
 		Expect(err).NotTo(HaveOccurred())
 
-		buildDir, err = ioutil.TempDir(tmpDir, "building-app")
+		buildDir, err = os.MkdirTemp(tmpDir, "building-app")
 		Expect(err).NotTo(HaveOccurred())
 
 		if runtime.GOOS == "windows" {
 			test_helpers.CopyFile(tarPath, filepath.Join(tmpDir, "tmp", "lifecycle", "tar.exe"))
 		}
 
-		buildpacksDir, err = ioutil.TempDir(tmpDir, "building-buildpacks")
+		buildpacksDir, err = os.MkdirTemp(tmpDir, "building-buildpacks")
 		Expect(err).NotTo(HaveOccurred())
 
-		outputDropletFile, err := ioutil.TempFile(tmpDir, "building-droplet")
+		outputDropletFile, err := os.CreateTemp(tmpDir, "building-droplet")
 		Expect(err).NotTo(HaveOccurred())
 		outputDroplet = outputDropletFile.Name()
 		Expect(outputDropletFile.Close()).To(Succeed())
 
-		outputBuildArtifactsCacheDir, err := ioutil.TempDir(tmpDir, "building-cache-output")
+		outputBuildArtifactsCacheDir, err := os.MkdirTemp(tmpDir, "building-cache-output")
 		Expect(err).NotTo(HaveOccurred())
 		outputBuildArtifactsCache = filepath.Join(outputBuildArtifactsCacheDir, "cache.tgz")
 
-		buildArtifactsCacheDir, err = ioutil.TempDir(tmpDir, "building-cache")
+		buildArtifactsCacheDir, err = os.MkdirTemp(tmpDir, "building-cache")
 		Expect(err).NotTo(HaveOccurred())
 
-		outputMetadataFile, err := ioutil.TempFile(tmpDir, "building-result")
+		outputMetadataFile, err := os.CreateTemp(tmpDir, "building-result")
 		Expect(err).NotTo(HaveOccurred())
 		outputMetadata = outputMetadataFile.Name()
 		Expect(outputMetadataFile.Close()).To(Succeed())
@@ -124,7 +123,7 @@ var _ = Describe("Building", func() {
 	})
 
 	resultJSON := func() []byte {
-		resultInfo, err := ioutil.ReadFile(outputMetadata)
+		resultInfo, err := os.ReadFile(outputMetadata)
 		Expect(err).NotTo(HaveOccurred())
 
 		return resultInfo
@@ -180,7 +179,7 @@ var _ = Describe("Building", func() {
 
 			caCerts := x509.NewCertPool()
 
-			caCertBytes, err := ioutil.ReadFile(filepath.Join(fixturesSslDir, "cacerts", "CA.crt"))
+			caCertBytes, err := os.ReadFile(filepath.Join(fixturesSslDir, "cacerts", "CA.crt"))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(caCerts.AppendCertsFromPEM(caCertBytes)).To(BeTrue())
 
@@ -861,7 +860,7 @@ var _ = Describe("Building", func() {
 					alwaysDetectsHash = buildpackHash("always-detects")
 					err := os.MkdirAll(filepath.Join(buildArtifactsCacheDir, alwaysDetectsHash), 0755)
 					Expect(err).To(BeNil())
-					err = ioutil.WriteFile(filepath.Join(buildArtifactsCacheDir, alwaysDetectsHash, "old-supply"), []byte(cachedSupply), 0644)
+					err = os.WriteFile(filepath.Join(buildArtifactsCacheDir, alwaysDetectsHash, "old-supply"), []byte(cachedSupply), 0644)
 					Expect(err).To(BeNil())
 
 					notInBuildpackOrderHash = buildpackHash("not-in-buildpack-order")
@@ -871,10 +870,10 @@ var _ = Describe("Building", func() {
 					cachedCompile = fmt.Sprintf("%d", rand.Int())
 					err = os.MkdirAll(filepath.Join(buildArtifactsCacheDir, "final"), 0755)
 					Expect(err).To(BeNil())
-					err = ioutil.WriteFile(filepath.Join(buildArtifactsCacheDir, "final", "old-compile"), []byte(cachedCompile), 0644)
+					err = os.WriteFile(filepath.Join(buildArtifactsCacheDir, "final", "old-compile"), []byte(cachedCompile), 0644)
 					Expect(err).To(BeNil())
 
-					err = ioutil.WriteFile(filepath.Join(buildArtifactsCacheDir, "pre-multi-file"), []byte("Some Content"), 0644)
+					err = os.WriteFile(filepath.Join(buildArtifactsCacheDir, "pre-multi-file"), []byte("Some Content"), 0644)
 					Expect(err).To(BeNil())
 				})
 

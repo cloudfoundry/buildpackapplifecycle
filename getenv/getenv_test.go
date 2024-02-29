@@ -3,7 +3,6 @@ package main_test
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -22,7 +21,7 @@ var _ = Describe("Getenv", func() {
 
 	BeforeEach(func() {
 		var err error
-		outputDir, err = ioutil.TempDir("", "getenv")
+		outputDir, err = os.MkdirTemp("", "getenv")
 		Expect(err).ToNot(HaveOccurred())
 		fileEnv = filepath.Join(outputDir, "file.env")
 
@@ -45,7 +44,7 @@ var _ = Describe("Getenv", func() {
 
 			Expect(fileEnv).To(BeAnExistingFile())
 
-			envs, err := ioutil.ReadFile(fileEnv)
+			envs, err := os.ReadFile(fileEnv)
 			Expect(err).NotTo(HaveOccurred())
 
 			cleanedVars := []string{}
@@ -68,7 +67,7 @@ var _ = Describe("Getenv", func() {
 
 			Expect(fileEnv).To(BeAnExistingFile())
 
-			envs, err := ioutil.ReadFile(fileEnv)
+			envs, err := os.ReadFile(fileEnv)
 			Expect(err).NotTo(HaveOccurred())
 
 			cleanedVars := []string{}

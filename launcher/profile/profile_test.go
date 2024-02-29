@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/rand"
 	"fmt"
-	"io/ioutil"
 	"math"
 	"math/big"
 	"os"
@@ -30,11 +29,11 @@ var _ = Describe("Profile", func() {
 				Skip("only run on Windows")
 			}
 			var err error
-			rootDir, err = ioutil.TempDir("", "root")
+			rootDir, err = os.MkdirTemp("", "root")
 			Expect(err).NotTo(HaveOccurred())
 			appDir = filepath.Join(rootDir, "app")
 			Expect(os.MkdirAll(appDir, 0755)).To(Succeed())
-			tmpDir, err = ioutil.TempDir("", "launcher-tmp")
+			tmpDir, err = os.MkdirTemp("", "launcher-tmp")
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -189,7 +188,7 @@ baz=`
 
 		Context("temp dir is not a directory", func() {
 			BeforeEach(func() {
-				Expect(ioutil.WriteFile(filepath.Join(tmpDir, "some-file"), []byte("xxx"), 0644)).To(Succeed())
+				Expect(os.WriteFile(filepath.Join(tmpDir, "some-file"), []byte("xxx"), 0644)).To(Succeed())
 			})
 
 			It("errors", func() {
@@ -201,7 +200,7 @@ baz=`
 })
 
 func writeToFile(content, file string) {
-	err := ioutil.WriteFile(file, []byte(content), 0755)
+	err := os.WriteFile(file, []byte(content), 0755)
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 }
 

@@ -3,7 +3,6 @@ package buildpackrunner_test
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -42,7 +41,7 @@ var _ = Describe("Runner", func() {
 					Expect(stagingInfo).To(ContainSubstring("staging_info.yml"))
 					Expect(stagingInfo).To(BeAnExistingFile())
 
-					stagingInfoContents, err := ioutil.ReadFile(stagingInfo)
+					stagingInfoContents, err := os.ReadFile(stagingInfo)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(string(stagingInfoContents)).To(ContainSubstring(fmt.Sprintf(`{"detected_buildpack":"","start_command":"%s"}`, defaultStartCommandFromFixtures)))
 
@@ -87,7 +86,7 @@ processes:
 						depsIdxPath := filepath.Join(runner.GetDepsDir(), strconv.Itoa(index))
 						Expect(os.MkdirAll(depsIdxPath, os.ModePerm)).To(Succeed())
 						launchPath := filepath.Join(depsIdxPath, "launch.yml")
-						Expect(ioutil.WriteFile(launchPath, []byte(launchContent[index]), os.ModePerm)).To(Succeed())
+						Expect(os.WriteFile(launchPath, []byte(launchContent[index]), os.ModePerm)).To(Succeed())
 					}
 				})
 
@@ -102,11 +101,11 @@ processes:
 					Expect(stagingInfo).To(ContainSubstring("staging_info.yml"))
 					Expect(stagingInfo).To(BeAnExistingFile())
 
-					stagingInfoContents, err := ioutil.ReadFile(stagingInfo)
+					stagingInfoContents, err := os.ReadFile(stagingInfo)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(string(stagingInfoContents)).To(ContainSubstring(`{"detected_buildpack":"","start_command":"do something else forever"}`))
 
-					resultsJSONContents, err := ioutil.ReadFile(resultsJSON)
+					resultsJSONContents, err := os.ReadFile(resultsJSON)
 					Expect(err).ToNot(HaveOccurred())
 
 					actualStagingResult := buildpackapplifecycle.StagingResult{}
@@ -134,7 +133,7 @@ processes:
 				var procFilePath string
 				BeforeEach(func() {
 					procFilePath = filepath.Join(builderConfig.BuildDir(), "Procfile")
-					Expect(ioutil.WriteFile(procFilePath, []byte("web: gunicorn server:app"), os.ModePerm)).To(Succeed())
+					Expect(os.WriteFile(procFilePath, []byte("web: gunicorn server:app"), os.ModePerm)).To(Succeed())
 				})
 
 				AfterEach(func() {
@@ -148,11 +147,11 @@ processes:
 					Expect(stagingInfo).To(ContainSubstring("staging_info.yml"))
 					Expect(stagingInfo).To(BeAnExistingFile())
 
-					contents, err := ioutil.ReadFile(stagingInfo)
+					contents, err := os.ReadFile(stagingInfo)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(string(contents)).To(ContainSubstring(`{"detected_buildpack":"","start_command":"gunicorn server:app"}`))
 
-					resultsJSONContents, err := ioutil.ReadFile(resultsJSON)
+					resultsJSONContents, err := os.ReadFile(resultsJSON)
 					Expect(err).ToNot(HaveOccurred())
 
 					actualStagingResult := buildpackapplifecycle.StagingResult{}
@@ -182,7 +181,7 @@ processes:
 					depsIdxPath := filepath.Join(runner.GetDepsDir(), strconv.Itoa(0))
 					Expect(os.MkdirAll(depsIdxPath, os.ModePerm)).To(Succeed())
 					launchPath := filepath.Join(depsIdxPath, "launch.yml")
-					Expect(ioutil.WriteFile(launchPath, []byte(launchContents), os.ModePerm)).To(Succeed())
+					Expect(os.WriteFile(launchPath, []byte(launchContents), os.ModePerm)).To(Succeed())
 				})
 
 				It("Should always use the start command from the bin/release", func() {
@@ -192,11 +191,11 @@ processes:
 					Expect(stagingInfo).To(ContainSubstring("staging_info.yml"))
 					Expect(stagingInfo).To(BeAnExistingFile())
 
-					stagingInfoContents, err := ioutil.ReadFile(stagingInfo)
+					stagingInfoContents, err := os.ReadFile(stagingInfo)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(string(stagingInfoContents)).To(ContainSubstring(fmt.Sprintf(`{"detected_buildpack":"","start_command":"%s"}`, defaultStartCommandFromFixtures)))
 
-					resultsJSONContents, err := ioutil.ReadFile(resultsJSON)
+					resultsJSONContents, err := os.ReadFile(resultsJSON)
 					Expect(err).ToNot(HaveOccurred())
 
 					actualStagingResult := buildpackapplifecycle.StagingResult{}
@@ -248,13 +247,13 @@ processes:
 
 				BeforeEach(func() {
 					procFilePath := filepath.Join(builderConfig.BuildDir(), "Procfile")
-					Expect(ioutil.WriteFile(procFilePath, []byte("web: gunicorn server:app"), os.ModePerm)).To(Succeed())
+					Expect(os.WriteFile(procFilePath, []byte("web: gunicorn server:app"), os.ModePerm)).To(Succeed())
 
 					for index := range buildpacks {
 						depsIdxPath := filepath.Join(runner.GetDepsDir(), strconv.Itoa(index))
 						Expect(os.MkdirAll(depsIdxPath, os.ModePerm)).To(Succeed())
 						launchPath := filepath.Join(depsIdxPath, "launch.yml")
-						Expect(ioutil.WriteFile(launchPath, []byte(launchContent[index]), os.ModePerm)).To(Succeed())
+						Expect(os.WriteFile(launchPath, []byte(launchContent[index]), os.ModePerm)).To(Succeed())
 					}
 				})
 
@@ -269,11 +268,11 @@ processes:
 					Expect(stagingInfo).To(ContainSubstring("staging_info.yml"))
 					Expect(stagingInfo).To(BeAnExistingFile())
 
-					stagingInfoContents, err := ioutil.ReadFile(stagingInfo)
+					stagingInfoContents, err := os.ReadFile(stagingInfo)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(string(stagingInfoContents)).To(ContainSubstring(`{"detected_buildpack":"","start_command":"gunicorn server:app"}`))
 
-					resultsJSONContents, err := ioutil.ReadFile(resultsJSON)
+					resultsJSONContents, err := os.ReadFile(resultsJSON)
 					Expect(err).ToNot(HaveOccurred())
 
 					actualStagingResult := buildpackapplifecycle.StagingResult{}
@@ -304,15 +303,15 @@ processes:
 func makeBuilderConfig(buildpacks []string) buildpackapplifecycle.LifecycleBuilderConfig {
 	skipDetect := true
 	builderConfig := buildpackapplifecycle.NewLifecycleBuilderConfig(buildpacks, skipDetect, false)
-	outputMetadataPath, err := ioutil.TempDir(os.TempDir(), "results")
+	outputMetadataPath, err := os.MkdirTemp(os.TempDir(), "results")
 	Expect(err).ToNot(HaveOccurred())
 	Expect(builderConfig.Set("outputMetadata", filepath.Join(outputMetadataPath, "results.json"))).To(Succeed())
 
-	buildDirPath, err := ioutil.TempDir(os.TempDir(), "app")
+	buildDirPath, err := os.MkdirTemp(os.TempDir(), "app")
 	Expect(err).ToNot(HaveOccurred())
 	Expect(builderConfig.Set("buildDir", buildDirPath)).To(Succeed())
 
-	buildpacksDirPath, err := ioutil.TempDir(os.TempDir(), "buildpack")
+	buildpacksDirPath, err := os.MkdirTemp(os.TempDir(), "buildpack")
 	Expect(err).ToNot(HaveOccurred())
 	Expect(builderConfig.Set("buildpacksDir", buildpacksDirPath)).To(Succeed())
 
