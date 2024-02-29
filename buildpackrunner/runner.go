@@ -319,15 +319,6 @@ func (runner *Runner) launchYMLExists(index int) bool {
 	return false
 }
 
-func (runner *Runner) hasLaunchYML(selectedBuildpacks []string) bool {
-	for index := range selectedBuildpacks {
-		if runner.launchYMLExists(index) {
-			return true
-		}
-	}
-	return false
-}
-
 func (runner *Runner) buildpacksMetadata(buildpackKeyList []string) []buildpackapplifecycle.BuildpackMetadata {
 	buildpacksMetadataList := []buildpackapplifecycle.BuildpackMetadata{}
 
