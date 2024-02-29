@@ -2,7 +2,6 @@ package buildpackrunner_test
 
 import (
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -122,34 +121,4 @@ func writeFile(filepath, content string) {
 	err := ioutil.WriteFile(filepath,
 		[]byte(content), os.ModePerm)
 	Expect(err).NotTo(HaveOccurred())
-}
-
-func downloadTar() string {
-	tarUrl := os.Getenv("TAR_URL")
-	Expect(tarUrl).NotTo(BeEmpty(), "TAR_URL environment variable must be set")
-
-	resp, err := http.Get(tarUrl)
-	Expect(err).NotTo(HaveOccurred())
-
-	defer resp.Body.Close()
-
-	tmpDir, err := ioutil.TempDir("", "tar")
-	Expect(err).NotTo(HaveOccurred())
-
-	tarExePath := filepath.Join(tmpDir, "tar.exe")
-	f, err := os.OpenFile(tarExePath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
-	Expect(err).NotTo(HaveOccurred())
-	defer f.Close()
-
-	_, err = io.Copy(f, resp.Body)
-	Expect(err).NotTo(HaveOccurred())
-
-	return tarExePath
-}
-
-func fileExists(filePath string) bool {
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		return false
-	}
-	return true
 }

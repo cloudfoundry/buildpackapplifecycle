@@ -43,21 +43,6 @@ func DownloadOrFindWindowsTar() string {
 	return tarPath
 }
 
-func copyWindowsTarIntoRunnerContext(tarPath, destDir string) {
-	srcTarExe, err := os.Open(tarPath)
-	Expect(err).NotTo(HaveOccurred())
-	defer srcTarExe.Close()
-
-	Expect(os.MkdirAll(destDir, 0755)).To(Succeed())
-
-	destTarExe, err := os.OpenFile(filepath.Join(destDir, "tar.exe"), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
-	Expect(err).NotTo(HaveOccurred())
-	defer destTarExe.Close()
-
-	_, err = io.Copy(destTarExe, srcTarExe)
-	Expect(err).NotTo(HaveOccurred())
-}
-
 func CopyFile(src string, dst string) {
 	s, err := os.Open(src)
 	Expect(err).ToNot(HaveOccurred())
