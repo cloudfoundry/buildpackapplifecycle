@@ -1,11 +1,11 @@
 package main_test
 
 import (
+	"crypto/rand"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"net/http"
 	"os"
 	"os/exec"
@@ -855,7 +855,6 @@ var _ = Describe("Building", func() {
 				)
 
 				BeforeEach(func() {
-					rand.Seed(time.Now().UnixNano())
 					cachedSupply = fmt.Sprintf("%d", rand.Int())
 					alwaysDetectsHash = buildpackHash("always-detects")
 					err := os.MkdirAll(filepath.Join(buildArtifactsCacheDir, alwaysDetectsHash), 0755)
