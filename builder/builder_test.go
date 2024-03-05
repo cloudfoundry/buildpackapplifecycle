@@ -1,11 +1,11 @@
 package main_test
 
 import (
-	"crypto/rand"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"os"
 	"os/exec"
