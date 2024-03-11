@@ -59,7 +59,7 @@ func copyDirectory(srcDir, destDir string) error {
 		dest := filepath.Join(destDir, f.Name())
 
 		if f.IsDir() {
-			if err := os.MkdirAll(dest, f.Mode()); err != nil {
+			if err := os.MkdirAll(dest, f.Type()); err != nil {
 				return err
 			}
 			if err := copyDirectory(src, dest); err != nil {
@@ -71,7 +71,7 @@ func copyDirectory(srcDir, destDir string) error {
 				return err
 			}
 
-			destHandle, err := os.OpenFile(dest, os.O_RDWR|os.O_CREATE|os.O_TRUNC, f.Mode())
+			destHandle, err := os.OpenFile(dest, os.O_RDWR|os.O_CREATE|os.O_TRUNC, f.Type())
 			if err != nil {
 				srcHandle.Close()
 				return err
