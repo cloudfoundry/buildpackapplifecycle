@@ -83,7 +83,7 @@ func runProcess(dir, command, _entrypoint string) {
 	// https://msdn.microsoft.com/en-us/library/windows/desktop/ms682425(v=vs.85).aspx
 	// Process Creation flags
 	// https://msdn.microsoft.com/en-us/library/windows/desktop/ms684863(v=vs.85).aspx
-	r, _, e := syscall.Syscall12(createProcessW.Addr(), 10,
+	r, _, e := syscall.SyscallN(createProcessW.Addr(),
 		uintptr(uint16(0)),                            // appname
 		uintptr(unsafe.Pointer(args)),                 // executable and args
 		uintptr(unsafe.Pointer(nil)),                  // process security attributes
