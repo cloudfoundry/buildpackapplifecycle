@@ -20,5 +20,6 @@ On a mac, you should use docker to run the tests on a linux machine
 
 ```
 $ docker build -f Dockerfile.linux.test -t buildpackapplifecycle .
-$ docker run -it buildpackapplifecycle
+$ docker run -it -v .:/workdir buildpackapplifecycle
+$> ginkgo -r
 ```
