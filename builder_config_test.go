@@ -33,6 +33,8 @@ var _ = Describe("LifecycleBuilderConfig", func() {
 				"-outputBuildArtifactsCache=/tmp/output-cache",
 				"-skipCertVerify=false",
 				"-skipDetect=false",
+				"-credhubConnectAttempts=3",
+				"-credhubRetryDelay=1s",
 			}
 
 			Expect(builderConfig.Path()).To(Equal(filepath.Join(pathPrefix(), "tmp", "lifecycle", "builder")))
@@ -65,6 +67,8 @@ var _ = Describe("LifecycleBuilderConfig", func() {
 			builderConfig.Set("outputBuildArtifactsCache", "/some/cache-file")
 			builderConfig.Set("skipCertVerify", "true")
 			builderConfig.Set("skipDetect", "true")
+			builderConfig.Set("credhubConnectAttempts", "5")
+			builderConfig.Set("credhubRetryDelay", "5s")
 		})
 
 		It("generates a script for running its builder", func() {
@@ -79,6 +83,8 @@ var _ = Describe("LifecycleBuilderConfig", func() {
 				"-outputBuildArtifactsCache=/some/cache-file",
 				"-skipCertVerify=true",
 				"-skipDetect=true",
+				"-credhubConnectAttempts=5",
+				"-credhubRetryDelay=5s",
 			}
 
 			Expect(builderConfig.Path()).To(Equal(filepath.Join(pathPrefix(), "tmp", "lifecycle", "builder")))

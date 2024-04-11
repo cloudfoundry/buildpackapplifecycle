@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"code.cloudfoundry.org/buildpackapplifecycle/containerpath"
 	"code.cloudfoundry.org/buildpackapplifecycle/credhub"
@@ -26,6 +27,9 @@ var _ = Describe("credhub", func() {
 
 			fakeOs  *os_fake.FakeOs
 			subject *credhub.Credhub
+
+			maxConnectAttempts int
+			retryDelay         time.Duration
 		)
 
 		VerifyClientCerts := func() http.HandlerFunc {
@@ -85,7 +89,9 @@ var _ = Describe("credhub", func() {
 				fakeOs.Setenv("CF_SYSTEM_CERT_PATH", filepath.Join(fixturesSslDir, "cacerts"))
 			}
 
-			subject = credhub.New(fakeOs)
+			maxConnectAttempts = 5
+			retryDelay = 0 * time.Second
+			subject = credhub.New(fakeOs, maxConnectAttempts, retryDelay)
 		})
 
 		AfterEach(func() {
@@ -146,19 +152,48 @@ var _ = Describe("credhub", func() {
 			})
 		})
 
-		Context("when credhub fails", func() {
+		Context("when credhub fails initially, but eventually succeeds", func() {
 			BeforeEach(func() {
+
 				server.AppendHandlers(
 					ghttp.CombineHandlers(
 						ghttp.VerifyRequest("POST", "/api/v1/interpolate"),
 						ghttp.VerifyBody([]byte(vcapServicesValue)),
 						ghttp.RespondWith(http.StatusInternalServerError, "{}"),
 					))
+
+				server.AppendHandlers(
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("POST", "/api/v1/interpolate"),
+						ghttp.VerifyBody([]byte(vcapServicesValue)),
+						VerifyClientCerts(),
+						ghttp.RespondWith(http.StatusOK, "INTERPOLATED_JSON"),
+					))
 			})
 
-			It("returns an error and doesn't change VCAP_SERVICES", func() {
-				Expect(err).To(MatchError(MatchRegexp("Unable to interpolate credhub references")))
-				Expect(fakeOs.Getenv("VCAP_SERVICES")).To(Equal(vcapServicesValue))
+			It("updates VCAP_SERVICES with the interpolated content and runs the process without VCAP_PLATFORM_OPTIONS", func() {
+				Expect(err).NotTo(HaveOccurred())
+				Expect(fakeOs.Getenv("VCAP_SERVICES")).To(Equal("INTERPOLATED_JSON"))
+			})
+		})
+
+		Context("when credhub always fails", func() {
+			BeforeEach(func() {
+				for attempt := 1; attempt <= maxConnectAttempts; attempt++ {
+					server.AppendHandlers(
+						ghttp.CombineHandlers(
+							ghttp.VerifyRequest("POST", "/api/v1/interpolate"),
+							ghttp.VerifyBody([]byte(vcapServicesValue)),
+							ghttp.RespondWith(http.StatusInternalServerError, "{}"),
+						))
+				}
+			})
+
+			Context("and it never succeeds", func() {
+				It("returns an error and doesn't change VCAP_SERVICES", func() {
+					Expect(err).To(MatchError(MatchRegexp("Unable to interpolate credhub references")))
+					Expect(fakeOs.Getenv("VCAP_SERVICES")).To(Equal(vcapServicesValue))
+				})
 			})
 		})
 

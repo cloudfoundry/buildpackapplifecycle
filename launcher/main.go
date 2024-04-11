@@ -7,6 +7,7 @@ import (
 	"runtime"
 
 	"code.cloudfoundry.org/buildpackapplifecycle/buildpackrunner"
+	"code.cloudfoundry.org/buildpackapplifecycle/credhub_flags"
 	"code.cloudfoundry.org/buildpackapplifecycle/env"
 	"code.cloudfoundry.org/goshims/osshim"
 	yaml "gopkg.in/yaml.v2"
@@ -48,7 +49,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := env.CalcEnv(&osshim.OsShim{}, dir); err != nil {
+	credhubFlags := credhub_flags.NewCredhubFlags("launcher")
+	credhubFlags.Parse(os.Args[3:len(os.Args)])
+	attempts := credhubFlags.ConnectAttempts()
+	delay := credhubFlags.RetryDelay()
+
+	if err := env.CalcEnv(&osshim.OsShim{}, dir, attempts, delay); err != nil {
 		fmt.Fprint(os.Stderr, err.Error())
 		os.Exit(3)
 	}
