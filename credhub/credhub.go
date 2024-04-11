@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"code.cloudfoundry.org/buildpackapplifecycle/containerpath"
 	api "code.cloudfoundry.org/credhub-cli/credhub"
@@ -12,14 +13,18 @@ import (
 )
 
 type Credhub struct {
-	os      osshim.Os
-	pathFor func(path ...string) string
+	os                 osshim.Os
+	pathFor            func(path ...string) string
+	MaxConnectAttempts int
+	RetryDelay         time.Duration
 }
 
-func New(os osshim.Os) *Credhub {
+func New(os osshim.Os, maxConnectAttempts int, retryDelay time.Duration) *Credhub {
 	return &Credhub{
-		os:      os,
-		pathFor: containerpath.New(os.Getenv("USERPROFILE")).For,
+		os:                 os,
+		pathFor:            containerpath.New(os.Getenv("USERPROFILE")).For,
+		MaxConnectAttempts: maxConnectAttempts,
+		RetryDelay:         retryDelay,
 	}
 }
 
@@ -34,10 +39,21 @@ func (c *Credhub) InterpolateServiceRefs(credhubURI string) error {
 	if err != nil {
 		return fmt.Errorf("Unable to set up credhub client: %v", err)
 	}
-	interpolatedServices, err := ch.InterpolateString(c.os.Getenv("VCAP_SERVICES"))
+
+	var interpolatedServices string
+	for attempt := 1; attempt <= c.MaxConnectAttempts; attempt++ {
+		interpolatedServices, err = ch.InterpolateString(c.os.Getenv("VCAP_SERVICES"))
+		if err == nil {
+			break
+		}
+		fmt.Printf("Failed on attempt %v out of %v: Unable to interpolate credhub references: %v\n", attempt, c.MaxConnectAttempts, err)
+		time.Sleep(c.RetryDelay)
+	}
+
 	if err != nil {
 		return fmt.Errorf("Unable to interpolate credhub references: %v", err)
 	}
+
 	if err := c.os.Setenv("VCAP_SERVICES", interpolatedServices); err != nil {
 		return fmt.Errorf("Unable to update VCAP_SERVICES with interpolated credhub references: %v", err)
 	}

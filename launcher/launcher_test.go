@@ -65,6 +65,7 @@ var _ = Describe("Launcher", func() {
 		launcherCmd = &exec.Cmd{
 			Path: launcher,
 			Dir:  extractDir,
+			Args: []string{"-credhubRetryDelay=0s"},
 			Env: append(
 				os.Environ(),
 				"CALLERENV=some-value",
@@ -556,7 +557,8 @@ var _ = Describe("Launcher", func() {
 				"launcher",
 				appDir,
 				startCommand,
-				"",
+				"-credhubRetryDelay=0s",
+				"-credhubConnectAttempts=1",
 			}
 		})
 
@@ -597,12 +599,14 @@ var _ = Describe("Launcher", func() {
 
 				Context("when credhub fails", func() {
 					BeforeEach(func() {
-						server.AppendHandlers(
-							ghttp.CombineHandlers(
-								ghttp.VerifyRequest("POST", "/api/v1/interpolate"),
-								ghttp.VerifyBody([]byte(vcapServicesValue)),
-								ghttp.RespondWith(http.StatusInternalServerError, "{}"),
-							))
+						for attempt := 1; attempt <= 3; attempt++ {
+							server.AppendHandlers(
+								ghttp.CombineHandlers(
+									ghttp.VerifyRequest("POST", "/api/v1/interpolate"),
+									ghttp.VerifyBody([]byte(vcapServicesValue)),
+									ghttp.RespondWith(http.StatusInternalServerError, "{}"),
+								))
+						}
 					})
 
 					It("prints an error message", func() {

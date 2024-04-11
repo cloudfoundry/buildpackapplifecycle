@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strconv"
+	"time"
 
 	"code.cloudfoundry.org/buildpackapplifecycle/credhub"
 	"code.cloudfoundry.org/buildpackapplifecycle/databaseuri"
@@ -12,7 +13,7 @@ import (
 	"code.cloudfoundry.org/goshims/osshim"
 )
 
-func CalcEnv(os osshim.Os, dir string) error {
+func CalcEnv(os osshim.Os, dir string, attempts int, delay time.Duration) error {
 	os.Setenv("HOME", dir)
 
 	tmpDir, err := filepath.Abs(filepath.Join(dir, "..", "tmp"))
@@ -51,7 +52,7 @@ func CalcEnv(os osshim.Os, dir string) error {
 	if platformOptions, err := platformoptions.Get(os.Getenv("VCAP_PLATFORM_OPTIONS")); err != nil {
 		return fmt.Errorf("Invalid platform options: %v", err)
 	} else if platformOptions != nil && platformOptions.CredhubURI != "" {
-		err := credhub.New(&osshim.OsShim{}).InterpolateServiceRefs(platformOptions.CredhubURI)
+		err := credhub.New(&osshim.OsShim{}, attempts, delay).InterpolateServiceRefs(platformOptions.CredhubURI)
 		if err != nil {
 			return fmt.Errorf("Unable to interpolate credhub refs: %v", err)
 		}

@@ -116,6 +116,7 @@ var _ = Describe("Building", func() {
 			"-buildpackOrder", buildpackOrder,
 			"-outputMetadata", outputMetadata,
 			"-skipDetect="+strconv.FormatBool(skipDetect),
+			"-credhubRetryDelay=0s",
 		)
 
 		builderCmd.Env = sessionEnv
@@ -248,12 +249,14 @@ var _ = Describe("Building", func() {
 
 				Context("when credhub fails", func() {
 					BeforeEach(func() {
-						server.AppendHandlers(
-							ghttp.CombineHandlers(
-								ghttp.VerifyRequest("POST", "/api/v1/interpolate"),
-								ghttp.VerifyBody([]byte(vcapServicesValue)),
-								ghttp.RespondWith(http.StatusInternalServerError, "{}"),
-							))
+						for attempt := 1; attempt <= 3; attempt++ {
+							server.AppendHandlers(
+								ghttp.CombineHandlers(
+									ghttp.VerifyRequest("POST", "/api/v1/interpolate"),
+									ghttp.VerifyBody([]byte(vcapServicesValue)),
+									ghttp.RespondWith(http.StatusInternalServerError, "{}"),
+								))
+						}
 					})
 
 					It("prints an error message", func() {

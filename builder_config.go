@@ -10,7 +10,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
+	"code.cloudfoundry.org/buildpackapplifecycle/credhub_flags"
 	"github.com/cespare/xxhash/v2"
 )
 
@@ -105,6 +107,8 @@ func NewLifecycleBuilderConfig(buildpacks []string, skipDetect bool, skipCertVer
 		skipCertVerify,
 		"skip SSL certificate verification",
 	)
+
+	credhub_flags.AddCredhubFlags(flagSet)
 
 	wd, err := os.Getwd()
 	if err != nil {
@@ -221,6 +225,14 @@ func (s LifecycleBuilderConfig) SkipCertVerify() bool {
 
 func (s LifecycleBuilderConfig) SkipDetect() bool {
 	return s.Lookup(lifecycleBuilderSkipDetect).Value.String() == "true"
+}
+
+func (s LifecycleBuilderConfig) CredhubConnectAttempts() int {
+	return credhub_flags.ConnectAttempts(s.FlagSet)
+}
+
+func (s LifecycleBuilderConfig) CredhubRetryDelay() time.Duration {
+	return credhub_flags.RetryDelay(s.FlagSet)
 }
 
 type ValidationError []error

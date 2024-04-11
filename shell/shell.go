@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"runtime"
 
+	"code.cloudfoundry.org/buildpackapplifecycle/credhub_flags"
 	"code.cloudfoundry.org/buildpackapplifecycle/env"
 	"code.cloudfoundry.org/goshims/osshim"
 )
@@ -35,13 +36,21 @@ func Run(os osshim.Os, exec exec, shellArgs []string) error {
 		dir = absDir
 	}
 
+	argsToParseForFlags := []string{}
 	if len(shellArgs) >= 3 {
 		commands = shellArgs[2:]
+		argsToParseForFlags = shellArgs[3:len(shellArgs)]
 	} else {
 		commands = []string{"bash"}
 	}
 
-	if err := env.CalcEnv(os, dir); err != nil {
+	credhubFlags := credhub_flags.NewCredhubFlags("shell")
+	credhubFlags.Parse(argsToParseForFlags)
+
+	attempts := credhubFlags.ConnectAttempts()
+	delay := credhubFlags.RetryDelay()
+
+	if err := env.CalcEnv(os, dir, attempts, delay); err != nil {
 		return err
 	}
 
