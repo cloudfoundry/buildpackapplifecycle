@@ -39,7 +39,7 @@ func Run(os osshim.Os, exec exec, shellArgs []string) error {
 	argsToParseForFlags := []string{}
 	if len(shellArgs) >= 3 {
 		commands = shellArgs[2:]
-		argsToParseForFlags = shellArgs[3:len(shellArgs)]
+		argsToParseForFlags = shellArgs[3:]
 	} else {
 		commands = []string{"bash"}
 	}
