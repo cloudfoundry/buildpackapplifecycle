@@ -42,7 +42,7 @@ func (z *ZipDownloader) DownloadAndExtract(u *url.URL, destination string) (uint
 		lager.NewLogger("noop"),
 		u,
 		func() (*os.File, error) {
-			return os.OpenFile(zipFile.Name(), os.O_WRONLY, 0666)
+			return os.OpenFile(zipFile.Name(), os.O_WRONLY, 0644)
 		},
 		cacheddownloader.CachingInfoType{},
 		cacheddownloader.ChecksumInfoType{},
