@@ -326,6 +326,7 @@ func (runner *Runner) buildpacksMetadata(buildpackKeyList []string) []buildpacka
 
 		configPath := filepath.Join(runner.depsDir, runner.config.DepsIndex(i), "config.yml")
 		if contents, err := os.ReadFile(configPath); err == nil {
+			// #nosec: G104 - we don't want to handle this for some reason
 			yaml.Unmarshal(contents, &metadata) //nolint:errcheck
 		}
 

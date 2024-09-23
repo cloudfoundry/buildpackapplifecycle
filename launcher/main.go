@@ -50,7 +50,12 @@ func main() {
 	}
 
 	credhubFlags := credhub_flags.NewCredhubFlags("launcher")
-	credhubFlags.Parse(os.Args[3:len(os.Args)])
+	err = credhubFlags.Parse(os.Args[3:len(os.Args)])
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%s: could not parse credhub flags: %s", os.Args[0], err)
+		os.Exit(1)
+	}
+
 	attempts := credhubFlags.ConnectAttempts()
 	delay := credhubFlags.RetryDelay()
 
@@ -60,7 +65,11 @@ func main() {
 	}
 
 	runtime.GOMAXPROCS(1)
-	runProcess(dir, command, stagingInfo.GetEntrypointPrefix())
+	err = runProcess(dir, command, stagingInfo.GetEntrypointPrefix())
+	if err != nil {
+		fmt.Fprint(os.Stderr, err.Error())
+		os.Exit(4)
+	}
 }
 
 func unmarhsalStagingInfo() (buildpackrunner.DeaStagingInfo, error) {
