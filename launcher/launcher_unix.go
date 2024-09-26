@@ -42,8 +42,8 @@ exec %s "$@"
 `, preStartMessage, startMessage, entryPoint)
 }
 
-func runProcess(dir, command, entrypointPrefix string) {
-	syscall.Exec("/bin/bash", []string{
+func runProcess(dir, command, entrypointPrefix string) error {
+	return syscall.Exec("/bin/bash", []string{
 		"bash",
 		"-c",
 		getLauncher(entrypointPrefix),

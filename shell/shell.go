@@ -14,7 +14,7 @@ import (
 )
 
 type exec interface {
-	Exec(dir, launcher, args, command string, environ []string)
+	Exec(dir, launcher, args, command string, environ []string) error
 }
 
 func Run(os osshim.Os, exec exec, shellArgs []string) error {
@@ -45,8 +45,10 @@ func Run(os osshim.Os, exec exec, shellArgs []string) error {
 	}
 
 	credhubFlags := credhub_flags.NewCredhubFlags("shell")
-	credhubFlags.Parse(argsToParseForFlags)
-
+	err := credhubFlags.Parse(argsToParseForFlags)
+	if err != nil {
+		return fmt.Errorf("Could not parse credhub flags: %s", err)
+	}
 	attempts := credhubFlags.ConnectAttempts()
 	delay := credhubFlags.RetryDelay()
 
@@ -56,8 +58,7 @@ func Run(os osshim.Os, exec exec, shellArgs []string) error {
 
 	runtime.GOMAXPROCS(1)
 
-	exec.Exec(dir, launcher, shellArgs[0], commands[0], os.Environ())
-	return nil
+	return exec.Exec(dir, launcher, shellArgs[0], commands[0], os.Environ())
 }
 
 const launcher = `

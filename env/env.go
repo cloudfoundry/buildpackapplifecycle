@@ -14,16 +14,25 @@ import (
 )
 
 func CalcEnv(os osshim.Os, dir string, attempts int, delay time.Duration) error {
-	os.Setenv("HOME", dir)
+	err := os.Setenv("HOME", dir)
+	if err != nil {
+		return fmt.Errorf("Unable to set HOME environment variable: %v", err)
+	}
 
 	tmpDir, err := filepath.Abs(filepath.Join(dir, "..", "tmp"))
 	if err == nil {
-		os.Setenv("TMPDIR", tmpDir)
+		err = os.Setenv("TMPDIR", tmpDir)
+		if err != nil {
+			return fmt.Errorf("Unable to set TMPDIR environment variable: %v", err)
+		}
 	}
 
 	depsDir, err := filepath.Abs(filepath.Join(dir, "..", "deps"))
 	if err == nil {
-		os.Setenv("DEPS_DIR", depsDir)
+		err = os.Setenv("DEPS_DIR", depsDir)
+		if err != nil {
+			return fmt.Errorf("Unable to set DEPS_DIR environment variable: %v", err)
+		}
 	}
 
 	vcapAppEnv := map[string]interface{}{}
@@ -45,7 +54,10 @@ func CalcEnv(os osshim.Os, dir string, attempts int, delay time.Duration) error 
 
 		mungedAppEnv, err := json.Marshal(vcapAppEnv)
 		if err == nil {
-			os.Setenv("VCAP_APPLICATION", string(mungedAppEnv))
+			err = os.Setenv("VCAP_APPLICATION", string(mungedAppEnv))
+			if err != nil {
+				return fmt.Errorf("Unable to set VCAP_APPLICATION environment variable: %v", err)
+			}
 		}
 	}
 
@@ -57,14 +69,20 @@ func CalcEnv(os osshim.Os, dir string, attempts int, delay time.Duration) error 
 			return fmt.Errorf("Unable to interpolate credhub refs: %v", err)
 		}
 	}
-	os.Unsetenv("VCAP_PLATFORM_OPTIONS")
+	err = os.Unsetenv("VCAP_PLATFORM_OPTIONS")
+	if err != nil {
+		return fmt.Errorf("Unable to unset VCAP_PLATFORM_OPTIONS environment variable: %v", err)
+	}
 
 	if os.Getenv("VCAP_SERVICES") != "" {
 		dbUri := databaseuri.New()
 		if creds, err := dbUri.Credentials([]byte(os.Getenv("VCAP_SERVICES"))); err == nil {
 			databaseUrl := dbUri.Uri(creds)
 			if databaseUrl != "" {
-				os.Setenv("DATABASE_URL", databaseUrl)
+				err = os.Setenv("DATABASE_URL", databaseUrl)
+				if err != nil {
+					return fmt.Errorf("Unable to set DATABASE_URL environment variable: %v", err)
+				}
 			}
 		}
 	}

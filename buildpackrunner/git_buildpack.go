@@ -27,7 +27,10 @@ func GitClone(repo url.URL, destination string) error {
 		}, branch)
 
 	if err != nil {
-		os.RemoveAll(destination)
+		err = os.RemoveAll(destination)
+		if err != nil {
+			return fmt.Errorf("Failed to remove %s prior to cloning on top: %s", destination, err)
+		}
 
 		err = performGitClone(gitPath,
 			[]string{

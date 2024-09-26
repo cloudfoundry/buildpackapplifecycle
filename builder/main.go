@@ -44,7 +44,11 @@ func main() {
 		if creds, err := dbUri.Credentials([]byte(os.Getenv("VCAP_SERVICES"))); err == nil {
 			databaseUrl := dbUri.Uri(creds)
 			if databaseUrl != "" {
-				os.Setenv("DATABASE_URL", databaseUrl)
+				err = os.Setenv("DATABASE_URL", databaseUrl)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Unable to set DATABASE_URL envirionment variable: %v", err)
+					os.Exit(5)
+				}
 			}
 		}
 	}

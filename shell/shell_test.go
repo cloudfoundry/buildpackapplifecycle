@@ -24,10 +24,11 @@ type FakeExec struct {
 	}
 }
 
-func (e *FakeExec) Exec(dir, launcher, args, command string, environ []string) {
+func (e *FakeExec) Exec(dir, launcher, args, command string, environ []string) error {
 	e.ExecCalled = true
 	e.ExecCalledWith.Dir = dir
 	e.ExecCalledWith.Command = command
+	return nil
 }
 
 var _ = Describe("Shell", func() {
