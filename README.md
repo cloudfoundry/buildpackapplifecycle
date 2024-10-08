@@ -1,16 +1,21 @@
-# BBS
+# buildpackapplifecycle
 
-Bulletin Board System (BBS) is the API to access the database for Diego.
-It communicates via protocol-buffer-encoded RPC-style calls over HTTP.
+The buildpack lifecycle implements the traditional Cloud Foundry
+deployment strategy.
 
-Diego clients communicate with the BBS via an
-[ExternalClient](https://godoc.org/github.com/cloudfoundry/bbs#ExternalClient)
-interface. This interface allows clients to create, read, update,
-delete, and subscribe to events about Tasks and LRPs.
+The **Builder** downloads buildpacks and app bits, and produces a
+droplet.
+
+The **Launcher** runs the start command using a standard rootfs and
+environment.
+
+Read about the app lifecycle spec here:
+https://github.com/cloudfoundry/diego-design-notes\#app-lifecycles
 
 > \[!NOTE\]
 >
-> This repository should be imported as `code.cloudfoundry.org/bbs`.
+> This repository should be imported as
+> `code.cloudfoundry.org/buildpackapplifecycle`.
 
 # Contributing
 
