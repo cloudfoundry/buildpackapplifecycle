@@ -21,7 +21,7 @@ var (
 	createProcessW = kernel32.NewProc("CreateProcessW")
 )
 
-func runProcess(dir, command, _entrypoint string) {
+func runProcess(dir, command, _entrypoint string) error {
 	err := createProcessW.Find()
 	handleErr("couldn't find func address", err)
 
@@ -110,6 +110,7 @@ func runProcess(dir, command, _entrypoint string) {
 	handleErr("GetExitCodeProcess failed", err)
 
 	os.Exit(int(exitCode))
+	return nil // this function already handles errors by exiting on its own. but runProcess needs to return an error now so we just return nil at the end to avoid changing things
 }
 
 func handleErr(description string, err error) {
