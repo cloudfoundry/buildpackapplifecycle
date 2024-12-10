@@ -1,5 +1,10 @@
 # buildpackapplifecycle
 
+[![Go Report
+Card](https://goreportcard.com/badge/code.cloudfoundry.org/buildpackapplifecycle)](https://goreportcard.com/report/code.cloudfoundry.org/buildpackapplifecycle)
+[![Go
+Reference](https://pkg.go.dev/badge/code.cloudfoundry.org/buildpackapplifecycle.svg)](https://pkg.go.dev/code.cloudfoundry.org/buildpackapplifecycle)
+
 The buildpack lifecycle implements the traditional Cloud Foundry
 deployment strategy.
 
