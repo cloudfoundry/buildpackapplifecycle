@@ -576,7 +576,7 @@ var _ = Describe("Launcher", func() {
 
 			Context("when the credhub location is passed to the launcher's platform options", func() {
 				BeforeEach(func() {
-					launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf(`VCAP_PLATFORM_OPTIONS={ "credhub-uri": "`+server.URL()+`"}`))
+					launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf(`VCAP_PLATFORM_OPTIONS={ "credhub-uri": "%s"}`, server.URL()))
 				})
 
 				Context("when credhub successfully interpolates", func() {
@@ -664,7 +664,7 @@ var _ = Describe("Launcher", func() {
 
 			BeforeEach(func() {
 				vcapServicesValue := `{"my-server":[{"credentials":{"credhub-ref":"(//my-server/creds)"}}]}`
-				launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf(`VCAP_PLATFORM_OPTIONS={ "credhub-uri": "`+server.URL()+`"}`))
+				launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf(`VCAP_PLATFORM_OPTIONS={ "credhub-uri": "%s"}`, server.URL()))
 				launcherCmd.Env = append(launcherCmd.Env, fmt.Sprintf("VCAP_SERVICES=%s", vcapServicesValue))
 				server.AppendHandlers(
 					ghttp.CombineHandlers(
