@@ -226,21 +226,43 @@ func (runner *Runner) Setup() error {
 
 func (runner *Runner) GoLikeLightning() (string, string, error) {
 	var detectedBuildpack, detectOutput, detectedBuildpackDir string
-	var ok bool
-	var err error
+	var buildpackKeys []string
 
 	if runner.config.SkipDetect() {
+		var err error
 		detectedBuildpack, detectedBuildpackDir, err = runner.runSupplyBuildpacks()
 		if err != nil {
 			return "", "", err
 		}
+		buildpackKeys = runner.config.BuildpackOrder()
 	} else {
+		var ok bool
 		detectedBuildpack, detectedBuildpackDir, detectOutput, ok = runner.detect()
 		if !ok {
 			return "", "", newDescriptiveError(nil, buildpackapplifecycle.DetectFailMsg)
 		}
+		buildpackKeys = []string{detectedBuildpack}
 	}
 
+	resultJSONPath, stagingInfoYMLPath, err := runner.build(detectedBuildpack, detectedBuildpackDir, detectOutput)
+	if err != nil {
+		// write result json even if build fails to capture buildpack metadata
+		buildpacks := runner.buildpacksMetadata(buildpackKeys)
+		runner.WriteResultJSON(
+			buildpackapplifecycle.StagingResult{
+				LifecycleType: "buildpack",
+			}, buildpacks) //nolint:errcheck
+		return "", "", err
+	}
+
+	if err := runner.packageDroplet(); err != nil {
+		return "", "", err
+	}
+
+	return resultJSONPath, stagingInfoYMLPath, nil
+}
+
+func (runner *Runner) build(detectedBuildpack, detectedBuildpackDir, detectOutput string) (string, string, error) {
 	if err := runner.runFinalize(detectedBuildpackDir); err != nil {
 		return "", "", newDescriptiveError(err, buildpackapplifecycle.CompileFailMsg)
 	}
@@ -255,43 +277,40 @@ func (runner *Runner) GoLikeLightning() (string, string, error) {
 		return "", "", err
 	}
 
-	resultJSONPath, stagingInfoYMLPath, err := runner.WriteStartCommands(detectedBuildpackDir, detectedBuildpack, detectOutput, procMap)
-	if err != nil {
-		return "", "", err
-	}
+	return runner.WriteStartCommands(detectedBuildpackDir, detectedBuildpack, detectOutput, procMap)
+}
 
+func (runner *Runner) packageDroplet() error {
 	for _, name := range []string{"tmp", "logs"} {
 		if err := os.MkdirAll(filepath.Join(runner.contentsDir, name), 0755); err != nil {
-			return "", "", newDescriptiveError(err, "Failed to set up droplet filesystem")
+			return newDescriptiveError(err, "Failed to set up droplet filesystem")
 		}
 	}
 
 	appDir := filepath.Join(runner.contentsDir, "app")
-	err = runner.copyApp(runner.config.BuildDir(), appDir)
-	if err != nil {
-		return "", "", newDescriptiveError(err, "Failed to copy compiled droplet")
+	if err := runner.copyApp(runner.config.BuildDir(), appDir); err != nil {
+		return newDescriptiveError(err, "Failed to copy compiled droplet")
 	}
 
 	tarPath, err := runner.findTar()
 	if err != nil {
-		return "", "", newDescriptiveError(err, "Unable to find tar executable")
+		return newDescriptiveError(err, "Unable to find tar executable")
 	}
 
 	if output, err := exec.Command(tarPath, "-czf", runner.config.OutputDroplet(), "-C", runner.contentsDir, ".").CombinedOutput(); err != nil {
-		return "", "", newDescriptiveError(err, "Failed to compress droplet filesystem: %s", string(output))
+		return newDescriptiveError(err, "Failed to compress droplet filesystem: %s", string(output))
 	}
 
 	//prepare the build artifacts cache output directory
-	err = os.MkdirAll(filepath.Dir(runner.config.OutputBuildArtifactsCache()), 0755)
-	if err != nil {
-		return "", "", newDescriptiveError(err, "Failed to create output build artifacts cache dir")
+	if err := os.MkdirAll(filepath.Dir(runner.config.OutputBuildArtifactsCache()), 0755); err != nil {
+		return newDescriptiveError(err, "Failed to create output build artifacts cache dir")
 	}
 
 	if output, err := exec.Command(tarPath, "-czf", runner.config.OutputBuildArtifactsCache(), "-C", runner.config.BuildArtifactsCacheDir(), ".").CombinedOutput(); err != nil {
-		return "", "", newDescriptiveError(err, "Failed to compress build artifacts: %s", string(output))
+		return newDescriptiveError(err, "Failed to compress build artifacts: %s", string(output))
 	}
 
-	return resultJSONPath, stagingInfoYMLPath, nil
+	return nil
 }
 
 func (runner *Runner) Run() (string, error) {
