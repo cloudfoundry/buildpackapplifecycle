@@ -28,7 +28,7 @@ var _ = Describe("Runner", func() {
 			var defaultStartCommandFromFixtures = "This is the start command for the 'web' default process type in testdata/fake_{unix,windows}_bp/bin/release{,.bat}"
 
 			BeforeEach(func() {
-				builderConfig = makeBuilderConfig(buildpacks)
+				builderConfig = makeBuilderConfig(buildpacks, fakeBuildpackDir())
 				runner = buildpackrunner.New(&builderConfig)
 				Expect(runner.Setup()).To(Succeed())
 			})
@@ -298,9 +298,78 @@ processes:
 			})
 		})
 	})
+
+	Describe("GoLikeLightning failure scenarios", func() {
+		var runner *buildpackrunner.Runner
+		var builderConfig buildpackapplifecycle.LifecycleBuilderConfig
+
+		When("staging fails but buildpack has written metadata", func() {
+			BeforeEach(func() {
+				buildpacks := []string{"failing-buildpack"}
+				builderConfig = makeBuilderConfig(buildpacks, fakeFailingBuildpackDir())
+				runner = buildpackrunner.New(&builderConfig)
+				Expect(runner.Setup()).To(Succeed())
+			})
+
+			It("should write result.json with buildpack metadata on failure", func() {
+				_, _, err := runner.GoLikeLightning()
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("Failed to compile droplet"))
+
+				resultsJSONPath := builderConfig.OutputMetadata()
+				Expect(resultsJSONPath).To(BeAnExistingFile())
+
+				resultsJSONContents, err := os.ReadFile(resultsJSONPath)
+				Expect(err).ToNot(HaveOccurred())
+
+				actualStagingResult := buildpackapplifecycle.StagingResult{}
+				Expect(json.Unmarshal(resultsJSONContents, &actualStagingResult)).To(Succeed())
+
+				Expect(actualStagingResult.LifecycleType).To(Equal("buildpack"))
+				Expect(actualStagingResult.LifecycleMetadata.Buildpacks).To(HaveLen(1))
+				Expect(actualStagingResult.LifecycleMetadata.Buildpacks[0].Key).To(Equal("failing-buildpack"))
+				Expect(actualStagingResult.LifecycleMetadata.Buildpacks[0].Name).To(Equal("failing-buildpack"))
+				Expect(actualStagingResult.LifecycleMetadata.Buildpacks[0].Version).To(Equal("1.2.3"))
+			})
+		})
+
+		When("staging fails with multiple buildpacks", func() {
+			BeforeEach(func() {
+				buildpacks := []string{"first-failing-buildpack", "second-failing-buildpack"}
+				builderConfig = makeBuilderConfig(buildpacks, fakeFailingBuildpackDir())
+				runner = buildpackrunner.New(&builderConfig)
+				Expect(runner.Setup()).To(Succeed())
+			})
+
+			It("should write result.json with metadata for all buildpacks on failure", func() {
+				_, _, err := runner.GoLikeLightning()
+				Expect(err).To(HaveOccurred())
+
+				resultsJSONPath := builderConfig.OutputMetadata()
+				Expect(resultsJSONPath).To(BeAnExistingFile())
+
+				resultsJSONContents, err := os.ReadFile(resultsJSONPath)
+				Expect(err).ToNot(HaveOccurred())
+
+				actualStagingResult := buildpackapplifecycle.StagingResult{}
+				Expect(json.Unmarshal(resultsJSONContents, &actualStagingResult)).To(Succeed())
+
+				Expect(actualStagingResult.LifecycleType).To(Equal("buildpack"))
+				Expect(actualStagingResult.LifecycleMetadata.Buildpacks).To(HaveLen(2))
+
+				Expect(actualStagingResult.LifecycleMetadata.Buildpacks[0].Key).To(Equal("first-failing-buildpack"))
+				Expect(actualStagingResult.LifecycleMetadata.Buildpacks[0].Name).To(Equal("failing-buildpack"))
+				Expect(actualStagingResult.LifecycleMetadata.Buildpacks[0].Version).To(Equal("1.2.3"))
+
+				Expect(actualStagingResult.LifecycleMetadata.Buildpacks[1].Key).To(Equal("second-failing-buildpack"))
+				Expect(actualStagingResult.LifecycleMetadata.Buildpacks[1].Name).To(Equal("failing-buildpack"))
+				Expect(actualStagingResult.LifecycleMetadata.Buildpacks[1].Version).To(Equal("1.2.3"))
+			})
+		})
+	})
 })
 
-func makeBuilderConfig(buildpacks []string) buildpackapplifecycle.LifecycleBuilderConfig {
+func makeBuilderConfig(buildpacks []string, testdataDir string) buildpackapplifecycle.LifecycleBuilderConfig {
 	skipDetect := true
 	builderConfig := buildpackapplifecycle.NewLifecycleBuilderConfig(buildpacks, skipDetect, false)
 	outputMetadataPath, err := os.MkdirTemp(os.TempDir(), "results")
@@ -317,7 +386,7 @@ func makeBuilderConfig(buildpacks []string) buildpackapplifecycle.LifecycleBuild
 
 	for _, bp := range buildpacks {
 		bpPath := builderConfig.BuildpackPath(bp)
-		Expect(genFakeBuildpack(bpPath)).To(Succeed())
+		Expect(genFakeBuildpack(bpPath, testdataDir)).To(Succeed())
 	}
 
 	err = os.MkdirAll(builderConfig.BuildDir(), os.ModePerm)
@@ -331,15 +400,14 @@ func makeBuilderConfig(buildpacks []string) buildpackapplifecycle.LifecycleBuild
 	return builderConfig
 }
 
-func genFakeBuildpack(bpRoot string) error {
-	err := os.MkdirAll(filepath.Join(bpRoot, "bin"), os.ModePerm)
-	if err != nil {
+func genFakeBuildpack(bpRoot string, testdataDir string) error {
+	if err := os.MkdirAll(filepath.Join(bpRoot, "bin"), os.ModePerm); err != nil {
 		return err
 	}
 	if runtime.GOOS == "windows" {
-		CopyDirectory(filepath.Join("testdata", "fake_windows_bp", "bin", "*"), filepath.Join(bpRoot, "bin"))
+		CopyDirectory(filepath.Join("testdata", testdataDir, "bin", "*"), filepath.Join(bpRoot, "bin"))
 	} else {
-		CopyDirectory(filepath.Join("testdata", "fake_unix_bp", "bin"), filepath.Join(bpRoot))
+		CopyDirectory(filepath.Join("testdata", testdataDir, "bin"), filepath.Join(bpRoot))
 	}
 	return nil
 }
@@ -356,4 +424,18 @@ func CopyDirectory(src string, dst string) {
 	Expect(err).NotTo(HaveOccurred())
 	session.Wait()
 	Expect(session).Should(gexec.Exit())
+}
+
+func fakeBuildpackDir() string {
+	if runtime.GOOS == "windows" {
+		return "fake_windows_bp"
+	}
+	return "fake_unix_bp"
+}
+
+func fakeFailingBuildpackDir() string {
+	if runtime.GOOS == "windows" {
+		return "fake_windows_bp_failing"
+	}
+	return "fake_unix_bp_failing"
 }

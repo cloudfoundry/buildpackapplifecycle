@@ -46,10 +46,11 @@ type LifecycleMetadata struct {
 }
 
 type BuildpackMetadata struct {
-	Key     string           `json:"key" yaml:"key"`
-	Name    string           `json:"name" yaml:"name"`
-	Version string           `json:"version,omitempty" yaml:"version,omitempty"`
-	Config  *BuildpackConfig `json:"config,omitempty" yaml:"config,omitempty"`
+	Key            string           `json:"key" yaml:"key"`
+	Name           string           `json:"name" yaml:"name"`
+	Version        string           `json:"version,omitempty" yaml:"version,omitempty"`
+	Config         *BuildpackConfig `json:"config,omitempty" yaml:"config,omitempty"`
+	OutputMetadata map[string]any   `json:"output_metadata,omitempty" yaml:"output_metadata,omitempty"`
 }
 
 type BuildpackConfig struct {
