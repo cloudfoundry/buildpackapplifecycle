@@ -17,6 +17,7 @@ import (
 	"github.com/cespare/xxhash/v2"
 
 	"gopkg.in/yaml.v2"
+	yamlv3 "gopkg.in/yaml.v3"
 
 	"code.cloudfoundry.org/buildpackapplifecycle"
 	"code.cloudfoundry.org/buildpackapplifecycle/buildpackrunner/resources"
@@ -345,8 +346,9 @@ func (runner *Runner) buildpacksMetadata(buildpackKeyList []string) []buildpacka
 
 		configPath := filepath.Join(runner.depsDir, runner.config.DepsIndex(i), "config.yml")
 		if contents, err := os.ReadFile(configPath); err == nil {
+			// yaml.v3 produces map[string]interface{} (vs map[interface{}]interface{} in v2), which is required for JSON marshaling of arbitrary output_metadata
 			// #nosec: G104 - we don't want to handle this for some reason
-			yaml.Unmarshal(contents, &metadata) //nolint:errcheck
+			yamlv3.Unmarshal(contents, &metadata) //nolint:errcheck
 		}
 
 		buildpacksMetadataList = append(buildpacksMetadataList, metadata)
