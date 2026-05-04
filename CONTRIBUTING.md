@@ -6,5 +6,4 @@ Please create pull requests against the `develop` branch using a forked reposito
 please run the existing test suite and make sure that any additional code has good test coverage.  Follow the instructions in the
 README for how to run the test suite. 
 
-After the PR has been merged into the `develop` branch, the progress of the CI pipeline can be observed here: https://buildpacks.ci.cf-app.com/teams/main/pipelines/bal .
 Once the pipeline has completed the changes will be automatically merged into `master` and bumped into the [Diego Release](https://github.com/cloudfoundry/diego-release) `develop` branch. 
